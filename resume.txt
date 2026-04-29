@@ -1,0 +1,19 @@
+AKHILESH VISHWAKARMA
+Full-Stack Developer & Digital Craftsman
+Brooklyn, NY  |  hello@akhilesh.dev
+
+This is a placeholder resume file. Replace public/resume.txt (or upload
+public/resume.pdf and update the link in src/pages/home.tsx) with your
+actual resume.
+
+EXPERIENCE
+- Senior Full-Stack Engineer, Acme Corp (2022 — Present)
+- Product Engineer, Studio Interface (2019 — 2022)
+- Frontend Developer, TechFlow Startup (2017 — 2019)
+
+EDUCATION
+B.Tech in Computer Science — Indian Institute of Technology, 2017
+
+STACK
+React, Next.js, TypeScript, Node.js, PostgreSQL, Tailwind, Framer Motion,
+GSAP, Three.js, AWS, Docker, Figma.

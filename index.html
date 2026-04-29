@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0c0c" />
+  <title>
+    Akhilesh Vishwakarma — Full-Stack Developer &amp; Digital Craftsman
+  </title>
+  <meta name="description"
+    content="Personal portfolio of Akhilesh Vishwakarma — a full-stack developer & digital craftsman building bold, high-performance web experiences for ambitious brands." />
+  <meta property="og:title" content="Akhilesh Vishwakarma — Full-Stack Developer" />
+  <meta property="og:description" content="Building bold, high-performance web experiences for ambitious brands." />
+  <meta property="og:image" content="./opengraph.jpg" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+
+  <!-- Preconnects for faster font/CDN loading -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+
+  <link rel="preload" as="image" href="./portrait.png" />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap"
+    rel="stylesheet" />
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body class="bg-bg text-fg">
+  <!-- Skip to content -->
+  <a href="#main" class="visually-hidden-focusable skip-link">Skip to content</a>
+
+  <!-- Scroll progress bar -->
+  <div class="scroll-progress" aria-hidden="true">
+    <span id="scrollProgress"></span>
+  </div>
+
+  <!-- ============ Preloader ============ -->
+  <div id="preloader" class="preloader" aria-hidden="true">
+    <div class="preloader__inner">
+      <div class="preloader__brand">
+        <span class="brand-dot"></span>
+        <span class="brand-text">Akhilesh<span class="text-primary">.</span></span>
+      </div>
+      <ul class="preloader__lines" id="preloaderLines"></ul>
+      <div class="preloader__bar"><span id="preloaderBar"></span></div>
+      <div class="preloader__meta">
+        <span>Loading</span>
+        <span><span id="preloaderPct">0</span>%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Spotlight follower (desktop only) ============ -->
+  <div class="spotlight" id="spotlight" aria-hidden="true"></div>
+
+  <!-- ============ Navigation ============ -->
+  <header class="site-nav" id="siteNav">
+    <div class="site-nav__inner">
+      <a class="brand" href="#top" aria-label="Akhilesh — back to top">
+        <span class="brand-dot"></span>
+        <span class="brand-text">Akhilesh<span class="text-primary">.</span></span>
+      </a>
+
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#about">About</a>
+        <a href="#education">Education</a>
+        <a href="#experience">Experience</a>
+        <a href="#services">Services</a>
+        <a href="#work">Work</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <a href="#contact" class="btn-outline btn-hire d-none d-md-inline-flex">Hire Me</a>
+
+      <button type="button" class="nav-toggle d-md-none" id="navToggle" aria-label="Open menu" aria-expanded="false"
+        aria-controls="mobileMenu">
+        <i class="bi bi-list" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile menu drawer -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <nav class="mobile-menu__nav" aria-label="Mobile">
+      <a href="#about" class="mobile-link"><span>01</span>About</a>
+      <a href="#education" class="mobile-link"><span>02</span>Education</a>
+      <a href="#experience" class="mobile-link"><span>03</span>Experience</a>
+      <a href="#services" class="mobile-link"><span>04</span>Services</a>
+      <a href="#work" class="mobile-link"><span>05</span>Work</a>
+      <a href="#contact" class="mobile-link"><span>06</span>Contact</a>
+      <a href="#contact" class="btn-primary mt-4">Hire Me</a>
+    </nav>
+  </div>
+
+  <main id="main">
+    <span id="top" class="anchor-top"></span>
+
+    <!-- ============ Hero ============ -->
+    <section class="hero" id="hero">
+      <div class="hero__grid" aria-hidden="true"></div>
+
+      <div class="hero__shape hero__shape--circle"></div>
+      <div class="hero__shape hero__shape--dot"></div>
+      <div class="hero__shape hero__shape--square"></div>
+      <div class="hero__shape hero__shape--ring"></div>
+      <div class="hero__shape hero__shape--small-dot"></div>
+      <div class="hero__dotgrid" aria-hidden="true">
+        <div class="dotgrid"></div>
+      </div>
+
+      <div class="container-xxl hero__container">
+        <div class="row g-5 align-items-center">
+          <div class="col-lg-7">
+            <div class="hero__eyebrow" data-reveal>
+              <span class="eyebrow-line"></span>
+              <span class="eyebrow-text">
+                <span class="dim">$</span> whoami
+                <span class="dim">--</span> creative_coder
+              </span>
+            </div>
+
+            <h1 class="hero__title">
+              <span class="line line--1" data-reveal>I AM</span>
+              <span class="line line--2 text-primary" data-reveal>AKHILESH</span>
+              <span class="line line--3" data-reveal>VISHWAKARMA</span>
+            </h1>
+
+            <p class="hero__rotator" data-reveal>
+              <span class="dim">I'm a</span>
+              <span class="rotator">
+                <span class="rotator__text" id="rotatorText">Developer</span><span class="rotator__cursor">|</span>
+              </span>
+            </p>
+
+            <p class="hero__lede" data-reveal>
+              Full-stack developer &amp; digital craftsman building bold,
+              high-performance web experiences for ambitious brands and
+              forward-thinking teams.
+            </p>
+
+            <div class="hero__cta" data-reveal>
+              <a href="#work" class="btn-primary">
+                Discover Work <i class="bi bi-arrow-right"></i>
+              </a>
+              <a href="./resume.txt" download class="btn-outline">
+                <i class="bi bi-download"></i> Download Resume
+              </a>
+              <a href="#contact" class="btn-ghost">
+                Let's Talk <i class="bi bi-arrow-up-right"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="hero__portrait" data-reveal>
+              <div class="hero__portrait-glow" aria-hidden="true"></div>
+              <img src="./portrait.png" alt="Akhilesh Vishwakarma portrait" width="520" height="650" loading="eager"
+                decoding="async" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Stats ============ -->
+    <section class="section stats">
+      <div class="container-xxl">
+        <div class="kicker" data-reveal>
+          <span class="kicker__line"></span>
+          <span class="kicker__text">// by_the_numbers</span>
+        </div>
+        <div class="row g-4">
+          <div class="col-6 col-lg-3" data-reveal>
+            <div class="stat">
+              <div class="stat__num" data-counter="7" data-suffix="+">0</div>
+              <div class="stat__label">Years of Experience</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3" data-reveal>
+            <div class="stat">
+              <div class="stat__num" data-counter="84" data-suffix="+">0</div>
+              <div class="stat__label">Projects Delivered</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3" data-reveal>
+            <div class="stat">
+              <div class="stat__num" data-counter="32">0</div>
+              <div class="stat__label">Happy Clients</div>
+            </div>
+          </div>
+          <div class="col-6 col-lg-3" data-reveal>
+            <div class="stat">
+              <div class="stat__num" data-counter="15">0</div>
+              <div class="stat__label">Industry Awards</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ About ============ -->
+    <section class="section about" id="about">
+      <div class="container-xxl">
+        <div class="row g-5 align-items-center">
+          <div class="col-lg-5">
+            <div class="about__media" data-reveal>
+              <div class="about__media-frame">
+                <img src="./portrait.png" alt="Akhilesh portrait, about section" loading="lazy" decoding="async" />
+                <div class="about__media-overlay"></div>
+                <div class="about__media-caption">
+                  <div class="text-primary tag-uppercase">Akhilesh</div>
+                  <div class="caption-strong">Mumbai, India → Worldwide</div>
+                </div>
+              </div>
+              <span class="about__media-accent" aria-hidden="true"></span>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="kicker" data-reveal>
+              <span class="kicker__line"></span>
+              <span class="kicker__text">// about_me</span>
+            </div>
+            <h2 class="display-title" data-reveal>
+              Building digital<br />
+              experiences with
+              <em class="font-serif text-primary">purpose</em> &amp; craft.
+            </h2>
+            <div class="prose" data-reveal>
+              <p>
+                I'm a full-stack developer based in Mumbai, India, with 7+
+                years shaping products that people genuinely love to use. From
+                scrappy startups to established consumer brands, I turn
+                complex ideas into clean, high-performance code.
+              </p>
+              <p>
+                My work lives at the intersection of design and engineering —
+                I care equally about the elegance of a UI animation and the
+                reliability of a database query.
+              </p>
+            </div>
+            <div class="info-grid" data-reveal>
+              <div class="info-grid__cell">
+                <div class="tag-uppercase dim">Based in</div>
+                <div class="info-grid__value">Mumbai, India</div>
+              </div>
+              <div class="info-grid__cell">
+                <div class="tag-uppercase dim">Working</div>
+                <div class="info-grid__value">Worldwide</div>
+              </div>
+              <div class="info-grid__cell">
+                <div class="tag-uppercase dim">Email</div>
+                <div class="info-grid__value text-truncate">
+                  hello@akhilesh.dev
+                </div>
+              </div>
+              <div class="info-grid__cell">
+                <div class="tag-uppercase dim">Status</div>
+                <div class="info-grid__value text-primary">Available</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Education ============ -->
+    <section class="section education" id="education">
+      <div class="container-xxl">
+        <div class="kicker" data-reveal>
+          <span class="kicker__line"></span>
+          <span class="kicker__text">// education</span>
+        </div>
+        <div class="section-header" data-reveal>
+          <h2 class="display-title">
+            Always <em class="font-serif text-primary">learning</em>, forever.
+          </h2>
+          <p class="section-header__lede">
+            Formal degrees, online cohorts and the small daily habit of
+            shipping side projects.
+          </p>
+        </div>
+        <div class="row g-3" id="educationGrid"></div>
+      </div>
+    </section>
+
+    <!-- ============ Experience + Toolkit ============ -->
+    <section class="section experience" id="experience">
+      <div class="container-xxl">
+        <div class="row g-5">
+          <div class="col-lg-7">
+            <div class="kicker" data-reveal>
+              <span class="kicker__line"></span>
+              <span class="kicker__text">// experience</span>
+            </div>
+            <h2 class="display-title mb-5" data-reveal>
+              A career built<br />
+              shipping <span class="text-primary">things that matter</span>.
+            </h2>
+            <div id="experienceList"></div>
+          </div>
+          <div class="col-lg-5">
+            <div class="experience__side">
+              <div class="kicker" data-reveal>
+                <span class="kicker__line"></span>
+                <span class="kicker__text">// toolkit</span>
+              </div>
+              <h3 class="display-title display-title--sm mb-5" data-reveal>
+                Tech I reach<br />for daily.
+              </h3>
+              <div id="toolkit"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Services ============ -->
+    <section class="section services" id="services">
+      <div class="container-xxl">
+        <div class="kicker" data-reveal>
+          <span class="kicker__line"></span>
+          <span class="kicker__text">// what_i_do</span>
+        </div>
+        <div class="section-header" data-reveal>
+          <h2 class="display-title">
+            Services that <em class="font-serif text-primary">ship</em>.
+          </h2>
+          <p class="section-header__lede">
+            A small, focused menu of things I do well — end-to-end, from the
+            first sketch to the final deploy.
+          </p>
+        </div>
+        <div class="row g-0 services__grid" id="servicesGrid"></div>
+      </div>
+    </section>
+
+    <!-- ============ Work ============ -->
+    <section class="section work" id="work">
+      <div class="container-xxl">
+        <div class="kicker" data-reveal>
+          <span class="kicker__line"></span>
+          <span class="kicker__text">// selected_work</span>
+        </div>
+        <div class="section-header section-header--inline" data-reveal>
+          <h2 class="display-title">
+            Work that <span class="text-primary">moves</span> the needle.
+          </h2>
+          <a href="#contact" class="link-arrow">
+            Start a project <i class="bi bi-arrow-up-right"></i>
+          </a>
+        </div>
+        <div class="row g-4 g-md-5" id="workGrid"></div>
+        <div class="text-center mt-5 work__more" id="workMoreWrap" hidden>
+          <button type="button" class="btn-outline" id="workLoadMore">
+            Load More Projects <i class="bi bi-plus-lg"></i>
+          </button>
+          <div class="dim tag-uppercase mt-3" id="workCount"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Testimonials ============ -->
+    <section class="section testimonials">
+      <div class="container-xxl" style="max-width: 1200px">
+        <div class="kicker" data-reveal>
+          <span class="kicker__line"></span>
+          <span class="kicker__text">// kind_words</span>
+        </div>
+        <h2 class="display-title mb-5" data-reveal>
+          What people<br />
+          <span class="text-primary">say</span> about working with me.
+        </h2>
+
+        <div class="testimonials__wrap">
+          <span class="testimonials__quotemark" aria-hidden="true">&ldquo;</span>
+          <div class="testimonials__card">
+            <div class="testimonials__counter" id="tCounter">01 / 04</div>
+            <div id="tContent" class="testimonials__content"></div>
+          </div>
+          <div class="testimonials__controls">
+            <div class="testimonials__dots" id="tDots"></div>
+            <div class="testimonials__arrows">
+              <button type="button" class="ctrl-btn" id="tPrev" aria-label="Previous testimonial">
+                <i class="bi bi-arrow-left"></i>
+              </button>
+              <button type="button" class="ctrl-btn" id="tNext" aria-label="Next testimonial">
+                <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Contact ============ -->
+    <section class="section contact" id="contact">
+      <div class="contact__bg" aria-hidden="true">CONTACT</div>
+      <div class="container-xxl position-relative">
+        <div class="row g-5">
+          <div class="col-lg-6">
+            <div class="kicker" data-reveal>
+              <span class="kicker__line"></span>
+              <span class="kicker__text">// get_in_touch</span>
+            </div>
+            <h2 class="display-title" data-reveal>
+              Let's build<br />
+              something <em class="font-serif text-primary">great</em>.
+            </h2>
+            <p class="prose" data-reveal>
+              Got a project in mind, or just want to chat about technology and
+              craft? I'm always up for a good conversation.
+            </p>
+            <div class="contact__list" data-reveal>
+              <a href="mailto:hello@akhilesh.dev" class="contact__item">
+                <span class="contact__icon"><i class="bi bi-envelope"></i></span>
+                <span>
+                  <span class="tag-uppercase dim">Email</span>
+                  <strong>hello@akhilesh.dev</strong>
+                </span>
+              </a>
+              <a href="tel:+919999999999" class="contact__item">
+                <span class="contact__icon"><i class="bi bi-telephone"></i></span>
+                <span>
+                  <span class="tag-uppercase dim">Phone</span>
+                  <strong>+91 99999 99999</strong>
+                </span>
+              </a>
+              <div class="contact__item contact__item--static">
+                <span class="contact__icon"><i class="bi bi-geo-alt"></i></span>
+                <span>
+                  <span class="tag-uppercase dim">Location</span>
+                  <strong>Mumbai, India — Worldwide</strong>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <form class="contact__form needs-validation" id="contactForm" novalidate data-reveal>
+              <div class="row g-4">
+                <div class="col-md-6">
+                  <label for="cName" class="form-label">Your Name</label>
+                  <input type="text" id="cName" name="name" class="form-control" placeholder="Jane Doe" required
+                    minlength="2" />
+                  <div class="invalid-feedback">Please enter your name.</div>
+                </div>
+                <div class="col-md-6">
+                  <label for="cEmail" class="form-label">Email</label>
+                  <input type="email" id="cEmail" name="email" class="form-control" placeholder="jane@example.com"
+                    required />
+                  <div class="invalid-feedback">
+                    Please enter a valid email address.
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label for="cSubject" class="form-label">Subject</label>
+                  <input type="text" id="cSubject" name="subject" class="form-control" placeholder="Project inquiry"
+                    required minlength="3" />
+                  <div class="invalid-feedback">
+                    Please add a short subject.
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label for="cMessage" class="form-label">Message</label>
+                  <textarea id="cMessage" name="message" class="form-control" rows="5"
+                    placeholder="Tell me about your project..." required minlength="10"></textarea>
+                  <div class="invalid-feedback">
+                    Please enter at least 10 characters.
+                  </div>
+                </div>
+                <div class="col-12">
+                  <button type="submit" class="btn-primary w-100">
+                    Send Message <i class="bi bi-arrow-right"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Footer ============ -->
+  <footer class="site-footer">
+    <div class="container-xxl">
+      <div class="site-footer__top">
+        <div>
+          <div class="brand mb-3">
+            <span class="brand-dot"></span>
+            <span class="brand-text">Akhilesh<span class="text-primary">.</span></span>
+          </div>
+          <p class="site-footer__tagline">
+            Full-stack developer &amp; digital craftsman building bold,
+            high-performance web experiences.
+          </p>
+        </div>
+        <div class="site-footer__socials">
+          <a href="https://twitter.com/akhilesh" target="_blank" rel="noopener" aria-label="Twitter"><i
+              class="bi bi-twitter-x"></i></a>
+          <a href="https://github.com/akhilesh" target="_blank" rel="noopener" aria-label="GitHub"><i
+              class="bi bi-github"></i></a>
+          <a href="https://linkedin.com/in/akhilesh" target="_blank" rel="noopener" aria-label="LinkedIn"><i
+              class="bi bi-linkedin"></i></a>
+        </div>
+      </div>
+      <div class="site-footer__bottom">
+        <span class="tag-uppercase dim">© <span id="copyYear"></span> Akhilesh Vishwakarma — All rights
+          reserved</span>
+        <span class="tag-uppercase dim">Designed &amp; Built with Care</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ Floating actions ============ -->
+  <a href="https://wa.me/919999999999" target="_blank" rel="noopener" class="float-whatsapp"
+    aria-label="Chat on WhatsApp">
+    <i class="bi bi-whatsapp"></i>
+  </a>
+  <button type="button" class="float-totop" id="backToTop" aria-label="Back to top" hidden>
+    <i class="bi bi-arrow-up"></i>
+  </button>
+
+  <!-- ============ Project modal ============ -->
+  <div class="modal fade project-modal" id="projectModal" tabindex="-1" aria-labelledby="projectModalTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <button type="button" class="modal__close" data-bs-dismiss="modal" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="modal__media"><img id="pmImage" src="" alt="" /></div>
+        <div class="modal__body">
+          <div class="tag-uppercase text-primary mb-2" id="pmTag"></div>
+          <h3 class="modal__title" id="projectModalTitle"></h3>
+          <p id="pmDesc" class="modal__desc"></p>
+          <div class="modal__stack" id="pmStack"></div>
+          <a href="#contact" class="btn-primary mt-4" data-bs-dismiss="modal">
+            Discuss this project <i class="bi bi-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Toast ============ -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-4">
+    <div id="liveToast" class="toast align-items-center text-black bg-success" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toastBody">Message sent.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+          aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Scripts ============ -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script src="./data.js"></script>
+  <script src="./main.js"></script>
+</body>
+
+</html>
