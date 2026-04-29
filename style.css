@@ -52,7 +52,7 @@ ul { list-style: none; padding: 0; margin: 0; }
 button { font: inherit; }
 
 .container-xxl { max-width: var(--max-w); padding-left: var(--pad-x); padding-right: var(--pad-x); }
-.section { padding: var(--section-y) 0; border-top: 1px solid var(--line); position: relative; }
+.section { padding: var(--section-y) 0; border-top: 1px solid var(--line); position: relative; overflow:hidden;}
 .section:first-of-type { border-top: 0; }
 
 /* Bootstrap modal/toast tweaks */
