@@ -115,7 +115,7 @@ window.PORTFOLIO_DATA = {
       tag: "Fintech / 2024",
       description:
         "Reimagining institutional trading with a real-time data layer and a high-density UI that traders actually want to use. Cut decision latency by 38%.",
-      image: "/projects/project-1.png",
+      image: "./projects/project-1.png",
       stack: ["React", "WebSockets", "D3"],
     },
     {
@@ -123,7 +123,7 @@ window.PORTFOLIO_DATA = {
       tag: "E-Commerce / 2023",
       description:
         "An editorial shopping experience for an independent fragrance brand. Atmospheric art direction, fluid transitions, and a checkout flow that lifted conversion 34%.",
-      image: "/projects/project-2.png",
+      image: "./projects/project-2.png",
       stack: ["Next.js", "Shopify", "GSAP"],
     },
     {
@@ -131,7 +131,7 @@ window.PORTFOLIO_DATA = {
       tag: "SaaS / 2023",
       description:
         "A self-serve analytics product for product teams. Built a fast, customisable dashboard layer and an event ingestion pipeline that scales.",
-      image: "/projects/project-3.png",
+      image: "./projects/project-3.png",
       stack: ["TypeScript", "PostgreSQL", "Recharts"],
     },
     {
@@ -139,7 +139,7 @@ window.PORTFOLIO_DATA = {
       tag: "Healthtech / 2022",
       description:
         "Patient-first appointment scheduling for a network of clinics. Reduced no-shows by 22% with a smart reminders engine.",
-      image: "/projects/project-4.png",
+      image: "./projects/project-4.png",
       stack: ["React Native", "Node.js", "Twilio"],
     },
     {
@@ -147,7 +147,7 @@ window.PORTFOLIO_DATA = {
       tag: "Agency Site / 2024",
       description:
         "An award-winning marketing site for a creative collective. Editorial layouts, scroll-triggered animations and a custom CMS.",
-      image: "/projects/project-1.png",
+      image: "./projects/project-1.png",
       stack: ["Next.js", "Framer Motion", "Sanity"],
     },
     {
@@ -155,7 +155,7 @@ window.PORTFOLIO_DATA = {
       tag: "Branding / 2023",
       description:
         "A bold, type-driven portfolio for a 3D motion studio. WebGL-powered hero, custom shader transitions, and a CMS-driven case study layer.",
-      image: "/projects/project-2.png",
+      image: "./projects/project-2.png",
       stack: ["Three.js", "GLSL", "Next.js"],
     },
   ],
