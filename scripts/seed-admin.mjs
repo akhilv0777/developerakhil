@@ -3,10 +3,13 @@
 //
 // Usage:
 //   node scripts/seed-admin.mjs <username> <password>
+//
+// Requires DATABASE_URL to be set in the environment — either export it,
+// or put it in a .env file in the project root (this script loads .env
+// automatically).
 
 import 'dotenv/config';
-import pg from 'pg';
-const { Client } = pg;
+import { neon } from '@neondatabase/serverless';
 import bcrypt from 'bcryptjs';
 
 async function main() {
@@ -20,45 +23,34 @@ async function main() {
     console.error('Password must be at least 8 characters.');
     process.exit(1);
   }
-  
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
   if (!connectionString) {
     console.error('DATABASE_URL is not set. Add it to a .env file or export it in your shell.');
+    console.error('(In Vercel: Project Settings → Storage → your Postgres DB → copy the .env.local snippet.)');
     process.exit(1);
   }
+  const sql = neon(connectionString);
 
-  // Neon ki jagah ab standard pg Client use hoga
-  const client = new Client({
-    connectionString: connectionString,
-  });
+  await sql`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id SERIAL PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `;
 
-  await client.connect();
+  const passwordHash = await bcrypt.hash(password, 12);
 
-  try {
-    // Table create karne ka standard query
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS admin_users (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-      );
-    `);
+  await sql`
+    INSERT INTO admin_users (username, password_hash)
+    VALUES (${username}, ${passwordHash})
+    ON CONFLICT (username)
+    DO UPDATE SET password_hash = EXCLUDED.password_hash;
+  `;
 
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    // Data insert ya update karne ka query
-    await client.query(`
-      INSERT INTO admin_users (username, password_hash)
-      VALUES ($1, $2)
-      ON CONFLICT (username)
-      DO UPDATE SET password_hash = EXCLUDED.password_hash;
-    `, [username, passwordHash]);
-
-    console.log(`✅ Admin user "${username}" is ready. You can now log in at /console.`);
-  } finally {
-    await client.end();
-  }
+  console.log(`✅ Admin user "${username}" is ready. You can now log in at /console.`);
+  process.exit(0);
 }
 
 main().catch((error) => {

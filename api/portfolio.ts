@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ensureSchema, sql } from '../lib/db';
-import { getSessionUser } from '../lib/auth';
+import { ensureSchema, sql } from '../lib/db.js';
+import { getSessionUser } from '../lib/auth.js';
 
 const RESOURCE_KEYS = ['services', 'projects', 'education', 'experience', 'testimonials'] as const;
 
