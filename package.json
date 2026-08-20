@@ -53,7 +53,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@vercel/node": "^3.2.24",
+    "@vercel/node": "^5.10.1",
     "@vitejs/plugin-react": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",
