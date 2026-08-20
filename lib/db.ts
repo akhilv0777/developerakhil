@@ -1,12 +1,57 @@
-import { neon } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 
-// Vercel's Postgres Marketplace integration (Neon under the hood) injects
-// DATABASE_URL. POSTGRES_URL is kept as a fallback for older setups.
-const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL (or POSTGRES_URL) environment variable is not set.');
+/**
+ * Different Postgres providers on the Vercel Marketplace name their env
+ * vars differently, and some (like Prisma Postgres's DATABASE_URL) use a
+ * proxy protocol (`prisma+postgres://`) that only Prisma's own client
+ * understands. We look for the first variable that's an actual Postgres
+ * wire-protocol URL, trying the most common names in order.
+ */
+function resolveConnectionString(): string {
+  const candidates = [
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.DATABASE_URL,
+  ].filter((value): value is string => Boolean(value));
+
+  const usable = candidates.find((url) => url.startsWith('postgres://') || url.startsWith('postgresql://'));
+  if (usable) return usable;
+
+  if (candidates.length > 0) {
+    const protocols = candidates.map((url) => url.split('://')[0]).join(', ');
+    throw new Error(
+      `Found a database env var, but it uses an unsupported protocol (${protocols}). ` +
+        'This app needs a plain "postgres://" or "postgresql://" connection string — ' +
+        'in your database provider\'s Vercel integration settings, look for a "direct connection" ' +
+        'or "POSTGRES_URL" style value rather than a proxy/accelerate URL.',
+    );
+  }
+  throw new Error('No database connection string found. Set POSTGRES_URL or DATABASE_URL.');
 }
-export const sql = neon(connectionString, { fullResults: true });
+
+let pool: Pool | null = null;
+function getPool(): Pool {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: resolveConnectionString(),
+      ssl: { rejectUnauthorized: false },
+      max: 1, // keep connections per serverless instance low
+    });
+  }
+  return pool;
+}
+
+type QueryResult = { rows: any[]; rowCount: number };
+
+/** Tagged template helper mirroring the `sql\`...\`` style used throughout this project. */
+export async function sql(strings: TemplateStringsArray, ...values: unknown[]): Promise<QueryResult> {
+  let text = strings[0];
+  for (let i = 0; i < values.length; i++) {
+    text += `$${i + 1}` + strings[i + 1];
+  }
+  const result = await getPool().query(text, values);
+  return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+}
 
 // The default content the site ships with. Used only to seed the
 // database the very first time /api/portfolio is called and the

@@ -25,8 +25,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@assets/*": ["../../attached_assets/*"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": ["src", "vite.config.ts", "api", "lib"]
 }

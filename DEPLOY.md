@@ -13,11 +13,21 @@ vercel.com → **Add New → Project** → import your repo.
 
 ## 2. Attach a Postgres database
 
-Vercel's own Postgres product was retired — Postgres on Vercel now runs
-through **Neon**, available from the **Marketplace**. In your Vercel
-project: **Storage → Create Database → Postgres (Neon)**, then connect
-it to this project. Vercel automatically adds a `DATABASE_URL`
-environment variable — you don't need to type it in yourself.
+Vercel's own Postgres product was retired — Postgres on Vercel now works
+through Marketplace integrations (**Neon**, **Supabase**, or **Prisma
+Postgres**, among others). In your Vercel project: **Storage → Create
+Database → Postgres**, pick any provider, then connect it to this
+project. This app works with all of them — it just needs a standard
+`postgres://` connection string, which Vercel injects as `POSTGRES_URL`
+(with `DATABASE_URL` as a fallback).
+
+> **Using Prisma Postgres?** Its `DATABASE_URL` is a special
+> `prisma+postgres://` proxy URL that only Prisma's own client
+> understands. This project doesn't use Prisma — it reads `POSTGRES_URL`
+> instead, which Prisma Postgres also provides as a normal
+> `postgres://` connection string. No extra setup needed, just make sure
+> `POSTGRES_URL` made it into your environment variables (it does by
+> default).
 
 ## 3. Add a JWT secret
 
@@ -41,7 +51,7 @@ You need to run this **once**, from your own computer, pointed at the
 same database:
 
 ```bash
-# pull the real DATABASE_URL + JWT_SECRET into a local .env file
+# pull the real POSTGRES_URL + JWT_SECRET into a local .env file
 vercel env pull .env
 
 # install deps if you haven't already
