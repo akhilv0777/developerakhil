@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
-import { ensureSchema, sql } from '../../lib/db.js';
-import { signSession, setSessionCookie } from '../../lib/auth.js';
+import { ensureSchema, sql } from '../_lib/db.js';
+import { signSession, setSessionCookie } from '../_lib/auth.js';
 
 // Very small in-memory rate limiter per serverless instance. Not a
 // substitute for a real WAF, but it slows down naive brute forcing.
