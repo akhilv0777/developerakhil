@@ -37,6 +37,16 @@ function getPool(): Pool {
       ssl: { rejectUnauthorized: false },
       max: 1, // keep connections per serverless instance low
     });
+    // IMPORTANT: pg emits a background 'error' event on the pool when an
+    // idle client's connection is dropped by the database (very common
+    // with remote Postgres providers between serverless invocations).
+    // If nothing listens for it, Node treats it as an unhandled error and
+    // crashes the whole function process (Vercel shows this as
+    // FUNCTION_INVOCATION_FAILED). Listening here just logs it and lets
+    // the pool quietly create a fresh connection on the next query.
+    pool.on('error', (err) => {
+      console.error('Unexpected error on idle Postgres client:', err);
+    });
   }
   return pool;
 }
