@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ensureSchema, sql } from './_lib/db.js';
+import { ensureSchema, seedPortfolioData, sql } from './_lib/db.js';
 import { getSessionUser } from './_lib/auth.js';
 
 const RESOURCE_KEYS = ['stats', 'services', 'projects', 'education', 'experience', 'testimonials'] as const;
@@ -91,7 +91,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ ok: true });
     }
 
-    res.setHeader('Allow', 'GET, PUT');
+    if (req.method === 'POST') {
+      const username = getSessionUser(req);
+      if (!username) {
+        return res.status(401).json({ error: 'Authentication required.' });
+      }
+
+      let payload = req.body;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          payload = null;
+        }
+      }
+      if (!payload || payload.action !== 'reset') {
+        return res.status(400).json({ error: 'Reset action required.' });
+      }
+
+      // Keep the default content on the server. The browser only requests
+      // this operation; it never owns or sends the canonical seed payload.
+      await sql`
+        UPDATE portfolio_content
+        SET data = ${JSON.stringify(seedPortfolioData)}::jsonb, updated_at = now()
+        WHERE id = 1;
+      `;
+      return res.status(200).json(seedPortfolioData);
+    }
+
+    res.setHeader('Allow', 'GET, PUT, POST');
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error) {
     console.error('Portfolio API error:', error);

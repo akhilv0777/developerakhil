@@ -95,141 +95,6 @@ type PortfolioData = {
   testimonials: Testimonial[];
 };
 
-const defaultProfile: Profile = {
-  name: "Akhilesh Vishwakarma",
-  tagline: "Full-stack developer / digital craftsman",
-  location: "Mumbai, India",
-  bio1: "I’m Akhilesh — a developer who likes products with a point of view.",
-  bio2: "For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.",
-  bio3: "I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.",
-  email: "hello@akhilesh.dev",
-  github: "github.com/akhilesh-v",
-  image: "",
-  resume: "",
-  resumeName: "",
-  contactTitle: "Have a\ngood one?",
-  contactNote: "Currently accepting a few good problems.",
-};
-
-// Used only as an instant-render placeholder while the real content
-// loads from the database, and as the payload for "reset to defaults".
-const defaultPortfolioData: PortfolioData = {
-  profile: defaultProfile,
-  stats: [
-    { id: "stat-1", value: "06", label: "years making" },
-    { id: "stat-2", value: "38", label: "things shipped" },
-    { id: "stat-3", value: "12", label: "happy teams" },
-    { id: "stat-4", value: "∞", label: "tabs open" },
-  ],
-  services: [
-    {
-      id: "svc-1",
-      number: "01",
-      title: "Product engineering",
-      description:
-        "From first sketch to a reliable, fast product people want to use.",
-    },
-    {
-      id: "svc-2",
-      number: "02",
-      title: "Web experiences",
-      description:
-        "Editorial, expressive interfaces with a little more soul than expected.",
-    },
-    {
-      id: "svc-3",
-      number: "03",
-      title: "Design systems",
-      description:
-        "A shared visual language that lets a team move quickly without losing taste.",
-    },
-  ],
-  projects: [
-    {
-      id: "prj-1",
-      title: "Aster / finance for humans",
-      category: "Product design + engineering",
-      year: "2024",
-      description:
-        "A calmer way to understand the money moving through your life.",
-      tags: "React, TypeScript, Product",
-      accent: "lime",
-    },
-    {
-      id: "prj-2",
-      title: "Fieldnotes",
-      category: "Editorial platform",
-      year: "2023",
-      description:
-        "A living archive for curious people making things in the real world.",
-      tags: "Next.js, CMS, Art direction",
-      accent: "coral",
-    },
-    {
-      id: "prj-3",
-      title: "Morrow studio",
-      category: "Brand system + web",
-      year: "2023",
-      description:
-        "A new digital home for a studio working at the edge of materials and light.",
-      tags: "WebGL, Motion, Strategy",
-      accent: "blue",
-    },
-  ],
-  education: [
-    {
-      id: "edu-1",
-      degree: "B.Tech, Computer Science",
-      institution: "University of Mumbai",
-      period: "2015 — 2019",
-      detail:
-        "Systems, algorithms, and the habit of taking things apart to see how they work.",
-    },
-    {
-      id: "edu-2",
-      degree: "The self-directed studio",
-      institution: "Everywhere, always",
-      period: "2019 — now",
-      detail:
-        "A continuing practice in visual design, typography, and making useful things.",
-    },
-  ],
-  experience: [
-    {
-      id: "exp-1",
-      role: "Senior full-stack developer",
-      company: "Independent / select partners",
-      period: "2021 — now",
-      detail:
-        "Partnering with founders and small teams to turn ambitious ideas into shipped products.",
-    },
-    {
-      id: "exp-2",
-      role: "Full-stack developer",
-      company: "Bynocs Technologies",
-      period: "2019 — 2021",
-      detail:
-        "Built dependable web platforms and learned that good software begins with listening.",
-    },
-  ],
-  testimonials: [
-    {
-      id: "tst-1",
-      quote:
-        "Akhilesh brings the rare combination of a sharp eye and the patience to make the hard parts simple.",
-      name: "Riya Menon",
-      role: "Founder, Common Thread",
-    },
-    {
-      id: "tst-2",
-      quote:
-        "He made our product feel like us. Not just functional — unmistakably ours.",
-      name: "Nikhil Shah",
-      role: "Creative director, Morrow",
-    },
-  ],
-};
-
 // ---------------------------------------------------------------------
 // Data layer: public content comes from GET /api/portfolio (no auth).
 // Admin edits are saved via PUT /api/portfolio (requires a valid session
@@ -244,18 +109,11 @@ function usePortfolioQuery() {
         credentials: "include",
         cache: "no-store",
       });
+   
       if (!response.ok) throw new Error("Failed to load portfolio content");
       const json = await response.json();
-      // Older saved rows (before the Profile feature existed) won't have
-      // a `profile` key yet — fall back to the defaults so the public
-      // site and admin form always have something sensible to render.
-      return {
-        ...defaultPortfolioData,
-        ...json,
-        profile: { ...defaultProfile, ...(json?.profile ?? {}) },
-      };
+      return json;
     },
-    initialData: defaultPortfolioData,
     staleTime: 30_000,
   });
 }
@@ -275,15 +133,32 @@ function useSavePortfolioMutation() {
         const detail = Array.isArray(body.details) ? ` (${body.details.join("; ")})` : "";
         throw new Error((body.error || "Failed to save changes") + detail);
       }
-      return data;
+      return undefined;
     },
-    onSuccess: (data) => {
-      // Optimistically show what we just sent...
-      queryClient.setQueryData(["portfolio"], data);
-      // ...then re-fetch from the server to confirm it actually stuck.
-      // (This is what would have surfaced the "saved, but the DB still
-      // has the old value" symptom immediately, instead of only showing
-      // up on the next full page reload.)
+    onSuccess: () => {
+      // The UI is updated only after the fresh database response arrives.
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
+    },
+  });
+}
+
+function useResetPortfolioMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/portfolio", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset" }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to reset content");
+      }
+      await response.json();
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["portfolio"] });
     },
   });
@@ -974,9 +849,37 @@ function Footer({ profile }: { profile: Profile }) {
   );
 }
 
+function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
+  return (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+      {error ? (
+        <>
+          <p className="font-mono text-[11px] uppercase tracking-[.15em] text-destructive">
+            Could not load portfolio
+          </p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            The database did not return the content. Refresh the page and try again.
+          </p>
+        </>
+      ) : (
+        <>
+          <span className="h-8 w-8 animate-spin border-2 border-foreground/20 border-t-primary" aria-hidden="true" />
+          <p className="font-mono text-[11px] uppercase tracking-[.15em] text-muted-foreground">
+            Loading portfolio…
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function PublicPortfolio() {
-  const { data } = usePortfolioQuery();
+  const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
+  if (isLoading) return <PortfolioLoading />;
+  if (isError || !data) {
+    return <PortfolioLoading error />;
+  }
   return (
     <div id="top" className="grain min-h-[100dvh] bg-background">
       <Nav profile={data.profile} />
@@ -1561,8 +1464,9 @@ function AdminArea({
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const saveMutation = useSavePortfolioMutation();
+  const resetMutation = useResetPortfolioMutation();
   const resource = section === "profile" ? null : section;
-  const items = resource ? data[resource] : [];
+  const items = resource ? (data[resource] ?? []) : [];
 
   // `onDone` only fires once the PUT has actually succeeded — this is what
   // closes edit forms / clears selections. Never close a form optimistically
@@ -1603,7 +1507,20 @@ function AdminArea({
   };
   const resetAll = () => {
     if (!window.confirm("Reset all content to the original portfolio?")) return;
-    persist(defaultPortfolioData);
+    resetMutation.mutate(undefined, {
+      onSuccess: () => {
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 1800);
+        toast({ title: "Reset complete", description: "Fresh default content is live on the site." });
+      },
+      onError: (error) => {
+        toast({
+          variant: "destructive",
+          title: "Reset failed",
+          description: (error as Error)?.message || "Something went wrong — your content was not reset.",
+        });
+      },
+    });
   };
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -1611,9 +1528,9 @@ function AdminArea({
   };
 
   return (
-    <div className="grain min-h-[100dvh] bg-background">
-      <header className="border-b border-foreground/15 bg-foreground text-background">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-5 md:px-10">
+    <div className="grain min-h-[100dvh] overflow-x-hidden bg-background">
+      <header className="sticky top-0 z-40 border-b border-foreground/15 bg-foreground text-background shadow-sm">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 md:px-10 md:py-5">
           <div
             className="flex items-center gap-3"
             data-testid="link-admin-home"
@@ -1621,11 +1538,11 @@ function AdminArea({
             <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">
               AV
             </span>
-            <span className="truncate font-mono text-[11px] uppercase tracking-[.2em]">
+            <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[.16em] sm:text-[11px] sm:tracking-[.2em]">
               Content / console{username ? ` · ${username}` : ""}
             </span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <button
               type="button"
               onClick={() => setLocation("/")}
@@ -1645,7 +1562,7 @@ function AdminArea({
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[1440px] px-5 py-12 md:px-10 md:py-16">
+      <main className="mx-auto w-full max-w-[1440px] min-w-0 px-5 py-8 md:px-10 md:py-16">
         <div className="flex flex-col justify-between gap-8 border-b border-foreground/15 pb-10 md:flex-row md:items-end">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">
@@ -1680,8 +1597,8 @@ function AdminArea({
           </div>
         </div>
         <div className="mt-10 grid gap-10 lg:grid-cols-[220px_1fr]">
-          <aside className="lg:border-r lg:border-foreground/15 lg:pr-6">
-            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0">
+          <aside className="min-w-0 lg:border-r lg:border-foreground/15 lg:pr-6">
+            <div className="-mx-5 flex min-w-0 snap-x gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0 [&::-webkit-scrollbar]:hidden">
               <button
                 type="button"
                 onClick={() => {
@@ -1706,7 +1623,7 @@ function AdminArea({
                 >
                   <span>{resourceMeta[key].label}</span>
                   <span className={section === key ? "text-primary" : ""}>
-                    {data[key].length.toString().padStart(2, "0")}
+                    {(data[key] ?? []).length.toString().padStart(2, "0")}
                   </span>
                 </button>
               ))}
@@ -1714,14 +1631,15 @@ function AdminArea({
             <button
               type="button"
               onClick={resetAll}
+              disabled={resetMutation.isPending}
               className="mt-6 flex w-full items-center gap-2 border-t border-foreground/15 px-3 py-4 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive lg:mt-10"
               data-testid="button-reset-content"
             >
-              <RotateCcw size={13} /> Reset all content
+              <RotateCcw size={13} /> {resetMutation.isPending ? "Resetting…" : "Reset all content"}
             </button>
           </aside>
           {section === "profile" ? (
-            <section>
+            <section className="min-w-0">
               <div className="mb-6">
                 <p className="font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">
                   Editing
@@ -1740,8 +1658,8 @@ function AdminArea({
             </section>
           ) : (
             resource && (
-              <section>
-                <div className="mb-6 flex items-center justify-between">
+              <section className="min-w-0">
+                <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">
                       Editing collection
@@ -1831,6 +1749,12 @@ function ConsolePage() {
   }
   if (!auth.data?.authenticated) {
     return <LoginPage />;
+  }
+  if (portfolio.isLoading) {
+    return <PortfolioLoading />;
+  }
+  if (portfolio.isError || !portfolio.data) {
+    return <PortfolioLoading error />;
   }
   return <AdminArea data={portfolio.data} username={auth.data.username} />;
 }
