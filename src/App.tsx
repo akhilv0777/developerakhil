@@ -278,7 +278,13 @@ function useSavePortfolioMutation() {
       return data;
     },
     onSuccess: (data) => {
+      // Optimistically show what we just sent...
       queryClient.setQueryData(["portfolio"], data);
+      // ...then re-fetch from the server to confirm it actually stuck.
+      // (This is what would have surfaced the "saved, but the DB still
+      // has the old value" symptom immediately, instead of only showing
+      // up on the next full page reload.)
+      queryClient.invalidateQueries({ queryKey: ["portfolio"] });
     },
   });
 }
