@@ -1206,6 +1206,7 @@ function AdminForm({
   const fields: Record<Resource, string[]> = {
     stats: ["value", "label"],
     services: ["number", "title", "description"],
+    // Yay! We added "image" to the projects list here so it actually shows up! ✨
     projects: ["title", "category", "year", "description", "tags", "accent", "image"],
     education: ["degree", "institution", "period", "detail"],
     experience: ["role", "company", "period", "detail"],
