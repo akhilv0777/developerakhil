@@ -33,6 +33,7 @@ import {
 } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
+import { toast } from "@/hooks/use-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { useMotionFlow } from "@/lib/motionflow";
@@ -270,7 +271,8 @@ function useSavePortfolioMutation() {
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to save changes");
+        const detail = Array.isArray(body.details) ? ` (${body.details.join("; ")})` : "";
+        throw new Error((body.error || "Failed to save changes") + detail);
       }
       return data;
     },
@@ -1363,9 +1365,13 @@ function ProfileEditor({
     const file = event.target.files?.[0];
     if (!file) return;
     setResumeError(null);
-    const MAX_BYTES = 4 * 1024 * 1024;
+    // Kept well under the platform's hard request-size limit: the file is
+    // stored as a base64 data URL (~33% bigger than the raw file) alongside
+    // the rest of the portfolio JSON, so a 4MB PDF could previously push
+    // the whole save past the limit and get rejected.
+    const MAX_BYTES = 2 * 1024 * 1024;
     if (file.size > MAX_BYTES) {
-      setResumeError("That file is too large — please keep it under 4MB.");
+      setResumeError("That file is too large — please keep it under 2MB.");
       event.target.value = "";
       return;
     }
@@ -1551,11 +1557,24 @@ function AdminArea({
   const resource = section === "profile" ? null : section;
   const items = resource ? data[resource] : [];
 
-  const persist = (next: PortfolioData) => {
+  // `onDone` only fires once the PUT has actually succeeded — this is what
+  // closes edit forms / clears selections. Never close a form optimistically
+  // before the server confirms the save, or a failed save (e.g. malformed
+  // payload) looks identical to a successful one.
+  const persist = (next: PortfolioData, onDone?: () => void) => {
     saveMutation.mutate(next, {
       onSuccess: () => {
         setSaved(true);
         window.setTimeout(() => setSaved(false), 1800);
+        toast({ title: "Saved", description: "Your changes are live on the site." });
+        onDone?.();
+      },
+      onError: (error) => {
+        toast({
+          variant: "destructive",
+          title: "Save failed",
+          description: (error as Error)?.message || "Something went wrong — your changes were not saved.",
+        });
       },
     });
   };
@@ -1566,8 +1585,9 @@ function AdminArea({
     const next = items.some((item) => item.id === value.id)
       ? items.map((item) => (item.id === value.id ? value : item))
       : [...items, value];
-    persist({ ...data, [resource]: next });
-    setEditing(null);
+    // Close the form only after the save succeeds, so a failed save leaves
+    // the form open (with the error visible) instead of silently reverting.
+    persist({ ...data, [resource]: next }, () => setEditing(null));
   };
   const deleteItem = (id: string) => {
     if (!resource) return;
@@ -1594,7 +1614,7 @@ function AdminArea({
             <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">
               AV
             </span>
-            <span className="font-mono text-[11px] uppercase tracking-[.2em]">
+            <span className="truncate font-mono text-[11px] uppercase tracking-[.2em]">
               Content / console{username ? ` · ${username}` : ""}
             </span>
           </div>

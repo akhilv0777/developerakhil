@@ -2,7 +2,12 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+// NOTE: this was 1000000ms (~16.6 minutes) — a leftover placeholder from the
+// shadcn scaffold. That doesn't stop the toast from *showing*, but it means
+// a dismissed toast lingers in memory for 16 minutes before being cleaned
+// up, which can make back-to-back toasts (save, then another save) behave
+// oddly. 5s is a normal auto-dismiss delay.
+const TOAST_REMOVE_DELAY = 5000;
 
 type ToasterToast = ToastProps & {
   id: string;
