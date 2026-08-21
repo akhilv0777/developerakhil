@@ -14,11 +14,25 @@ type Project = { id: string; title: string; category: string; year: string; desc
 type Education = { id: string; degree: string; institution: string; period: string; detail: string };
 type Experience = { id: string; role: string; company: string; period: string; detail: string };
 type Testimonial = { id: string; quote: string; name: string; role: string };
-type PortfolioData = { services: Service[]; projects: Project[]; education: Education[]; experience: Experience[]; testimonials: Testimonial[] };
+type Profile = { name: string; tagline: string; location: string; bio1: string; bio2: string; bio3: string; email: string; github: string; image: string };
+type PortfolioData = { profile: Profile; services: Service[]; projects: Project[]; education: Education[]; experience: Experience[]; testimonials: Testimonial[] };
+
+const defaultProfile: Profile = {
+  name: 'Akhilesh Vishwakarma',
+  tagline: 'Full-stack developer / digital craftsman',
+  location: 'Mumbai, India',
+  bio1: 'I’m Akhilesh — a developer who likes products with a point of view.',
+  bio2: 'For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.',
+  bio3: 'I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.',
+  email: 'hello@akhilesh.dev',
+  github: 'github.com/akhilesh-v',
+  image: '',
+};
 
 // Used only as an instant-render placeholder while the real content
 // loads from the database, and as the payload for "reset to defaults".
 const defaultPortfolioData: PortfolioData = {
+  profile: defaultProfile,
   services: [
     { id: 'svc-1', number: '01', title: 'Product engineering', description: 'From first sketch to a reliable, fast product people want to use.' },
     { id: 'svc-2', number: '02', title: 'Web experiences', description: 'Editorial, expressive interfaces with a little more soul than expected.' },
@@ -55,7 +69,11 @@ function usePortfolioQuery() {
     queryFn: async () => {
       const response = await fetch('/api/portfolio', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to load portfolio content');
-      return response.json();
+      const json = await response.json();
+      // Older saved rows (before the Profile feature existed) won't have
+      // a `profile` key yet — fall back to the defaults so the public
+      // site and admin form always have something sensible to render.
+      return { ...defaultPortfolioData, ...json, profile: { ...defaultProfile, ...(json?.profile ?? {}) } };
     },
     initialData: defaultPortfolioData,
     staleTime: 30_000,
@@ -104,22 +122,23 @@ function useAuthQuery() {
   });
 }
 
-function Nav() {
+function Nav({ profile }: { profile: Profile }) {
   const [open, setOpen] = useState(false);
   const links = [['about', '01 / about'], ['work', '02 / work'], ['contact', '03 / contact']];
-  return <header className="fixed top-0 z-30 w-full border-b border-foreground/15 bg-background/90 backdrop-blur-md"><div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 md:px-10"><Link href="/" className="flex items-center gap-3" data-testid="link-home"><span className="flex h-8 w-8 items-center justify-center bg-foreground font-mono text-sm font-bold text-background">AV</span><span className="hidden font-mono text-[11px] uppercase tracking-[.22em] sm:inline">Akhilesh Vishwakarma</span></Link><nav className={`${open ? 'absolute left-0 top-[72px] flex w-full flex-col border-b border-foreground/15 bg-background p-5' : 'hidden'} gap-5 md:static md:flex md:w-auto md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0`}>{links.map(([href, label]) => <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className="font-mono text-[11px] uppercase tracking-[.16em] text-muted-foreground transition-colors hover:text-foreground" data-testid={`link-nav-${href}`}>{label}</a>)}</nav><button type="button" onClick={() => setOpen((value) => !value)} className="border border-foreground/20 p-2 md:hidden" aria-label="Toggle navigation" data-testid="button-toggle-nav">{open ? <X size={18} /> : <Menu size={18} />}</button></div></header>;
+  const initials = profile.name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AV';
+  return <header className="fixed top-0 z-30 w-full border-b border-foreground/15 bg-background/90 backdrop-blur-md"><div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-5 md:px-10"><Link href="/" className="flex items-center gap-3" data-testid="link-home">{profile.image ? <img src={profile.image} alt={profile.name} className="h-8 w-8 rounded-full object-cover" /> : <span className="flex h-8 w-8 items-center justify-center bg-foreground font-mono text-sm font-bold text-background">{initials}</span>}<span className="hidden font-mono text-[11px] uppercase tracking-[.22em] sm:inline">{profile.name}</span></Link><nav className={`${open ? 'absolute left-0 top-[72px] flex w-full flex-col border-b border-foreground/15 bg-background p-5' : 'hidden'} gap-5 md:static md:flex md:w-auto md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0`}>{links.map(([href, label]) => <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className="font-mono text-[11px] uppercase tracking-[.16em] text-muted-foreground transition-colors hover:text-foreground" data-testid={`link-nav-${href}`}>{label}</a>)}</nav><button type="button" onClick={() => setOpen((value) => !value)} className="border border-foreground/20 p-2 md:hidden" aria-label="Toggle navigation" data-testid="button-toggle-nav">{open ? <X size={18} /> : <Menu size={18} />}</button></div></header>;
 }
 
 function SectionLabel({ number, children, dark = false }: { number: string; children: ReactNode; dark?: boolean }) {
   return <div className={`mb-10 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[.2em] ${dark ? 'text-background/60' : 'text-muted-foreground'}`}><span className={dark ? 'text-primary' : 'text-accent'}>{number}</span><span>{children}</span><span className="h-px w-12 bg-current opacity-40" /></div>;
 }
 
-function Hero() {
-  return <section className="grid-paper relative flex min-h-[min(900px,100dvh)] items-end overflow-hidden border-b border-foreground/15 px-5 pb-16 pt-32 md:px-10 md:pb-20"><div className="mx-auto grid w-full max-w-[1440px] items-end gap-12 lg:grid-cols-[1fr_320px]"><div><p className="reveal mb-8 font-mono text-[11px] uppercase tracking-[.22em] text-muted-foreground">Full-stack developer <span className="mx-2 text-accent">/</span> digital craftsman</p><h1 className="display-title reveal reveal-delay-1 max-w-5xl text-[clamp(4.5rem,13vw,12.5rem)] font-semibold leading-[.78]">Building<br /><span className="text-accent">the useful</span><br />and unusual.</h1><div className="reveal reveal-delay-2 mt-12 flex flex-col gap-5 sm:flex-row sm:items-center"><a href="#work" className="group inline-flex w-fit items-center gap-5 bg-foreground px-5 py-4 font-mono text-[11px] uppercase tracking-[.14em] text-background transition-transform hover:-translate-y-1" data-testid="link-hero-work">See selected work <ArrowDownRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1 group-hover:translate-y-1" /></a><span className="font-mono text-[11px] text-muted-foreground">Currently accepting a few good problems.</span></div></div><div className="reveal reveal-delay-3 relative hidden h-[300px] border-l border-foreground/20 pl-7 lg:block"><div className="absolute left-7 top-0 h-2 w-2 -translate-x-1/2 bg-primary" /><p className="font-mono text-[11px] uppercase leading-[1.8] text-muted-foreground">Based in<br /><strong className="font-normal text-foreground">Mumbai, India</strong></p><div className="absolute bottom-0 left-7 right-0"><div className="mb-4 h-px w-full bg-foreground/20" /><p className="font-mono text-[11px] leading-[1.8] text-muted-foreground">I care about the line between a good idea and the moment someone finally gets it.</p></div></div></div><div className="absolute right-5 top-28 font-mono text-[10px] text-muted-foreground md:right-10">01—05 / 2025</div></section>;
+function Hero({ profile }: { profile: Profile }) {
+  return <section className="grid-paper relative flex min-h-[min(900px,100dvh)] items-end overflow-hidden border-b border-foreground/15 px-5 pb-16 pt-32 md:px-10 md:pb-20"><div className="mx-auto grid w-full max-w-[1440px] items-end gap-12 lg:grid-cols-[1fr_320px]"><div><p className="reveal mb-8 font-mono text-[11px] uppercase tracking-[.22em] text-muted-foreground">{profile.tagline}</p><h1 className="display-title reveal reveal-delay-1 max-w-5xl text-[clamp(4.5rem,13vw,12.5rem)] font-semibold leading-[.78]">Building<br /><span className="text-accent">the useful</span><br />and unusual.</h1><div className="reveal reveal-delay-2 mt-12 flex flex-col gap-5 sm:flex-row sm:items-center"><a href="#work" className="group inline-flex w-fit items-center gap-5 bg-foreground px-5 py-4 font-mono text-[11px] uppercase tracking-[.14em] text-background transition-transform hover:-translate-y-1" data-testid="link-hero-work">See selected work <ArrowDownRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1 group-hover:translate-y-1" /></a><span className="font-mono text-[11px] text-muted-foreground">Currently accepting a few good problems.</span></div></div><div className="reveal reveal-delay-3 relative hidden h-[300px] border-l border-foreground/20 pl-7 lg:block">{profile.image && <img src={profile.image} alt={profile.name} className="mb-6 h-28 w-28 rounded-full object-cover" data-testid="img-profile-photo" />}<div className="absolute left-7 top-0 h-2 w-2 -translate-x-1/2 bg-primary" /><p className="font-mono text-[11px] uppercase leading-[1.8] text-muted-foreground">Based in<br /><strong className="font-normal text-foreground">{profile.location}</strong></p><div className="absolute bottom-0 left-7 right-0"><div className="mb-4 h-px w-full bg-foreground/20" /><p className="font-mono text-[11px] leading-[1.8] text-muted-foreground">I care about the line between a good idea and the moment someone finally gets it.</p></div></div></div><div className="absolute right-5 top-28 font-mono text-[10px] text-muted-foreground md:right-10">01—05 / 2025</div></section>;
 }
 
-function About() {
-  return <section id="about" className="mx-auto grid max-w-[1440px] gap-12 px-5 py-24 md:grid-cols-[.6fr_1.4fr] md:px-10 md:py-36"><SectionLabel number="01">A little context</SectionLabel><div><p className="max-w-4xl text-[clamp(2rem,4.8vw,5rem)] font-medium leading-[.98] tracking-[-.055em]">I’m Akhilesh — a developer who likes products with a point of view.</p><div className="mt-12 grid gap-8 border-t border-foreground/15 pt-7 text-sm leading-[1.8] text-muted-foreground md:grid-cols-2"><p>For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.</p><p>I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.</p></div></div></section>;
+function About({ profile }: { profile: Profile }) {
+  return <section id="about" className="mx-auto grid max-w-[1440px] gap-12 px-5 py-24 md:grid-cols-[.6fr_1.4fr] md:px-10 md:py-36"><SectionLabel number="01">A little context</SectionLabel><div><p className="max-w-4xl text-[clamp(2rem,4.8vw,5rem)] font-medium leading-[.98] tracking-[-.055em]">{profile.bio1}</p><div className="mt-12 grid gap-8 border-t border-foreground/15 pt-7 text-sm leading-[1.8] text-muted-foreground md:grid-cols-2"><p>{profile.bio2}</p><p>{profile.bio3}</p></div></div></section>;
 }
 
 function Stats() {
@@ -152,17 +171,17 @@ function Testimonials({ data }: { data: PortfolioData }) {
   return <section className="mx-auto max-w-[1440px] px-5 py-24 md:px-10 md:py-36"><SectionLabel number="06">Good words, kept</SectionLabel><div className="grid gap-10 md:grid-cols-[1.3fr_.7fr]"><div className="border-l-4 border-primary pl-6 md:pl-10"><p className="max-w-4xl text-[clamp(2rem,4vw,4.5rem)] font-medium leading-[.98] tracking-[-.055em]">“{item?.quote || 'The best work makes the difficult feel possible.'}”</p><p className="mt-8 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">{item?.name} <span className="mx-2 text-accent">/</span> {item?.role}</p></div><div className="self-end border-t border-foreground/15 pt-6"><p className="text-sm leading-[1.7] text-muted-foreground">The brief is never the whole story. I make room for the unexpected bit that makes the result feel alive.</p></div></div></section>;
 }
 
-function Contact() {
-  return <section id="contact" className="bg-accent px-5 py-24 text-foreground md:px-10 md:py-32"><div className="mx-auto max-w-[1440px]"><SectionLabel number="07">Your turn</SectionLabel><div className="grid gap-12 md:grid-cols-[1.4fr_.6fr]"><div><h2 className="display-title max-w-5xl text-[clamp(4rem,11vw,10rem)] font-semibold leading-[.78] tracking-[-.08em]">Have a<br />good one?</h2><a href="mailto:hello@akhilesh.dev" className="group mt-12 inline-flex items-center gap-4 border-b-2 border-foreground pb-3 font-mono text-sm uppercase tracking-[.12em]" data-testid="link-email">hello@akhilesh.dev <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></a></div><div className="flex flex-col justify-end gap-5 font-mono text-[11px] uppercase tracking-[.14em]"><a href="https://github.com" className="flex items-center gap-3 transition-opacity hover:opacity-60" data-testid="link-github"><FaGithub size={15} /> github / akhilesh-v</a><a href="mailto:hello@akhilesh.dev" className="flex items-center gap-3 transition-opacity hover:opacity-60" data-testid="link-contact-mail"><Mail size={15} /> say hello</a><span className="flex items-center gap-3"><MapPin size={15} /> Mumbai / IST</span></div></div></div></section>;
+function Contact({ profile }: { profile: Profile }) {
+  return <section id="contact" className="bg-accent px-5 py-24 text-foreground md:px-10 md:py-32"><div className="mx-auto max-w-[1440px]"><SectionLabel number="07">Your turn</SectionLabel><div className="grid gap-12 md:grid-cols-[1.4fr_.6fr]"><div><h2 className="display-title max-w-5xl text-[clamp(4rem,11vw,10rem)] font-semibold leading-[.78] tracking-[-.08em]">Have a<br />good one?</h2><a href={`mailto:${profile.email}`} className="group mt-12 inline-flex items-center gap-4 border-b-2 border-foreground pb-3 font-mono text-sm uppercase tracking-[.12em]" data-testid="link-email">{profile.email} <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /></a></div><div className="flex flex-col justify-end gap-5 font-mono text-[11px] uppercase tracking-[.14em]"><a href={`https://${profile.github.replace(/^https?:\/\//, '')}`} className="flex items-center gap-3 transition-opacity hover:opacity-60" data-testid="link-github"><FaGithub size={15} /> {profile.github}</a><a href={`mailto:${profile.email}`} className="flex items-center gap-3 transition-opacity hover:opacity-60" data-testid="link-contact-mail"><Mail size={15} /> say hello</a><span className="flex items-center gap-3"><MapPin size={15} /> {profile.location}</span></div></div></div></section>;
 }
 
-function Footer() {
-  return <footer className="bg-foreground px-5 py-8 text-background md:px-10"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-5 font-mono text-[10px] uppercase tracking-[.15em] text-background/50 sm:flex-row"><span>© {new Date().getFullYear()} Akhilesh Vishwakarma</span><span className="terminal-caret">Made with curiosity & care</span><a href="#top" className="text-primary hover:text-background" data-testid="link-back-top">Back to top ↑</a></div></footer>;
+function Footer({ profile }: { profile: Profile }) {
+  return <footer className="bg-foreground px-5 py-8 text-background md:px-10"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-5 font-mono text-[10px] uppercase tracking-[.15em] text-background/50 sm:flex-row"><span>© {new Date().getFullYear()} {profile.name}</span><span className="terminal-caret">Made with curiosity & care</span><a href="#top" className="text-primary hover:text-background" data-testid="link-back-top">Back to top ↑</a></div></footer>;
 }
 
 function PublicPortfolio() {
   const { data } = usePortfolioQuery();
-  return <div id="top" className="grain min-h-[100dvh] bg-background"><Nav /><main><Hero /><About /><Stats /><Marquee /><Timeline data={data} /><ExperienceSection data={data} /><Services data={data} /><Work data={data} /><Testimonials data={data} /><Contact /></main><Footer /></div>;
+  return <div id="top" className="grain min-h-[100dvh] bg-background"><Nav profile={data.profile} /><main><Hero profile={data.profile} /><About profile={data.profile} /><Stats /><Marquee /><Timeline data={data} /><ExperienceSection data={data} /><Services data={data} /><Work data={data} /><Testimonials data={data} /><Contact profile={data.profile} /></main><Footer profile={data.profile} /></div>;
 }
 
 // ---------------------------------------------------------------------
@@ -205,7 +224,7 @@ function LoginPage() {
   return <div className="grain flex min-h-[100dvh] items-center justify-center bg-background px-5"><div className="w-full max-w-sm"><div className="mb-8 flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center bg-foreground text-background"><Lock size={16} /></span><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">Restricted</p><h1 className="text-xl font-medium">Console access</h1></div></div><form onSubmit={handleSubmit} className="border border-foreground/20 bg-background p-6" data-testid="form-login"><label className="mb-4 block"><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">Username</span><input required autoFocus value={username} onChange={(event) => setUsername(event.target.value)} className="w-full border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid="input-username" /></label><label className="mb-6 block"><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">Password</span><input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid="input-password" /></label>{error && <p className="mb-5 font-mono text-[11px] text-destructive" data-testid="text-login-error">{error}</p>}<button type="submit" disabled={submitting} className="flex w-full items-center justify-center gap-2 bg-foreground px-4 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-background transition-opacity hover:bg-primary hover:text-primary-foreground disabled:opacity-50" data-testid="button-login">{submitting ? 'Checking…' : 'Log in'}</button></form></div></div>;
 }
 
-type Resource = keyof PortfolioData;
+type Resource = Exclude<keyof PortfolioData, 'profile'>;
 const resourceMeta: Record<Resource, { label: string; singular: string }> = { services: { label: 'Services', singular: 'service' }, projects: { label: 'Projects', singular: 'project' }, education: { label: 'Education', singular: 'education' }, experience: { label: 'Experience', singular: 'role' }, testimonials: { label: 'Testimonials', singular: 'testimonial' } };
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
   const id = `${resource.slice(0, -1)}-${Date.now()}`;
@@ -238,14 +257,71 @@ function AdminForm({ resource, value, onSave, onCancel }: { resource: Resource; 
   return <form onSubmit={(event) => { event.preventDefault(); onSave({ ...value, ...form } as PortfolioData[Resource][number]); }} className="mt-5 border border-foreground/20 bg-background p-5 md:p-7" data-testid={`form-${resource}`}><div className="grid gap-5 md:grid-cols-2">{fields[resource].map((field) => <label key={field} className={field === 'description' || field === 'detail' || field === 'quote' ? 'md:col-span-2' : ''}><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">{labels[field]}</span>{field === 'accent' ? <select value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary"><option value="lime">Lime</option><option value="coral">Coral</option><option value="blue">Blue</option></select> : field === 'description' || field === 'detail' || field === 'quote' ? <textarea required value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} rows={4} className="w-full resize-y border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid={`input-${field}`} /> : <input required value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid={`input-${field}`} />}</label>)}</div><div className="mt-7 flex gap-3"><button type="submit" className="inline-flex items-center gap-2 bg-foreground px-4 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-background hover:bg-primary hover:text-primary-foreground" data-testid="button-save-item"><Save size={14} /> Save {resourceMeta[resource].singular}</button><button type="button" onClick={onCancel} className="border border-foreground/25 px-4 py-3 font-mono text-[10px] uppercase tracking-[.14em] hover:bg-muted" data-testid="button-cancel-item">Cancel</button></div></form>;
 }
 
+/** Reads an uploaded image file, downsizes it so the DB row stays small,
+ * and resolves to a base64 data URL ready to store/display directly. */
+function fileToResizedDataUrl(file: File, maxDimension = 480): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That file doesn’t look like a valid image.'));
+      img.onload = () => {
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Image processing is not supported in this browser.'));
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function ProfileEditor({ profile, onSave, saving }: { profile: Profile; onSave: (value: Profile) => void; saving: boolean }) {
+  const [form, setForm] = useState<Profile>(profile);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const fields: { key: keyof Profile; label: string; long?: boolean }[] = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'tagline', label: 'Tagline (shown under the header)' },
+    { key: 'location', label: 'Location' },
+    { key: 'github', label: 'GitHub (e.g. github.com/you)' },
+    { key: 'bio1', label: 'Headline bio (large text in About)', long: true },
+    { key: 'bio2', label: 'About paragraph 1', long: true },
+    { key: 'bio3', label: 'About paragraph 2', long: true },
+  ];
+
+  const handleImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImageError(null);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      setForm((current) => ({ ...current, image: dataUrl }));
+    } catch (error) {
+      setImageError((error as Error).message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  return <form onSubmit={(event) => { event.preventDefault(); onSave(form); }} className="mt-5 border border-foreground/20 bg-background p-5 md:p-7" data-testid="form-profile"><div className="mb-7 flex items-center gap-5"><div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-foreground/20 bg-card">{form.image ? <img src={form.image} alt="Profile" className="h-full w-full object-cover" data-testid="img-profile-preview" /> : <span className="font-mono text-[10px] uppercase text-muted-foreground">No photo</span>}</div><div><label className="inline-flex cursor-pointer items-center gap-2 border border-foreground/25 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[.13em] hover:bg-muted"><input type="file" accept="image/*" onChange={handleImage} className="hidden" data-testid="input-profile-image" />Upload photo</label>{form.image && <button type="button" onClick={() => setForm((current) => ({ ...current, image: '' }))} className="ml-3 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive" data-testid="button-remove-photo">Remove</button>}{imageError && <p className="mt-2 font-mono text-[11px] text-destructive">{imageError}</p>}</div></div><div className="grid gap-5 md:grid-cols-2">{fields.map(({ key, label, long }) => <label key={key} className={long ? 'md:col-span-2' : ''}><span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">{label}</span>{long ? <textarea required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} rows={3} className="w-full resize-y border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid={`input-${key}`} /> : <input required value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} className="w-full border border-foreground/20 bg-card px-3 py-3 text-sm outline-none focus:border-primary" data-testid={`input-${key}`} />}</label>)}</div><div className="mt-7 flex gap-3"><button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-foreground px-4 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-background hover:bg-primary hover:text-primary-foreground disabled:opacity-50" data-testid="button-save-profile"><Save size={14} /> Save profile</button></div></form>;
+}
+
 function AdminArea({ data, username }: { data: PortfolioData; username?: string }) {
-  const [resource, setResource] = useState<Resource>('services');
+  const [section, setSection] = useState<'profile' | Resource>('profile');
   const [editing, setEditing] = useState<PortfolioData[Resource][number] | null>(null);
   const [saved, setSaved] = useState(false);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const saveMutation = useSavePortfolioMutation();
-  const items = data[resource];
+  const resource = section === 'profile' ? null : section;
+  const items = resource ? data[resource] : [];
 
   const persist = (next: PortfolioData) => {
     saveMutation.mutate(next, {
@@ -256,12 +332,15 @@ function AdminArea({ data, username }: { data: PortfolioData; username?: string 
     });
   };
 
+  const saveProfile = (value: Profile) => persist({ ...data, profile: value });
   const saveItem = (value: PortfolioData[Resource][number]) => {
+    if (!resource) return;
     const next = items.some((item) => item.id === value.id) ? items.map((item) => (item.id === value.id ? value : item)) : [...items, value];
     persist({ ...data, [resource]: next });
     setEditing(null);
   };
   const deleteItem = (id: string) => {
+    if (!resource) return;
     if (!window.confirm('Delete this item? This cannot be undone.')) return;
     persist({ ...data, [resource]: items.filter((item) => item.id !== id) });
   };
@@ -274,7 +353,7 @@ function AdminArea({ data, username }: { data: PortfolioData; username?: string 
     await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
   };
 
-  return <div className="grain min-h-[100dvh] bg-background"><header className="border-b border-foreground/15 bg-foreground text-background"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 md:px-10"><div className="flex items-center gap-3" data-testid="link-admin-home"><span className="flex h-8 w-8 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">AV</span><span className="font-mono text-[11px] uppercase tracking-[.2em]">Content / console{username ? ` · ${username}` : ''}</span></div><div className="flex items-center gap-5"><button type="button" onClick={() => setLocation('/')} className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.15em] text-background/60 hover:text-primary" data-testid="button-view-site">View live site <ExternalLink size={14} /></button><button type="button" onClick={logout} className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.15em] text-background/60 hover:text-destructive" data-testid="button-logout">Log out <LogOut size={14} /></button></div></div></header><main className="mx-auto max-w-[1440px] px-5 py-12 md:px-10 md:py-16"><div className="flex flex-col justify-between gap-8 border-b border-foreground/15 pb-10 md:flex-row md:items-end"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">Signed in / changes save to the database</p><h1 className="display-title mt-5 text-6xl font-semibold leading-[.85] tracking-[-.07em] md:text-8xl">Shape the<br /><span className="text-accent">story.</span></h1></div><div className="max-w-xs text-sm leading-[1.7] text-muted-foreground"><p>Edits save straight to the live database and appear on the public site immediately.</p>{saveMutation.isPending && <p className="mt-3 font-mono text-[10px] uppercase text-muted-foreground">Saving…</p>}{saved && <p className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase text-green-700"><Check size={13} /> Saved</p>}{saveMutation.isError && <p className="mt-3 font-mono text-[10px] uppercase text-destructive">{(saveMutation.error as Error)?.message || 'Save failed'}</p>}</div></div><div className="mt-10 grid gap-10 lg:grid-cols-[220px_1fr]"><aside className="lg:border-r lg:border-foreground/15 lg:pr-6"><div className="flex gap-2 overflow-auto lg:block lg:space-y-1">{(Object.keys(resourceMeta) as Resource[]).map((key) => <button type="button" key={key} onClick={() => { setResource(key); setEditing(null); }} className={`flex w-full shrink-0 items-center justify-between px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] ${resource === key ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`} data-testid={`button-tab-${key}`}><span>{resourceMeta[key].label}</span><span className={resource === key ? 'text-primary' : ''}>{data[key].length.toString().padStart(2, '0')}</span></button>)}</div><button type="button" onClick={resetAll} className="mt-10 flex w-full items-center gap-2 border-t border-foreground/15 px-3 py-4 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive" data-testid="button-reset-content"><RotateCcw size={13} /> Reset all content</button></aside><section><div className="mb-6 flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">Editing collection</p><h2 className="mt-2 text-2xl font-medium">{resourceMeta[resource].label}</h2></div><button type="button" onClick={() => setEditing(emptyFor(resource))} className="inline-flex items-center gap-2 bg-primary px-4 py-3 font-mono text-[10px] uppercase tracking-[.13em] text-primary-foreground hover:bg-foreground hover:text-background" data-testid="button-add-item"><Plus size={15} /> Add {resourceMeta[resource].singular}</button></div>{editing && <AdminForm resource={resource} value={editing} onSave={saveItem} onCancel={() => setEditing(null)} />}<div className="space-y-3">{items.map((item, index) => <div key={item.id} className="group grid gap-4 border-t border-foreground/15 py-5 md:grid-cols-[48px_1fr_auto] md:items-center" data-testid={`admin-row-${item.id}`}><span className="font-mono text-[10px] text-accent">{String(index + 1).padStart(2, '0')}</span><div><h3 className="font-medium">{itemTitle(item)}</h3><p className="mt-1 line-clamp-2 max-w-2xl text-sm text-muted-foreground">{itemSubtitle(item)}</p></div><div className="flex gap-2 md:opacity-0 md:transition-opacity md:group-hover:opacity-100"><button type="button" onClick={() => setEditing(item)} className="border border-foreground/20 p-2 hover:border-primary hover:bg-primary" aria-label={`Edit item ${index + 1}`} data-testid={`button-edit-${item.id}`}><Pencil size={14} /></button><button type="button" onClick={() => deleteItem(item.id)} className="border border-foreground/20 p-2 hover:border-destructive hover:bg-destructive hover:text-destructive-foreground" aria-label={`Delete item ${index + 1}`} data-testid={`button-delete-${item.id}`}><Trash2 size={14} /></button></div></div>)}</div></section></div></main></div>;
+  return <div className="grain min-h-[100dvh] bg-background"><header className="border-b border-foreground/15 bg-foreground text-background"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 md:px-10"><div className="flex items-center gap-3" data-testid="link-admin-home"><span className="flex h-8 w-8 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">AV</span><span className="font-mono text-[11px] uppercase tracking-[.2em]">Content / console{username ? ` · ${username}` : ''}</span></div><div className="flex items-center gap-5"><button type="button" onClick={() => setLocation('/')} className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.15em] text-background/60 hover:text-primary" data-testid="button-view-site">View live site <ExternalLink size={14} /></button><button type="button" onClick={logout} className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.15em] text-background/60 hover:text-destructive" data-testid="button-logout">Log out <LogOut size={14} /></button></div></div></header><main className="mx-auto max-w-[1440px] px-5 py-12 md:px-10 md:py-16"><div className="flex flex-col justify-between gap-8 border-b border-foreground/15 pb-10 md:flex-row md:items-end"><div><p className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">Signed in / changes save to the database</p><h1 className="display-title mt-5 text-6xl font-semibold leading-[.85] tracking-[-.07em] md:text-8xl">Shape the<br /><span className="text-accent">story.</span></h1></div><div className="max-w-xs text-sm leading-[1.7] text-muted-foreground"><p>Edits save straight to the live database and appear on the public site immediately.</p>{saveMutation.isPending && <p className="mt-3 font-mono text-[10px] uppercase text-muted-foreground">Saving…</p>}{saved && <p className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase text-green-700"><Check size={13} /> Saved</p>}{saveMutation.isError && <p className="mt-3 font-mono text-[10px] uppercase text-destructive">{(saveMutation.error as Error)?.message || 'Save failed'}</p>}</div></div><div className="mt-10 grid gap-10 lg:grid-cols-[220px_1fr]"><aside className="lg:border-r lg:border-foreground/15 lg:pr-6"><div className="flex gap-2 overflow-auto lg:block lg:space-y-1"><button type="button" onClick={() => { setSection('profile'); setEditing(null); }} className={`flex w-full shrink-0 items-center justify-between px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] ${section === 'profile' ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`} data-testid="button-tab-profile"><span>Profile</span></button>{(Object.keys(resourceMeta) as Resource[]).map((key) => <button type="button" key={key} onClick={() => { setSection(key); setEditing(null); }} className={`flex w-full shrink-0 items-center justify-between px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] ${section === key ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted'}`} data-testid={`button-tab-${key}`}><span>{resourceMeta[key].label}</span><span className={section === key ? 'text-primary' : ''}>{data[key].length.toString().padStart(2, '0')}</span></button>)}</div><button type="button" onClick={resetAll} className="mt-10 flex w-full items-center gap-2 border-t border-foreground/15 px-3 py-4 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive" data-testid="button-reset-content"><RotateCcw size={13} /> Reset all content</button></aside>{section === 'profile' ? <section><div className="mb-6"><p className="font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">Editing</p><h2 className="mt-2 text-2xl font-medium">Profile</h2><p className="mt-2 max-w-lg text-sm text-muted-foreground">Your name, photo, and bio shown across the public site (header, hero, about, and contact).</p></div><ProfileEditor profile={data.profile} onSave={saveProfile} saving={saveMutation.isPending} /></section> : resource && <section><div className="mb-6 flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">Editing collection</p><h2 className="mt-2 text-2xl font-medium">{resourceMeta[resource].label}</h2></div><button type="button" onClick={() => setEditing(emptyFor(resource))} className="inline-flex items-center gap-2 bg-primary px-4 py-3 font-mono text-[10px] uppercase tracking-[.13em] text-primary-foreground hover:bg-foreground hover:text-background" data-testid="button-add-item"><Plus size={15} /> Add {resourceMeta[resource].singular}</button></div>{editing && <AdminForm resource={resource} value={editing} onSave={saveItem} onCancel={() => setEditing(null)} />}<div className="space-y-3">{items.map((item, index) => <div key={item.id} className="group grid gap-4 border-t border-foreground/15 py-5 md:grid-cols-[48px_1fr_auto] md:items-center" data-testid={`admin-row-${item.id}`}><span className="font-mono text-[10px] text-accent">{String(index + 1).padStart(2, '0')}</span><div><h3 className="font-medium">{itemTitle(item)}</h3><p className="mt-1 line-clamp-2 max-w-2xl text-sm text-muted-foreground">{itemSubtitle(item)}</p></div><div className="flex gap-2 md:opacity-0 md:transition-opacity md:group-hover:opacity-100"><button type="button" onClick={() => setEditing(item)} className="border border-foreground/20 p-2 hover:border-primary hover:bg-primary" aria-label={`Edit item ${index + 1}`} data-testid={`button-edit-${item.id}`}><Pencil size={14} /></button><button type="button" onClick={() => deleteItem(item.id)} className="border border-foreground/20 p-2 hover:border-destructive hover:bg-destructive hover:text-destructive-foreground" aria-label={`Delete item ${index + 1}`} data-testid={`button-delete-${item.id}`}><Trash2 size={14} /></button></div></div>)}</div></section>}</div></main></div>;
 }
 
 function ConsolePage() {

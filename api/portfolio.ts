@@ -4,10 +4,14 @@ import { getSessionUser } from './_lib/auth.js';
 
 const RESOURCE_KEYS = ['services', 'projects', 'education', 'experience', 'testimonials'] as const;
 
-function isValidPortfolioPayload(value: unknown): value is Record<string, unknown[]> {
+function isValidPortfolioPayload(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object') return false;
   const record = value as Record<string, unknown>;
-  return RESOURCE_KEYS.every((key) => Array.isArray(record[key]));
+  const arraysOk = RESOURCE_KEYS.every((key) => Array.isArray(record[key]));
+  // profile is optional (older saved data may not have it yet) but if present
+  // it must be a plain object, not an array/string/etc.
+  const profileOk = record.profile === undefined || (typeof record.profile === 'object' && record.profile !== null && !Array.isArray(record.profile));
+  return arraysOk && profileOk;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

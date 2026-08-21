@@ -67,6 +67,17 @@ export async function sql(strings: TemplateStringsArray, ...values: unknown[]): 
 // database the very first time /api/portfolio is called and the
 // table is empty — after that, everything lives in Postgres.
 export const seedPortfolioData = {
+  profile: {
+    name: 'Akhilesh Vishwakarma',
+    tagline: 'Full-stack developer / digital craftsman',
+    location: 'Mumbai, India',
+    bio1: 'I’m Akhilesh — a developer who likes products with a point of view.',
+    bio2: 'For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.',
+    bio3: 'I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.',
+    email: 'hello@akhilesh.dev',
+    github: 'github.com/akhilesh-v',
+    image: '',
+  },
   services: [
     { id: 'svc-1', number: '01', title: 'Product engineering', description: 'From first sketch to a reliable, fast product people want to use.' },
     { id: 'svc-2', number: '02', title: 'Web experiences', description: 'Editorial, expressive interfaces with a little more soul than expected.' },
