@@ -32,50 +32,67 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Replace the existing variables in index.css */
 :root {
-  --background: 42 30% 90%;
-  --foreground: 215 22% 12%;
-  --border: 215 17% 25% / .17;
-  --input: 42 24% 83%;
-  --ring: 73 100% 52%;
-  --card: 42 30% 94%;
-  --card-foreground: 215 22% 12%;
-  --card-border: 215 17% 25% / .16;
-  --primary: 73 100% 52%;
-  --primary-foreground: 215 22% 12%;
-  --secondary: 215 22% 12%;
-  --secondary-foreground: 42 30% 90%;
-  --muted: 42 19% 78%;
-  --muted-foreground: 215 12% 39%;
-  --accent: 12 83% 64%;
-  --accent-foreground: 215 22% 12%;
-  --destructive: 2 72% 52%;
-  --destructive-foreground: 42 30% 94%;
+  /* Soft, clean off-white background */
+  --background: 0 0% 98%;
+  /* Elegant dark gray for text */
+  --foreground: 240 10% 15%;
+  /* Very soft borders */
+  --border: 240 5.9% 90%;
+  --input: 240 5.9% 90%;
+  --ring: 250 84% 60%;
+  
+  /* Pure white cards with a premium feel */
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 15%;
+  --card-border: 240 5.9% 95%;
+  
+  /* A beautiful soft purple/indigo for the primary accent */
+  --primary: 250 84% 60%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 240 4.8% 95.9%;
+  --secondary-foreground: 240 5.9% 10%;
+  
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.8% 46.1%;
+  
+  /* Cute pinkish/coral accent for highlights */
+  --accent: 330 80% 65%;
+  --accent-foreground: 240 5.9% 10%;
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  
+  /* Softer, more modern fonts */
   --app-font-sans: 'Space Grotesk', sans-serif;
   --app-font-mono: 'DM Mono', monospace;
-  --radius: .15rem;
-  --shadow-soft: 0 16px 40px rgba(24, 31, 38, .09);
+  
+  /* Big change: Beautiful rounded corners instead of sharp edges */
+  --radius: 1rem; 
+  /* Floating, dreamy shadow for cards */
+  --shadow-soft: 0 10px 40px -10px rgba(0,0,0,0.08);
 }
 
+/* Optional: A much sleeker dark mode */
 .dark {
-  --background: 215 22% 12%;
-  --foreground: 42 30% 90%;
-  --border: 42 30% 90% / .17;
-  --input: 215 18% 18%;
-  --ring: 73 100% 52%;
-  --card: 215 19% 16%;
-  --card-foreground: 42 30% 90%;
-  --card-border: 42 30% 90% / .15;
-  --primary: 73 100% 52%;
-  --primary-foreground: 215 22% 12%;
-  --secondary: 42 30% 90%;
-  --secondary-foreground: 215 22% 12%;
-  --muted: 215 16% 24%;
-  --muted-foreground: 42 12% 65%;
-  --accent: 12 83% 64%;
-  --accent-foreground: 215 22% 12%;
-  --destructive: 2 72% 58%;
-  --destructive-foreground: 42 30% 94%;
+  --background: 240 10% 8%;
+  --foreground: 0 0% 98%;
+  --border: 240 10% 15%;
+  --input: 240 10% 15%;
+  --ring: 250 84% 65%;
+  --card: 240 10% 11%;
+  --card-foreground: 0 0% 98%;
+  --card-border: 240 10% 15%;
+  --primary: 250 84% 65%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 10% 15%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 10% 15%;
+  --muted-foreground: 240 5% 65%;
+  --accent: 330 80% 65%;
+  --accent-foreground: 0 0% 100%;
 }
 
 @layer base {
