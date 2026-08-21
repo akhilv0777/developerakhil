@@ -972,7 +972,7 @@ function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
             aria-hidden="true"
           />
           <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-primary">
-            Loading magic…
+            Loading Portfolio…
           </p>
         </div>
       )}
