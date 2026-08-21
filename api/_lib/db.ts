@@ -77,7 +77,17 @@ export const seedPortfolioData = {
     email: 'hello@akhilesh.dev',
     github: 'github.com/akhilesh-v',
     image: '',
+    resume: '',
+    resumeName: '',
+    contactTitle: 'Have a\ngood one?',
+    contactNote: 'Currently accepting a few good problems.',
   },
+  stats: [
+    { id: 'stat-1', value: '06', label: 'years making' },
+    { id: 'stat-2', value: '38', label: 'things shipped' },
+    { id: 'stat-3', value: '12', label: 'happy teams' },
+    { id: 'stat-4', value: '∞', label: 'tabs open' },
+  ],
   services: [
     { id: 'svc-1', number: '01', title: 'Product engineering', description: 'From first sketch to a reliable, fast product people want to use.' },
     { id: 'svc-2', number: '02', title: 'Web experiences', description: 'Editorial, expressive interfaces with a little more soul than expected.' },

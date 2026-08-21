@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ensureSchema, sql } from './_lib/db.js';
 import { getSessionUser } from './_lib/auth.js';
 
-const RESOURCE_KEYS = ['services', 'projects', 'education', 'experience', 'testimonials'] as const;
+const RESOURCE_KEYS = ['stats', 'services', 'projects', 'education', 'experience', 'testimonials'] as const;
 
 function isValidPortfolioPayload(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object') return false;

@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@slicemypage/motionflow':
+        specifier: ^1.0.0
+        version: 1.0.0
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -1027,6 +1030,9 @@ packages:
   '@rollup/pluginutils@4.2.1':
     resolution: {integrity: sha512-iKnFXr7NkdZAIHiIWE+BX5ULi/ucVFYWD6TbAV+rZctiRTY2PL6tsIKhoIOaoskiWAkgu+VsbXgUVDNLHf+InQ==}
     engines: {node: '>= 8.0.0'}
+
+  '@slicemypage/motionflow@1.0.0':
+    resolution: {integrity: sha512-Tj4UWhGy/ngNmMkrr70Ku295TJt1Rcgm7OktVTvgeLfd7EV3CFKBuvGhPZaUMD3eoupmfOwW0rbNAU1cMaiGJA==}
 
   '@tabby_ai/hijri-converter@1.0.5':
     resolution: {integrity: sha512-r5bClKrcIusDoo049dSL8CawnHR6mRdDwhlQuIgZRNty68q0x8k3Lf1BtPAMxRf/GgnHBnIO4ujd3+GQdLWzxQ==}
@@ -3313,6 +3319,8 @@ snapshots:
     dependencies:
       estree-walker: 2.0.2
       picomatch: 2.3.2
+
+  '@slicemypage/motionflow@1.0.0': {}
 
   '@tabby_ai/hijri-converter@1.0.5': {}
 

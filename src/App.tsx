@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useState } from "react";
 import {
   Link,
   Route,
@@ -35,6 +35,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { useMotionFlow } from "@/lib/motionflow";
 import "@/index.css";
 
 type Service = {
@@ -67,6 +68,7 @@ type Experience = {
   detail: string;
 };
 type Testimonial = { id: string; quote: string; name: string; role: string };
+type Stat = { id: string; value: string; label: string };
 type Profile = {
   name: string;
   tagline: string;
@@ -77,9 +79,14 @@ type Profile = {
   email: string;
   github: string;
   image: string;
+  resume: string;
+  resumeName: string;
+  contactTitle: string;
+  contactNote: string;
 };
 type PortfolioData = {
   profile: Profile;
+  stats: Stat[];
   services: Service[];
   projects: Project[];
   education: Education[];
@@ -97,12 +104,22 @@ const defaultProfile: Profile = {
   email: "hello@akhilesh.dev",
   github: "github.com/akhilesh-v",
   image: "",
+  resume: "",
+  resumeName: "",
+  contactTitle: "Have a\ngood one?",
+  contactNote: "Currently accepting a few good problems.",
 };
 
 // Used only as an instant-render placeholder while the real content
 // loads from the database, and as the payload for "reset to defaults".
 const defaultPortfolioData: PortfolioData = {
   profile: defaultProfile,
+  stats: [
+    { id: "stat-1", value: "06", label: "years making" },
+    { id: "stat-2", value: "38", label: "things shipped" },
+    { id: "stat-3", value: "12", label: "happy teams" },
+    { id: "stat-4", value: "∞", label: "tabs open" },
+  ],
   services: [
     {
       id: "svc-1",
@@ -395,11 +412,27 @@ function Hero({ profile }: { profile: Profile }) {
               <ArrowDownRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
             </a>
             <span className="font-mono text-[11px] text-muted-foreground">
-              Currently accepting a few good problems.
+              {profile.contactNote}
             </span>
+            {profile.resume && (
+              <a
+                href={profile.resume}
+                download={profile.resumeName || "resume.pdf"}
+                className="group inline-flex w-fit items-center gap-3 border border-foreground/25 px-5 py-4 font-mono text-[11px] uppercase tracking-[.14em] transition-colors hover:border-primary hover:bg-primary"
+                data-testid="link-hero-resume"
+              >
+                Download résumé
+                <ArrowDownRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1 group-hover:translate-y-1 group-hover:text-foreground" />
+              </a>
+            )}
           </div>
         </div>
-        <div className="reveal reveal-delay-3 relative hidden h-[300px] border-l border-foreground/20 pl-7 lg:block">
+        <div
+          data-mf-parallax
+          data-mf-parallax-speed="0.3"
+          data-mf-parallax-speed-mobile="0"
+          className="reveal reveal-delay-3 relative hidden h-[300px] border-l border-foreground/20 pl-7 lg:block"
+        >
           {profile.image && (
             <img
               src={profile.image}
@@ -440,10 +473,17 @@ function About({ profile }: { profile: Profile }) {
     >
       <SectionLabel number="01">A little context</SectionLabel>
       <div>
-        <p className="max-w-4xl text-[clamp(2rem,4.8vw,5rem)] font-medium leading-[.98] tracking-[-.055em]">
+        <p
+          data-mf-animation="fade-up"
+          className="max-w-4xl text-[clamp(2rem,4.8vw,5rem)] font-medium leading-[.98] tracking-[-.055em]"
+        >
           {profile.bio1}
         </p>
-        <div className="mt-12 grid gap-8 border-t border-foreground/15 pt-7 text-sm leading-[1.8] text-muted-foreground md:grid-cols-2">
+        <div
+          data-mf-stagger-animation="fade-up"
+          data-mf-stagger-gap="120"
+          className="mt-12 grid gap-8 border-t border-foreground/15 pt-7 text-sm leading-[1.8] text-muted-foreground md:grid-cols-2"
+        >
           <p>{profile.bio2}</p>
           <p>{profile.bio3}</p>
         </div>
@@ -452,29 +492,53 @@ function About({ profile }: { profile: Profile }) {
   );
 }
 
-function Stats() {
-  const stats = [
-    ["06", "years making"],
-    ["38", "things shipped"],
-    ["12", "happy teams"],
-    ["∞", "tabs open"],
-  ];
+/** Splits a stat's free-text value ("06", "38+", "10,000", "∞") into a
+ * leading numeric run MotionFlow can count up to, plus a static suffix.
+ * Falls back to plain (non-animated) text when nothing numeric is found. */
+function StatValue({ value }: { value: string }) {
+  const match = value.match(/^(\d[\d,]*)(.*)$/);
+  if (!match) {
+    return (
+      <span className="font-mono text-4xl text-primary md:text-5xl">
+        {value}
+      </span>
+    );
+  }
+  const [, digits, suffix] = match;
+  const target = Number(digits.replace(/,/g, ""));
+  return (
+    <span className="font-mono text-4xl text-primary md:text-5xl">
+      <span
+        data-mf-count-to={target}
+        data-mf-count-duration="1600"
+        data-mf-count-once="true"
+        data-mf-count-trigger="top 95%"
+      >
+        0
+      </span>
+      {suffix}
+    </span>
+  );
+}
+
+function Stats({ stats }: { stats: Stat[] }) {
   return (
     <section className="border-y border-foreground/15 bg-foreground px-5 py-10 text-background md:px-10">
-      <div className="mx-auto grid max-w-[1440px] grid-cols-2 gap-y-10 md:grid-cols-4">
-        {stats.map(([value, label]) => (
+      <div
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-gap="100"
+        className="mx-auto grid max-w-[1440px] grid-cols-2 gap-y-10 md:grid-cols-4"
+      >
+        {stats.map((stat) => (
           <div
-            key={label}
+            key={stat.id}
             className="border-l border-background/20 pl-5 first:border-0"
           >
-            <p
-              className="font-mono text-4xl text-primary md:text-5xl"
-              data-testid={`stat-${label}`}
-            >
-              {value}
+            <p data-testid={`stat-${stat.id}`}>
+              <StatValue value={stat.value} />
             </p>
             <p className="mt-2 font-mono text-[10px] uppercase tracking-[.18em] text-background/60">
-              {label}
+              {stat.label}
             </p>
           </div>
         ))}
@@ -483,18 +547,24 @@ function Stats() {
   );
 }
 
-function Marquee() {
+function Marquee({ services }: { services: Service[] }) {
+  const words =
+    services.length > 0
+      ? services.map((service) => service.title)
+      : ["Research", "Design", "Code", "Ship", "Learn"];
   return (
     <div className="overflow-hidden border-b border-foreground/15 bg-primary py-3 text-foreground">
-      <div className="flex w-max animate-[ticker_22s_linear_infinite] font-mono text-[11px] uppercase tracking-[.2em]">
-        <span className="pr-8">
-          Research → design → code → ship → learn →
-          repeat&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
-        </span>
-        <span className="pr-8">
-          Research → design → code → ship → learn →
-          repeat&nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
-        </span>
+      <div
+        data-mf-ticker
+        data-mf-ticker-speed="45"
+        data-mf-ticker-pause-on-hover="true"
+        className="font-mono text-[11px] uppercase tracking-[.2em]"
+      >
+        {words.map((word, index) => (
+          <span key={`${word}-${index}`} className="px-4">
+            {word} <span className="text-foreground/50">·</span>
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -503,7 +573,7 @@ function Marquee() {
 function Timeline({ data }: { data: PortfolioData }) {
   return (
     <section className="mx-auto grid max-w-[1440px] gap-16 px-5 py-24 md:grid-cols-2 md:px-10 md:py-32">
-      <div>
+      <div data-mf-animation="fade-up">
         <SectionLabel number="02">The long way round</SectionLabel>
         <h2 className="display-title max-w-xl text-5xl font-semibold leading-[.9] tracking-[-.06em] md:text-7xl">
           Learning by
@@ -515,7 +585,11 @@ function Timeline({ data }: { data: PortfolioData }) {
           suspicion of easy answers.
         </p>
       </div>
-      <div className="space-y-0 border-t border-foreground/15">
+      <div
+        data-mf-stagger-animation="fade-left"
+        data-mf-stagger-gap="100"
+        className="space-y-0 border-t border-foreground/15"
+      >
         {data.education.map((item) => (
           <div
             className="grid gap-4 border-b border-foreground/15 py-7 sm:grid-cols-[130px_1fr]"
@@ -549,14 +623,21 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
           Selected chapters
         </SectionLabel>
         <div className="grid gap-12 md:grid-cols-[.65fr_1.35fr]">
-          <h2 className="display-title text-5xl font-semibold leading-[.88] tracking-[-.06em] md:text-7xl">
+          <h2
+            data-mf-animation="fade-right"
+            className="display-title text-5xl font-semibold leading-[.88] tracking-[-.06em] md:text-7xl"
+          >
             The work
             <br />
             behind
             <br />
             <span className="text-primary">the work.</span>
           </h2>
-          <div className="border-t border-background/20">
+          <div
+            data-mf-stagger-animation="fade-up"
+            data-mf-stagger-gap="90"
+            className="border-t border-background/20"
+          >
             {data.experience.map((item, index) => (
               <div
                 className="grid gap-5 border-b border-background/20 py-8 sm:grid-cols-[100px_1fr_100px]"
@@ -591,7 +672,11 @@ function Services({ data }: { data: PortfolioData }) {
   return (
     <section className="mx-auto max-w-[1440px] px-5 py-24 md:px-10 md:py-32">
       <SectionLabel number="04">What I can do</SectionLabel>
-      <div className="grid border-t border-foreground/15 md:grid-cols-3">
+      <div
+        data-mf-stagger-animation="zoom-in"
+        data-mf-stagger-gap="110"
+        className="grid border-t border-foreground/15 md:grid-cols-3"
+      >
         {data.services.map((service) => (
           <article
             key={service.id}
@@ -630,7 +715,11 @@ function Work({ data }: { data: PortfolioData }) {
             A small selection / 2022—2024
           </span>
         </div>
-        <div className="space-y-5">
+        <div
+          data-mf-stagger-animation="fade-up"
+          data-mf-stagger-gap="90"
+          className="space-y-5"
+        >
           {data.projects.map((project, index) => (
             <article
               key={project.id}
@@ -681,7 +770,10 @@ function Testimonials({ data }: { data: PortfolioData }) {
     <section className="mx-auto max-w-[1440px] px-5 py-24 md:px-10 md:py-36">
       <SectionLabel number="06">Good words, kept</SectionLabel>
       <div className="grid gap-10 md:grid-cols-[1.3fr_.7fr]">
-        <div className="border-l-4 border-primary pl-6 md:pl-10">
+        <div
+          data-mf-animation="fade-up"
+          className="border-l-4 border-primary pl-6 md:pl-10"
+        >
           <p className="max-w-4xl text-[clamp(2rem,4vw,4.5rem)] font-medium leading-[.98] tracking-[-.055em]">
             “{item?.quote || "The best work makes the difficult feel possible."}
             ”
@@ -702,7 +794,87 @@ function Testimonials({ data }: { data: PortfolioData }) {
   );
 }
 
+function ContactForm({ email }: { email: string }) {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const subject = encodeURIComponent(`Hello from ${form.name || "your site"}`);
+    const body = encodeURIComponent(
+      `${form.message}\n\n— ${form.name}${form.email ? ` (${form.email})` : ""}`,
+    );
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+    setSent(true);
+    window.setTimeout(() => setSent(false), 4000);
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mt-10 grid gap-4 border-t border-foreground/20 pt-8 sm:grid-cols-2"
+      data-testid="form-contact"
+    >
+      <label className="sm:col-span-1">
+        <span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-foreground/60">
+          Your name
+        </span>
+        <input
+          required
+          value={form.name}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
+          className="w-full border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          data-testid="input-contact-name"
+        />
+      </label>
+      <label className="sm:col-span-1">
+        <span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-foreground/60">
+          Your email
+        </span>
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(event) => setForm({ ...form, email: event.target.value })}
+          className="w-full border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          data-testid="input-contact-email"
+        />
+      </label>
+      <label className="sm:col-span-2">
+        <span className="mb-2 block font-mono text-[10px] uppercase tracking-[.15em] text-foreground/60">
+          Message
+        </span>
+        <textarea
+          required
+          rows={4}
+          value={form.message}
+          onChange={(event) =>
+            setForm({ ...form, message: event.target.value })
+          }
+          className="w-full resize-y border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          data-testid="input-contact-message"
+        />
+      </label>
+      <div className="flex items-center gap-4 sm:col-span-2">
+        <button
+          type="submit"
+          className="inline-flex items-center gap-2 bg-foreground px-5 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-background transition-transform hover:-translate-y-0.5"
+          data-testid="button-send-message"
+        >
+          Send message <ArrowUpRight className="h-4 w-4" />
+        </button>
+        {sent && (
+          <span className="font-mono text-[10px] uppercase text-foreground/70">
+            Opening your email app…
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
 function Contact({ profile }: { profile: Profile }) {
+  const titleLines = profile.contactTitle.split("\n");
   return (
     <section
       id="contact"
@@ -711,11 +883,20 @@ function Contact({ profile }: { profile: Profile }) {
       <div className="mx-auto max-w-[1440px]">
         <SectionLabel number="07">Your turn</SectionLabel>
         <div className="grid gap-12 md:grid-cols-[1.4fr_.6fr]">
-          <div>
+          <div data-mf-animation="fade-up">
             <h2 className="display-title max-w-5xl text-[clamp(4rem,11vw,10rem)] font-semibold leading-[.78] tracking-[-.08em]">
-              Have a<br />
-              good one?
+              {titleLines.map((line, index) => (
+                <span key={index}>
+                  {line}
+                  {index < titleLines.length - 1 && <br />}
+                </span>
+              ))}
             </h2>
+            {profile.contactNote && (
+              <p className="mt-6 max-w-md text-sm leading-[1.7] text-foreground/70">
+                {profile.contactNote}
+              </p>
+            )}
             <a
               href={`mailto:${profile.email}`}
               className="group mt-12 inline-flex items-center gap-4 border-b-2 border-foreground pb-3 font-mono text-sm uppercase tracking-[.12em]"
@@ -724,8 +905,12 @@ function Contact({ profile }: { profile: Profile }) {
               {profile.email}{" "}
               <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
             </a>
+            <ContactForm email={profile.email} />
           </div>
-          <div className="flex flex-col justify-end gap-5 font-mono text-[11px] uppercase tracking-[.14em]">
+          <div
+            data-mf-animation="fade-left"
+            className="flex flex-col justify-end gap-5 font-mono text-[11px] uppercase tracking-[.14em]"
+          >
             <a
               href={`https://${profile.github.replace(/^https?:\/\//, "")}`}
               className="flex items-center gap-3 transition-opacity hover:opacity-60"
@@ -743,6 +928,16 @@ function Contact({ profile }: { profile: Profile }) {
             <span className="flex items-center gap-3">
               <MapPin size={15} /> {profile.location}
             </span>
+            {profile.resume && (
+              <a
+                href={profile.resume}
+                download={profile.resumeName || "resume.pdf"}
+                className="mt-4 flex items-center gap-3 border border-foreground/30 px-4 py-3 normal-case tracking-normal transition-colors hover:border-foreground hover:bg-foreground hover:text-background"
+                data-testid="link-contact-resume"
+              >
+                <ArrowDownRight size={15} /> Download résumé
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -772,14 +967,15 @@ function Footer({ profile }: { profile: Profile }) {
 
 function PublicPortfolio() {
   const { data } = usePortfolioQuery();
+  useMotionFlow([data]);
   return (
     <div id="top" className="grain min-h-[100dvh] bg-background">
       <Nav profile={data.profile} />
       <main>
         <Hero profile={data.profile} />
         <About profile={data.profile} />
-        <Stats />
-        <Marquee />
+        <Stats stats={data.stats} />
+        <Marquee services={data.services} />
         <Timeline data={data} />
         <ExperienceSection data={data} />
         <Services data={data} />
@@ -898,6 +1094,7 @@ function LoginPage() {
 
 type Resource = Exclude<keyof PortfolioData, "profile">;
 const resourceMeta: Record<Resource, { label: string; singular: string }> = {
+  stats: { label: "Stats", singular: "stat" },
   services: { label: "Services", singular: "service" },
   projects: { label: "Projects", singular: "project" },
   education: { label: "Education", singular: "education" },
@@ -906,6 +1103,7 @@ const resourceMeta: Record<Resource, { label: string; singular: string }> = {
 };
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
   const id = `${resource.slice(0, -1)}-${Date.now()}`;
+  if (resource === "stats") return { id, value: "", label: "" } as Stat;
   if (resource === "services")
     return { id, number: "0X", title: "", description: "" } as Service;
   if (resource === "projects")
@@ -931,8 +1129,10 @@ const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
   return { id, quote: "", name: "", role: "" } as Testimonial;
 };
 const itemTitle = (
-  item: Service | Project | Education | Experience | Testimonial,
+  item: Stat | Service | Project | Education | Experience | Testimonial,
 ): string => {
+  if ("value" in item && "label" in item)
+    return `${item.value || "—"} · ${item.label || "Untitled"}`;
   if ("title" in item) return item.title || "Untitled";
   if ("degree" in item) return item.degree || "Untitled";
   if ("role" in item && "company" in item) return item.role || "Untitled";
@@ -940,7 +1140,7 @@ const itemTitle = (
   return "Untitled";
 };
 const itemSubtitle = (
-  item: Service | Project | Education | Experience | Testimonial,
+  item: Stat | Service | Project | Education | Experience | Testimonial,
 ): string => {
   if ("description" in item) return String(item.description);
   if ("institution" in item) return String(item.institution);
@@ -964,7 +1164,13 @@ function AdminForm({
   const [form, setForm] = useState<Record<string, string>>(
     () => ({ ...value }) as unknown as Record<string, string>,
   );
+  // Keep the form in sync whenever a different item is opened for editing
+  // (e.g. clicking "Edit" on another row without closing this form first).
+  useEffect(() => {
+    setForm({ ...value } as unknown as Record<string, string>);
+  }, [value]);
   const fields: Record<Resource, string[]> = {
+    stats: ["value", "label"],
     services: ["number", "title", "description"],
     projects: ["title", "category", "year", "description", "tags", "accent"],
     education: ["degree", "institution", "period", "detail"],
@@ -972,6 +1178,8 @@ function AdminForm({
     testimonials: ["quote", "name", "role"],
   };
   const labels: Record<string, string> = {
+    value: "Value (e.g. 06, 100+, ∞)",
+    label: "Label (e.g. years making)",
     number: "Index",
     title: "Title",
     description: "Description",
@@ -1113,6 +1321,13 @@ function ProfileEditor({
 }) {
   const [form, setForm] = useState<Profile>(profile);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  // Re-sync whenever the saved profile changes underneath us — otherwise
+  // the fields keep showing whatever was typed before the last save
+  // (or stale defaults) instead of what's actually persisted.
+  useEffect(() => {
+    setForm(profile);
+  }, [profile]);
   const fields: { key: keyof Profile; label: string; long?: boolean }[] = [
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
@@ -1122,6 +1337,12 @@ function ProfileEditor({
     { key: "bio1", label: "Headline bio (large text in About)", long: true },
     { key: "bio2", label: "About paragraph 1", long: true },
     { key: "bio3", label: "About paragraph 2", long: true },
+    {
+      key: "contactTitle",
+      label: "Contact heading (use a new line to break it)",
+      long: true,
+    },
+    { key: "contactNote", label: "Contact note (small line near the CTA)" },
   ];
 
   const handleImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1133,6 +1354,35 @@ function ProfileEditor({
       setForm((current) => ({ ...current, image: dataUrl }));
     } catch (error) {
       setImageError((error as Error).message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleResume = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setResumeError(null);
+    const MAX_BYTES = 4 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      setResumeError("That file is too large — please keep it under 4MB.");
+      event.target.value = "";
+      return;
+    }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("Could not read that file."));
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      setForm((current) => ({
+        ...current,
+        resume: dataUrl,
+        resumeName: file.name,
+      }));
+    } catch (error) {
+      setResumeError((error as Error).message);
     } finally {
       event.target.value = "";
     }
@@ -1189,6 +1439,54 @@ function ProfileEditor({
             </p>
           )}
         </div>
+      </div>
+      <div className="mb-7 border-t border-foreground/15 pt-6">
+        <span className="mb-3 block font-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">
+          Résumé (shown as a download button on the site)
+        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="inline-flex cursor-pointer items-center gap-2 border border-foreground/25 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[.13em] hover:bg-muted">
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleResume}
+              className="hidden"
+              data-testid="input-profile-resume"
+            />
+            {form.resume ? "Replace résumé" : "Upload résumé"}
+          </label>
+          {form.resume && (
+            <>
+              <a
+                href={form.resume}
+                download={form.resumeName || "resume.pdf"}
+                className="font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-foreground"
+                data-testid="link-view-resume"
+              >
+                {form.resumeName || "resume.pdf"}
+              </a>
+              <button
+                type="button"
+                onClick={() =>
+                  setForm((current) => ({
+                    ...current,
+                    resume: "",
+                    resumeName: "",
+                  }))
+                }
+                className="font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive"
+                data-testid="button-remove-resume"
+              >
+                Remove
+              </button>
+            </>
+          )}
+        </div>
+        {resumeError && (
+          <p className="mt-2 font-mono text-[11px] text-destructive">
+            {resumeError}
+          </p>
+        )}
       </div>
       <div className="grid gap-5 md:grid-cols-2">
         {fields.map(({ key, label, long }) => (
@@ -1288,12 +1586,12 @@ function AdminArea({
   return (
     <div className="grain min-h-[100dvh] bg-background">
       <header className="border-b border-foreground/15 bg-foreground text-background">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 md:px-10">
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-5 md:px-10">
           <div
             className="flex items-center gap-3"
             data-testid="link-admin-home"
           >
-            <span className="flex h-8 w-8 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center bg-primary font-mono text-sm font-bold text-primary-foreground">
               AV
             </span>
             <span className="font-mono text-[11px] uppercase tracking-[.2em]">
@@ -1356,14 +1654,14 @@ function AdminArea({
         </div>
         <div className="mt-10 grid gap-10 lg:grid-cols-[220px_1fr]">
           <aside className="lg:border-r lg:border-foreground/15 lg:pr-6">
-            <div className="flex gap-2 overflow-auto lg:block lg:space-y-1">
+            <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:px-0 lg:pb-0">
               <button
                 type="button"
                 onClick={() => {
                   setSection("profile");
                   setEditing(null);
                 }}
-                className={`flex w-full shrink-0 items-center justify-between px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] ${section === "profile" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+                className={`flex shrink-0 items-center justify-between gap-6 whitespace-nowrap px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] lg:w-full ${section === "profile" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
                 data-testid="button-tab-profile"
               >
                 <span>Profile</span>
@@ -1376,7 +1674,7 @@ function AdminArea({
                     setSection(key);
                     setEditing(null);
                   }}
-                  className={`flex w-full shrink-0 items-center justify-between px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] ${section === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`flex shrink-0 items-center justify-between gap-6 whitespace-nowrap px-3 py-3 text-left font-mono text-[11px] uppercase tracking-[.13em] lg:w-full ${section === key ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted"}`}
                   data-testid={`button-tab-${key}`}
                 >
                   <span>{resourceMeta[key].label}</span>
@@ -1389,7 +1687,7 @@ function AdminArea({
             <button
               type="button"
               onClick={resetAll}
-              className="mt-10 flex w-full items-center gap-2 border-t border-foreground/15 px-3 py-4 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive"
+              className="mt-6 flex w-full items-center gap-2 border-t border-foreground/15 px-3 py-4 font-mono text-[10px] uppercase tracking-[.13em] text-muted-foreground hover:text-destructive lg:mt-10"
               data-testid="button-reset-content"
             >
               <RotateCcw size={13} /> Reset all content
@@ -1436,6 +1734,7 @@ function AdminArea({
                 </div>
                 {editing && (
                   <AdminForm
+                    key={editing.id}
                     resource={resource}
                     value={editing}
                     onSave={saveItem}
