@@ -28,6 +28,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await ensureSchema();
 
+    // This API always reads live from Postgres and must never be served
+    // from a cache — the browser, a CDN, or Vercel's edge network. Without
+    // this, a save can succeed (200 from PUT, row updated in the DB) while
+    // the very next GET still returns a stale cached copy (browsers were
+    // seeing 304 Not Modified on /api/portfolio right after a fresh save).
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (req.method === 'GET') {
       const result = await sql`SELECT data FROM portfolio_content WHERE id = 1;`;
       return res.status(200).json(result.rows[0]?.data ?? {});

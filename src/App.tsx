@@ -242,6 +242,7 @@ function usePortfolioQuery() {
     queryFn: async () => {
       const response = await fetch("/api/portfolio", {
         credentials: "include",
+        cache: "no-store",
       });
       if (!response.ok) throw new Error("Failed to load portfolio content");
       const json = await response.json();
