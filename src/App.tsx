@@ -1644,7 +1644,7 @@ function AdminArea({
             <p className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">
               Signed in / changes save to the database
             </p>
-            <h1 className="display-title mt-5 text-6xl font-semibold leading-[.85] tracking-[-.07em] md:text-8xl">
+            <h1 className="display-title mt-5 max-w-full text-[clamp(2.5rem,11vw,6rem)] font-semibold leading-[.88] tracking-[-.04em] break-words">
               Shape the
               <br />
               <span className="text-accent">story.</span>
