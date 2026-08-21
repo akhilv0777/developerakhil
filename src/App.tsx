@@ -315,25 +315,25 @@ function Hero({ profile }: { profile: Profile }) {
           data-mf-parallax
           data-mf-parallax-speed="0.3"
           data-mf-parallax-speed-mobile="0"
-          className="reveal reveal-delay-3 relative hidden h-[300px] border-l border-foreground/20 pl-7 lg:block"
+          className="reveal reveal-delay-3 relative mt-8 h-[300px] border-foreground/20 sm:h-[360px] sm:border-l sm:pl-7 lg:mt-0"
         >
           {profile.image && (
             <img
               src={profile.image}
               alt={profile.name}
-              className="mb-6 h-28 w-28 rounded-full object-cover"
+              className="mb-7 h-48 w-48 rounded-full border-4 border-background object-cover shadow-[12px_12px_0_hsl(var(--primary))] sm:h-56 sm:w-56"
               data-testid="img-profile-photo"
             />
           )}
-          <div className="absolute left-7 top-0 h-2 w-2 -translate-x-1/2 bg-primary" />
-          <p className="font-mono text-[11px] uppercase leading-[1.8] text-muted-foreground">
+          <div className="absolute left-0 top-0 h-2 w-2 bg-primary sm:left-7 sm:-translate-x-1/2" />
+          <p className="font-mono text-[11px] uppercase leading-[1.8] text-muted-foreground sm:mt-0">
             Based in
             <br />
             <strong className="font-normal text-foreground">
               {profile.location}
             </strong>
           </p>
-          <div className="absolute bottom-0 left-7 right-0">
+          <div className="absolute bottom-0 left-0 right-0 sm:left-7">
             <div className="mb-4 h-px w-full bg-foreground/20" />
             <p className="font-mono text-[11px] leading-[1.8] text-muted-foreground">
               I care about the line between a good idea and the moment someone
@@ -696,7 +696,7 @@ function ContactForm({ email }: { email: string }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-10 grid gap-4 border-t border-foreground/20 pt-8 sm:grid-cols-2"
+      className="mt-12 grid gap-5 border border-foreground/20 bg-foreground/[.06] p-5 pt-6 sm:grid-cols-2 sm:p-7"
       data-testid="form-contact"
     >
       <label className="sm:col-span-1">
@@ -707,7 +707,7 @@ function ContactForm({ email }: { email: string }) {
           required
           value={form.name}
           onChange={(event) => setForm({ ...form, name: event.target.value })}
-          className="w-full border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          className="w-full border border-foreground/25 bg-background/70 px-4 py-4 text-sm outline-none transition-colors placeholder:text-foreground/40 focus:border-foreground focus:bg-background"
           data-testid="input-contact-name"
         />
       </label>
@@ -720,7 +720,7 @@ function ContactForm({ email }: { email: string }) {
           type="email"
           value={form.email}
           onChange={(event) => setForm({ ...form, email: event.target.value })}
-          className="w-full border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          className="w-full border border-foreground/25 bg-background/70 px-4 py-4 text-sm outline-none transition-colors placeholder:text-foreground/40 focus:border-foreground focus:bg-background"
           data-testid="input-contact-email"
         />
       </label>
@@ -730,19 +730,19 @@ function ContactForm({ email }: { email: string }) {
         </span>
         <textarea
           required
-          rows={4}
+          rows={5}
           value={form.message}
           onChange={(event) =>
             setForm({ ...form, message: event.target.value })
           }
-          className="w-full resize-y border border-foreground/25 bg-background/40 px-3 py-3 text-sm outline-none focus:border-foreground"
+          className="w-full resize-y border border-foreground/25 bg-background/70 px-4 py-4 text-sm outline-none transition-colors placeholder:text-foreground/40 focus:border-foreground focus:bg-background"
           data-testid="input-contact-message"
         />
       </label>
-      <div className="flex items-center gap-4 sm:col-span-2">
+      <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center">
         <button
           type="submit"
-          className="inline-flex items-center gap-2 bg-foreground px-5 py-3 font-mono text-[10px] uppercase tracking-[.14em] text-background transition-transform hover:-translate-y-0.5"
+          className="inline-flex items-center gap-3 bg-foreground px-6 py-4 font-mono text-[10px] uppercase tracking-[.14em] text-background transition-all hover:-translate-y-0.5 hover:bg-primary hover:text-foreground"
           data-testid="button-send-message"
         >
           Send message <ArrowUpRight className="h-4 w-4" />
@@ -766,9 +766,9 @@ function Contact({ profile }: { profile: Profile }) {
     >
       <div className="mx-auto max-w-[1440px]">
         <SectionLabel number="07">Your turn</SectionLabel>
-        <div className="grid gap-12 md:grid-cols-[1.4fr_.6fr]">
+        <div className="grid gap-14 md:grid-cols-[1.25fr_.75fr] md:gap-16">
           <div data-mf-animation="fade-up">
-            <h2 className="display-title max-w-5xl text-[clamp(4rem,11vw,10rem)] font-semibold leading-[.78] tracking-[-.08em]">
+            <h2 className="display-title max-w-5xl text-[clamp(3.6rem,11vw,10rem)] font-semibold leading-[.8] tracking-[-.08em]">
               {titleLines.map((line, index) => (
                 <span key={index}>
                   {line}
