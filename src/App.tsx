@@ -53,6 +53,7 @@ type Project = {
   description: string;
   tags: string;
   accent: string;
+  image?: string; // Image field added for projects
 };
 type Education = {
   id: string;
@@ -490,32 +491,43 @@ function Timeline({ data }: { data: PortfolioData }) {
           data-mf-stagger-gap="100"
           className="grid gap-6"
         >
-          {data.education.map((item) => (
-            <div
-              className="group relative flex gap-6 rounded-3xl bg-card p-8 shadow-[var(--shadow-soft)] border border-card-border transition-all hover:shadow-xl hover:-translate-y-1"
-              key={item.id}
-            >
-              <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <span className="font-mono text-[10px] font-bold">
-                  {item.period.split("-")[0] || item.period}
-                </span>
+          {data.education.map((item) => {
+            const periodParts = item.period.split("-");
+
+            return (
+              <div
+                className="group relative flex gap-6 rounded-3xl bg-card p-8 shadow-[var(--shadow-soft)] border border-card-border transition-all hover:shadow-xl hover:-translate-y-1"
+                key={item.id}
+              >
+                <div className="hidden sm:flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-full bg-primary/10 text-primary p-2 text-center">
+                  <span className="font-mono text-[10px] font-bold leading-tight flex flex-col whitespace-pre-line">
+                    {periodParts.length > 1 ? (
+                      <>
+                        {periodParts[0].trim()} —<br />
+                        {periodParts[1].trim()}
+                      </>
+                    ) : (
+                      item.period
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[.15em] text-accent sm:hidden">
+                    {item.period}
+                  </p>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {item.degree}
+                  </h3>
+                  <p className="mt-2 font-mono text-[12px] font-medium text-primary">
+                    {item.institution}
+                  </p>
+                  <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                    {item.detail}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[.15em] text-accent sm:hidden">
-                  {item.period}
-                </p>
-                <h3 className="text-xl font-semibold text-foreground">
-                  {item.degree}
-                </h3>
-                <p className="mt-2 font-mono text-[12px] font-medium text-primary">
-                  {item.institution}
-                </p>
-                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                  {item.detail}
-                </p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -633,14 +645,28 @@ function Work({ data }: { data: PortfolioData }) {
             className="group grid gap-8 rounded-[2.5rem] bg-card p-8 md:p-10 shadow-[var(--shadow-soft)] border border-card-border transition-all hover:shadow-2xl hover:-translate-y-2 md:grid-cols-[1fr_1.2fr] items-center"
           >
             <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-3xl bg-secondary">
-              <div
-                className={`absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center ${project.accent === "lime" ? "bg-green-100" : project.accent === "coral" ? "bg-red-100" : "bg-blue-100"}`}
-              >
-                <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-white/20 blur-3xl" />
-                <div className="absolute bottom-6 left-6 inline-flex rounded-full bg-white/60 backdrop-blur-md px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground">
-                  {project.tags}
+              {project.image ? (
+                <>
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/10 transition-colors duration-700 group-hover:bg-transparent" />
+                  <div className="absolute bottom-6 left-6 inline-flex rounded-full bg-background/90 backdrop-blur-md px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground z-10 shadow-sm">
+                    {project.tags}
+                  </div>
+                </>
+              ) : (
+                <div
+                  className={`absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center ${project.accent === "lime" ? "bg-green-100" : project.accent === "coral" ? "bg-red-100" : "bg-blue-100"}`}
+                >
+                  <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-white/20 blur-3xl" />
+                  <div className="absolute bottom-6 left-6 inline-flex rounded-full bg-white/80 backdrop-blur-md px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground shadow-sm">
+                    {project.tags}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex flex-col justify-center px-4">
@@ -1097,6 +1123,7 @@ const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
       description: "",
       tags: "",
       accent: "lime",
+      image: "",
     } as Project;
   if (resource === "education")
     return {
@@ -1132,6 +1159,36 @@ const itemSubtitle = (
   return "";
 };
 
+function fileToResizedDataUrl(file: File, maxDimension = 480): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that file."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () =>
+        reject(new Error("That file doesn’t look like a valid image."));
+      img.onload = () => {
+        const scale = Math.min(
+          1,
+          maxDimension / Math.max(img.width, img.height),
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d");
+        if (!ctx)
+          return reject(
+            new Error("Image processing is not supported in this browser."),
+          );
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function AdminForm({
   resource,
   value,
@@ -1153,7 +1210,15 @@ function AdminForm({
   const fields: Record<Resource, string[]> = {
     stats: ["value", "label"],
     services: ["number", "title", "description"],
-    projects: ["title", "category", "year", "description", "tags", "accent"],
+    projects: [
+      "title",
+      "category",
+      "year",
+      "description",
+      "tags",
+      "accent",
+      "image",
+    ],
     education: ["degree", "institution", "period", "detail"],
     experience: ["role", "company", "period", "detail"],
     testimonials: ["quote", "name", "role"],
@@ -1167,7 +1232,7 @@ function AdminForm({
     category: "Category",
     year: "Year",
     tags: "Tags",
-    accent: "Color treatment",
+    accent: "Color treatment Fallback",
     degree: "Degree",
     institution: "Institution",
     period: "Period",
@@ -1176,6 +1241,23 @@ function AdminForm({
     company: "Company",
     quote: "Quote",
     name: "Name",
+    image: "Project Image (Optional)",
+  };
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    field: string,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const dataUrl = await fileToResizedDataUrl(file);
+      setForm((prev) => ({ ...prev, [field]: dataUrl }));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
@@ -1191,7 +1273,10 @@ function AdminForm({
           <label
             key={field}
             className={
-              field === "description" || field === "detail" || field === "quote"
+              field === "description" ||
+              field === "detail" ||
+              field === "quote" ||
+              field === "image"
                 ? "md:col-span-2"
                 : ""
             }
@@ -1199,7 +1284,41 @@ function AdminForm({
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {labels[field]}
             </span>
-            {field === "accent" ? (
+            {field === "image" ? (
+              <div className="flex items-center gap-4 rounded-xl border border-border bg-secondary/50 p-4">
+                {form[field] ? (
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={form[field]}
+                      alt="Preview"
+                      className="h-16 w-16 rounded-lg object-cover shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({ ...prev, [field]: "" }))
+                      }
+                      className="font-mono text-[10px] font-bold text-destructive uppercase tracking-wider hover:underline"
+                    >
+                      Remove Image
+                    </button>
+                  </div>
+                ) : (
+                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                    No image uploaded. (Will show color fallback)
+                  </span>
+                )}
+                <label className="ml-auto inline-flex cursor-pointer items-center justify-center rounded-full bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageUpload(e, field)}
+                    className="hidden"
+                  />
+                  {form[field] ? "Replace Image" : "Upload Image"}
+                </label>
+              </div>
+            ) : field === "accent" ? (
               <select
                 value={form[field] || ""}
                 onChange={(event) =>
@@ -1253,36 +1372,6 @@ function AdminForm({
       </div>
     </form>
   );
-}
-
-function fileToResizedDataUrl(file: File, maxDimension = 480): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Could not read that file."));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () =>
-        reject(new Error("That file doesn’t look like a valid image."));
-      img.onload = () => {
-        const scale = Math.min(
-          1,
-          maxDimension / Math.max(img.width, img.height),
-        );
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext("2d");
-        if (!ctx)
-          return reject(
-            new Error("Image processing is not supported in this browser."),
-          );
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 function ProfileEditor({

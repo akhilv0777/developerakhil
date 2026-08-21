@@ -75,7 +75,7 @@ export const seedPortfolioData = {
   profile: {
     name: "Akhilesh Vishwakarma",
     tagline: "Full-stack developer / digital craftsman",
-    location: "Mumbai, India",
+    location: "Lucknow, India",
     bio1: "I’m Akhilesh — a developer who likes products with a point of view.",
     bio2: "For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.",
     bio3: "I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.",
