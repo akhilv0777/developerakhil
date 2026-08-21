@@ -1200,54 +1200,27 @@ function AdminForm({
   onSave: (value: PortfolioData[Resource][number]) => void;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState<Record<string, string>>(
-    () => ({ ...value }) as unknown as Record<string, string>,
-  );
-  useEffect(() => {
-    setForm({ ...value } as unknown as Record<string, string>);
-  }, [value]);
-
+  const [form, setForm] = useState<Record<string, string>>(() => ({ ...value }) as unknown as Record<string, string>);
+  useEffect(() => { setForm({ ...value } as unknown as Record<string, string>); }, [value]);
+  
   const fields: Record<Resource, string[]> = {
     stats: ["value", "label"],
     services: ["number", "title", "description"],
-    projects: [
-      "title",
-      "category",
-      "year",
-      "description",
-      "tags",
-      "accent",
-      "image",
-    ],
+    projects: ["title", "category", "year", "description", "tags", "accent", "image"],
     education: ["degree", "institution", "period", "detail"],
     experience: ["role", "company", "period", "detail"],
     testimonials: ["quote", "name", "role"],
   };
   const labels: Record<string, string> = {
-    value: "Value (e.g. 06, 100+, ∞)",
-    label: "Label (e.g. years making)",
-    number: "Index",
-    title: "Title",
-    description: "Description",
-    category: "Category",
-    year: "Year",
-    tags: "Tags",
-    accent: "Color treatment Fallback",
-    degree: "Degree",
-    institution: "Institution",
-    period: "Period",
-    detail: "Detail",
-    role: "Role",
-    company: "Company",
-    quote: "Quote",
-    name: "Name",
-    image: "Project Image (Optional)",
+    value: "Value (e.g. 06, 100+, ∞)", label: "Label (e.g. years making)",
+    number: "Index", title: "Title", description: "Description",
+    category: "Category", year: "Year", tags: "Tags", accent: "Color treatment Fallback",
+    degree: "Degree", institution: "Institution", period: "Period",
+    detail: "Detail", role: "Role", company: "Company",
+    quote: "Quote", name: "Name", image: "Project Image (Optional)",
   };
 
-  const handleImageUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    field: string,
-  ) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>, field: string) => {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
@@ -1259,96 +1232,49 @@ function AdminForm({
       event.target.value = "";
     }
   };
-
+  
   return (
     <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave({ ...value, ...form } as PortfolioData[Resource][number]);
-      }}
+      onSubmit={(event) => { event.preventDefault(); onSave({ ...value, ...form } as PortfolioData[Resource][number]); }}
       className="mt-6 rounded-3xl border border-card-border bg-card p-6 md:p-8 shadow-md"
     >
       <div className="grid gap-6 md:grid-cols-2">
         {fields[resource].map((field) => (
-          <label
-            key={field}
-            className={
-              field === "description" ||
-              field === "detail" ||
-              field === "quote" ||
-              field === "image"
-                ? "md:col-span-2"
-                : ""
-            }
-          >
-            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {labels[field]}
-            </span>
+          <label key={field} className={field === "description" || field === "detail" || field === "quote" || field === "image" ? "md:col-span-2" : ""}>
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{labels[field]}</span>
             {field === "image" ? (
               <div className="flex items-center gap-4 rounded-xl border border-border bg-secondary/50 p-4">
-                {form[field] ? (
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={form[field]}
-                      alt="Preview"
-                      className="h-16 w-16 rounded-lg object-cover shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({ ...prev, [field]: "" }))
-                      }
-                      className="font-mono text-[10px] font-bold text-destructive uppercase tracking-wider hover:underline"
-                    >
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                    No image uploaded. (Will show color fallback)
-                  </span>
-                )}
-                <label className="ml-auto inline-flex cursor-pointer items-center justify-center rounded-full bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e, field)}
-                    className="hidden"
-                  />
-                  {form[field] ? "Replace Image" : "Upload Image"}
-                </label>
+                 {form[field] ? (
+                   <div className="flex items-center gap-4">
+                     <img src={form[field]} alt="Preview" className="h-16 w-16 rounded-lg object-cover shadow-sm" />
+                     <button type="button" onClick={() => setForm(prev => ({ ...prev, [field]: "" }))} className="font-mono text-[10px] font-bold text-destructive uppercase tracking-wider hover:underline">Remove Image</button>
+                   </div>
+                 ) : (
+                   <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">No image uploaded. (Will show color fallback)</span>
+                 )}
+                 <label className="ml-auto inline-flex cursor-pointer items-center justify-center rounded-full bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors">
+                   <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, field)} className="hidden" />
+                   {form[field] ? "Replace Image" : "Upload Image"}
+                 </label>
               </div>
             ) : field === "accent" ? (
               <select
                 value={form[field] || ""}
-                onChange={(event) =>
-                  setForm({ ...form, [field]: event.target.value })
-                }
+                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
                 className="w-full rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
               >
-                <option value="lime">Lime</option>
-                <option value="coral">Coral</option>
-                <option value="blue">Blue</option>
+                <option value="lime">Lime</option><option value="coral">Coral</option><option value="blue">Blue</option>
               </select>
-            ) : field === "description" ||
-              field === "detail" ||
-              field === "quote" ? (
+            ) : field === "description" || field === "detail" || field === "quote" ? (
               <textarea
-                required
-                value={form[field] || ""}
-                rows={4}
-                onChange={(event) =>
-                  setForm({ ...form, [field]: event.target.value })
-                }
+                required value={form[field] || ""} rows={4}
+                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
                 className="w-full resize-y rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
               />
             ) : (
               <input
-                required
-                value={form[field] || ""}
-                onChange={(event) =>
-                  setForm({ ...form, [field]: event.target.value })
-                }
+                required value={form[field] || ""}
+                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
                 className="w-full rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
               />
             )}
@@ -1356,17 +1282,10 @@ function AdminForm({
         ))}
       </div>
       <div className="mt-8 flex gap-4">
-        <button
-          type="submit"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all"
-        >
+        <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all">
           <Save size={14} /> Save {resourceMeta[resource].singular}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full border border-border bg-card px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider hover:bg-secondary transition-all"
-        >
+        <button type="button" onClick={onCancel} className="rounded-full border border-border bg-card px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider hover:bg-secondary transition-all">
           Cancel
         </button>
       </div>
