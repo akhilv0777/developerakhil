@@ -1206,7 +1206,6 @@ function AdminForm({
   const fields: Record<Resource, string[]> = {
     stats: ["value", "label"],
     services: ["number", "title", "description"],
-    // Yay! We added "image" to the projects list here so it actually shows up! ✨
     projects: ["title", "category", "year", "description", "tags", "accent", "image"],
     education: ["degree", "institution", "period", "detail"],
     experience: ["role", "company", "period", "detail"],
@@ -1237,23 +1236,23 @@ function AdminForm({
   return (
     <form
       onSubmit={(event) => { event.preventDefault(); onSave({ ...value, ...form } as PortfolioData[Resource][number]); }}
-      className="mt-6 rounded-3xl border border-card-border bg-card p-6 md:p-8 shadow-md"
+      className="mt-6 rounded-3xl border border-card-border bg-card p-5 md:p-8 shadow-md"
     >
       <div className="grid gap-6 md:grid-cols-2">
         {fields[resource].map((field) => (
           <label key={field} className={field === "description" || field === "detail" || field === "quote" || field === "image" ? "md:col-span-2" : ""}>
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{labels[field]}</span>
             {field === "image" ? (
-              <div className="flex items-center gap-4 rounded-xl border border-border bg-secondary/50 p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-border bg-secondary/50 p-4">
                  {form[field] ? (
-                   <div className="flex items-center gap-4">
-                     <img src={form[field]} alt="Preview" className="h-16 w-16 rounded-lg object-cover shadow-sm" />
-                     <button type="button" onClick={() => setForm(prev => ({ ...prev, [field]: "" }))} className="font-mono text-[10px] font-bold text-destructive uppercase tracking-wider hover:underline">Remove Image</button>
+                   <div className="flex items-center gap-4 w-full sm:w-auto">
+                     <img src={form[field]} alt="Preview" className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-sm" />
+                     <button type="button" onClick={() => setForm(prev => ({ ...prev, [field]: "" }))} className="font-mono text-[10px] font-bold text-destructive uppercase tracking-wider hover:underline whitespace-nowrap">Remove Image</button>
                    </div>
                  ) : (
-                   <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">No image uploaded. (Will show color fallback)</span>
+                   <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">No image uploaded.</span>
                  )}
-                 <label className="ml-auto inline-flex cursor-pointer items-center justify-center rounded-full bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors">
+                 <label className="sm:ml-auto inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-full bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, field)} className="hidden" />
                    {form[field] ? "Replace Image" : "Upload Image"}
                  </label>
@@ -1282,15 +1281,293 @@ function AdminForm({
           </label>
         ))}
       </div>
-      <div className="mt-8 flex gap-4">
-        <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div className="mt-8 flex flex-col sm:flex-row gap-4">
+        <button type="submit" className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full bg-primary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all">
           <Save size={14} /> Save {resourceMeta[resource].singular}
         </button>
-        <button type="button" onClick={onCancel} className="rounded-full border border-border bg-card px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider hover:bg-secondary transition-all">
+        <button type="button" onClick={onCancel} className="rounded-full w-full sm:w-auto border border-border bg-card px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider hover:bg-secondary transition-all">
           Cancel
         </button>
       </div>
     </form>
+  );
+}
+
+function ProfileEditor({ profile, onSave, saving }: { profile: Profile; onSave: (value: Profile) => void; saving: boolean; }) {
+  const [form, setForm] = useState<Profile>(profile);
+  const [imageError, setImageError] = useState<string | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  useEffect(() => { setForm(profile); }, [profile]);
+  
+  const fields: { key: keyof Profile; label: string; long?: boolean }[] = [
+    { key: "name", label: "Name" }, { key: "email", label: "Email" },
+    { key: "tagline", label: "Tagline" }, { key: "location", label: "Location" },
+    { key: "github", label: "GitHub (e.g. github.com/you)" },
+    { key: "bio1", label: "Headline bio", long: true },
+    { key: "bio2", label: "About paragraph 1", long: true },
+    { key: "bio3", label: "About paragraph 2", long: true },
+    { key: "contactTitle", label: "Contact heading", long: true },
+    { key: "contactNote", label: "Contact note" },
+  ];
+
+  const handleImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; if (!file) return;
+    setImageError(null);
+    try { const dataUrl = await fileToResizedDataUrl(file); setForm((current) => ({ ...current, image: dataUrl })); }
+    catch (error) { setImageError((error as Error).message); } finally { event.target.value = ""; }
+  };
+
+  const handleResume = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]; if (!file) return;
+    setResumeError(null);
+    if (file.size > 2 * 1024 * 1024) { setResumeError("That file is too large — please keep it under 2MB."); event.target.value = ""; return; }
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader(); reader.onerror = () => reject(new Error("Could not read that file."));
+        reader.onload = () => resolve(reader.result as string); reader.readAsDataURL(file);
+      });
+      setForm((current) => ({ ...current, resume: dataUrl, resumeName: file.name }));
+    } catch (error) { setResumeError((error as Error).message); } finally { event.target.value = ""; }
+  };
+
+  return (
+    <form onSubmit={(event) => { event.preventDefault(); onSave(form); }} className="mt-6 rounded-3xl border border-card-border bg-card p-5 md:p-10 shadow-md">
+      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+        <div className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-secondary bg-secondary">
+          {form.image ? <img src={form.image} alt="Profile" className="h-full w-full object-cover" /> : <span className="font-mono text-[10px] uppercase text-muted-foreground">No photo</span>}
+        </div>
+        <div className="flex flex-col gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-full bg-secondary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider hover:bg-secondary/70 transition-colors whitespace-nowrap">
+              <input type="file" accept="image/*" onChange={handleImage} className="hidden" /> Upload new photo
+            </label>
+            {form.image && (
+              <button type="button" onClick={() => setForm((current) => ({ ...current, image: "" }))} className="w-full sm:w-auto rounded-full bg-red-50 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-red-600 hover:bg-red-100 transition-colors whitespace-nowrap">
+                Remove
+              </button>
+            )}
+          </div>
+          {imageError && <p className="font-mono text-[11px] text-destructive">{imageError}</p>}
+        </div>
+      </div>
+      
+      <div className="mb-10 rounded-2xl bg-secondary/30 p-5 md:p-6 border border-border min-w-0">
+        <span className="mb-4 block font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">Résumé Document</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-full bg-primary/10 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+            <input type="file" accept=".pdf,.doc,.docx" onChange={handleResume} className="hidden" />
+            {form.resume ? "Replace file" : "Upload file"}
+          </label>
+          {form.resume && (
+            <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+              <span className="font-mono text-[12px] font-medium text-foreground truncate">{form.resumeName || "resume.pdf"}</span>
+              <button type="button" onClick={() => setForm((current) => ({ ...current, resume: "", resumeName: "" }))} className="shrink-0 font-mono text-[11px] font-bold uppercase text-destructive hover:underline">
+                Remove
+              </button>
+            </div>
+          )}
+        </div>
+        {resumeError && <p className="mt-3 font-mono text-[11px] text-destructive">{resumeError}</p>}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {fields.map(({ key, label, long }) => (
+          <label key={key} className={long ? "md:col-span-2" : ""}>
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+            {long ? (
+              <textarea
+                required value={form[key]} rows={3}
+                onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                className="w-full resize-y rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+              />
+            ) : (
+              <input
+                required value={form[key]}
+                onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                className="w-full rounded-xl border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+              />
+            )}
+          </label>
+        ))}
+      </div>
+      <div className="mt-8 flex gap-3">
+        <button type="submit" disabled={saving} className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 whitespace-nowrap">
+          <Save size={16} /> Save profile
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function AdminArea({ data, username }: { data: PortfolioData; username?: string; }) {
+  const [section, setSection] = useState<"profile" | Resource>("profile");
+  const [editing, setEditing] = useState<PortfolioData[Resource][number] | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const saveMutation = useSavePortfolioMutation();
+  const resetMutation = useResetPortfolioMutation();
+  const resource = section === "profile" ? null : section;
+  const items = resource ? (data[resource] ?? []) : [];
+
+  const persist = (next: PortfolioData, onDone?: () => void) => {
+    saveMutation.mutate(next, {
+      onSuccess: () => {
+        setSaved(true); window.setTimeout(() => setSaved(false), 1800);
+        toast({ title: "Saved ✨", description: "Your beautiful changes are live!" });
+        onDone?.();
+      },
+      onError: (error) => { toast({ variant: "destructive", title: "Save failed", description: (error as Error)?.message || "Something went wrong." }); },
+    });
+  };
+
+  const saveProfile = (value: Profile) => persist({ ...data, profile: value });
+  const saveItem = (value: PortfolioData[Resource][number]) => {
+    if (!resource) return;
+    const next = items.some((item) => item.id === value.id) ? items.map((item) => (item.id === value.id ? value : item)) : [...items, value];
+    persist({ ...data, [resource]: next }, () => setEditing(null));
+  };
+  const deleteItem = (id: string) => {
+    if (!resource) return;
+    if (!window.confirm("Delete this item? This cannot be undone.")) return;
+    persist({ ...data, [resource]: items.filter((item) => item.id !== id) });
+  };
+  const resetAll = () => {
+    if (!window.confirm("Reset all content to the original portfolio?")) return;
+    resetMutation.mutate(undefined, {
+      onSuccess: () => { toast({ title: "Reset complete", description: "Fresh default content is live." }); },
+      onError: (error) => { toast({ variant: "destructive", title: "Reset failed", description: (error as Error)?.message }); },
+    });
+  };
+  const logout = async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+  };
+
+  return (
+    <div className="min-h-[100dvh] overflow-x-hidden bg-background flex flex-col">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-md shadow-sm">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between min-w-0">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-primary-foreground shadow-md">
+              AV
+            </span>
+            <span className="font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-foreground truncate">
+              Console {username ? `· ${username}` : ""}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 overflow-x-auto pb-2 sm:pb-0 [scrollbar-width:none]">
+            <button onClick={() => setLocation("/")} className="whitespace-nowrap shrink-0 flex items-center gap-2 rounded-full bg-secondary px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:bg-primary hover:text-primary-foreground transition-colors">
+              View site <ExternalLink size={14} />
+            </button>
+            <button onClick={logout} className="whitespace-nowrap shrink-0 flex items-center gap-2 rounded-full bg-red-50 px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wider text-red-600 hover:bg-red-100 transition-colors">
+              Log out <LogOut size={14} />
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      <main className="mx-auto w-full max-w-[1440px] px-4 py-8 md:px-10 md:py-16 min-w-0">
+        <div className="mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end rounded-3xl bg-primary/5 p-6 md:p-12 border border-primary/10">
+          <div className="min-w-0">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary/20 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary mb-6 whitespace-nowrap">
+              <span className="h-2 w-2 rounded-full bg-primary animate-pulse" /> Live Editing
+            </span>
+            <h1 className="text-[clamp(2rem,6vw,5rem)] font-bold leading-tight tracking-tight text-foreground break-words">
+              Shape the <span className="text-primary">story.</span>
+            </h1>
+          </div>
+          <div className="max-w-xs text-sm leading-[1.7] text-muted-foreground font-medium shrink-0">
+            <p>Edits save straight to the live database and appear on the public site immediately.</p>
+            {saveMutation.isPending && <p className="mt-3 font-mono text-[10px] uppercase text-primary">Saving your magic…</p>}
+            {saved && <p className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase text-green-600"><Check size={14} /> Saved beautiful</p>}
+          </div>
+        </div>
+        
+        <div className="grid gap-10 lg:grid-cols-[240px_1fr] min-w-0">
+          <aside className="min-w-0 lg:border-r lg:border-border lg:pr-8">
+            <div className="-mx-4 px-4 flex gap-3 overflow-x-auto pb-4 snap-x lg:mx-0 lg:px-0 lg:flex-col lg:gap-2 lg:overflow-visible lg:pb-0 [scrollbar-width:none]">
+              <button
+                onClick={() => { setSection("profile"); setEditing(null); }}
+                className={`whitespace-nowrap flex w-auto sm:w-full shrink-0 snap-start items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${section === "profile" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-secondary"}`}
+              >
+                Profile
+              </button>
+              {(Object.keys(resourceMeta) as Resource[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => { setSection(key); setEditing(null); }}
+                  className={`whitespace-nowrap flex w-auto sm:w-full shrink-0 snap-start items-center justify-between gap-4 rounded-2xl px-5 py-4 text-left font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider transition-all ${section === key ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-secondary"}`}
+                >
+                  <span>{resourceMeta[key].label}</span>
+                  <span className={`inline-flex h-6 items-center justify-center rounded-full px-2 text-[9px] ${section === key ? "bg-primary-foreground/20" : "bg-card border border-border"}`}>
+                    {(data[key] ?? []).length.toString().padStart(2, "0")}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            <button
+              onClick={resetAll} disabled={resetMutation.isPending}
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-red-100 bg-red-50 px-4 py-4 font-mono text-[10px] font-bold uppercase tracking-wider text-red-600 hover:bg-red-100 transition-colors"
+            >
+              <RotateCcw size={14} /> Reset all content
+            </button>
+          </aside>
+          
+          {section === "profile" ? (
+            <section className="min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Profile Settings</h2>
+              <p className="text-sm sm:text-base text-muted-foreground mb-6">Customize your personal brand across the site.</p>
+              <ProfileEditor profile={data.profile} onSave={saveProfile} saving={saveMutation.isPending} />
+            </section>
+          ) : (
+            resource && (
+              <section className="min-w-0">
+                <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2 truncate">{resourceMeta[resource].label}</h2>
+                    <p className="text-sm sm:text-base text-muted-foreground">Manage your {resourceMeta[resource].label.toLowerCase()} collection.</p>
+                  </div>
+                  <button
+                    onClick={() => setEditing(emptyFor(resource))}
+                    className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full bg-primary px-6 py-3.5 font-mono text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all whitespace-nowrap"
+                  >
+                    <Plus size={16} /> Add {resourceMeta[resource].singular}
+                  </button>
+                </div>
+                
+                {editing && <AdminForm key={editing.id} resource={resource} value={editing} onSave={saveItem} onCancel={() => setEditing(null)} />}
+                
+                <div className="mt-8 grid gap-4">
+                  {items.map((item, index) => (
+                    <div key={item.id} className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6 rounded-2xl bg-card p-5 shadow-sm border border-card-border hover:shadow-md transition-shadow min-w-0">
+                      <div className="flex items-start sm:items-center gap-4 min-w-0">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-[10px] font-bold text-primary">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="text-lg font-bold text-foreground truncate">{itemTitle(item)}</h3>
+                          <p className="mt-1 truncate max-w-full text-sm text-muted-foreground font-medium">{itemSubtitle(item)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 self-end sm:self-auto shrink-0">
+                        <button onClick={() => setEditing(item)} className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground transition-colors">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={() => deleteItem(item.id)} className="flex h-10 w-10 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
 
