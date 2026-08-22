@@ -1081,7 +1081,7 @@ function SettingsEditor() {
 
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            From address 
+            From address
           </span>
           <input
             value={form.contactFromEmail}
