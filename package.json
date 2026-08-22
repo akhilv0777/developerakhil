@@ -14,7 +14,9 @@
     "@slicemypage/motionflow": "^1.0.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.23.0"
+    "nodemailer": "^9.0.5",
+    "pg": "^8.23.0",
+    "resend": "^6.22.0"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -51,6 +53,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "latest",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.23.1",
     "@types/react": "latest",
     "@types/react-dom": "latest",

@@ -70,24 +70,25 @@ export async function sql(
   return { rows: result.rows, rowCount: result.rowCount ?? 0 };
 }
 
-
+// The default content the site ships with. Used only to seed the
+// database the very first time /api/portfolio is called and the
+// table is empty — after that, everything lives in Postgres.
 export const seedPortfolioData = {
   profile: {
     name: "Akhilesh Vishwakarma",
     tagline: "Full-stack developer / digital craftsman",
-    location: "Lucknow, India",
+    location: "Mumbai, India",
     bio1: "I’m Akhilesh — a developer who likes products with a point of view.",
     bio2: "For the past 6 years, I’ve moved between interface, API, database, and the conversations that connect them. The best work happens when those boundaries get blurry.",
     bio3: "I work with people who have something worth making and need a partner who can bring both technical rigor and a human eye to the room.",
-    email: "akhilv0777@gmail.com",
-    github: "github.com/akhilv0777",
+    email: "hello@akhilesh.dev",
+    github: "github.com/akhilesh-v",
     image: "",
     resume: "",
     resumeName: "",
     contactTitle: "Have a\ngood one?",
     contactNote: "Currently accepting a few good problems.",
   },
-
   stats: [
     { id: "stat-1", value: "06", label: "years making" },
     { id: "stat-2", value: "38", label: "things shipped" },
@@ -203,12 +204,32 @@ export const seedPortfolioData = {
   ],
 };
 
+export type ContactSettings = {
+  gmailAppPassword: string;
+  contactToEmail: string;
+  contactFromEmail: string;
+};
+
+const defaultContactSettings: ContactSettings = {
+  gmailAppPassword: "",
+  contactToEmail: "",
+  contactFromEmail: "",
+};
+
+export type ContactMessage = {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+};
+
 let schemaReady: Promise<void> | null = null;
 
 /**
  * Creates the tables on first use and idempotently seeds the single
- * portfolio_content row. Safe to call on every request — after the first
- * run it's just two fast existence checks.
+ * portfolio_content row. Safe to call on every request — after the
+ * first run it's just a few fast existence checks.
  */
 export function ensureSchema(): Promise<void> {
   if (!schemaReady) {
@@ -238,13 +259,100 @@ export function ensureSchema(): Promise<void> {
         `;
       }
 
+      // Contact-form settings (Resend API key + addresses). Single-row
+      // table, same pattern as portfolio_content — edited from the admin
+      // Settings tab instead of environment variables so it's changeable
+      // without a redeploy.
       await sql`
-        UPDATE portfolio_content
-        SET data = jsonb_set(data, '{stats}', ${JSON.stringify(seedPortfolioData.stats)}::jsonb, true),
-            updated_at = now()
-        WHERE id = 1 AND NOT (data ? 'stats');
+        CREATE TABLE IF NOT EXISTS contact_settings (
+          id INTEGER PRIMARY KEY DEFAULT 1,
+          data JSONB NOT NULL,
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          CONSTRAINT single_row CHECK (id = 1)
+        );
+      `;
+      const existingSettings =
+        await sql`SELECT id FROM contact_settings WHERE id = 1;`;
+      if (existingSettings.rowCount === 0) {
+        await sql`
+          INSERT INTO contact_settings (id, data)
+          VALUES (1, ${JSON.stringify(defaultContactSettings)}::jsonb);
+        `;
+      }
+
+      // Submissions from the public contact form, viewable/deletable from
+      // the admin Messages tab.
+      await sql`
+        CREATE TABLE IF NOT EXISTS contact_messages (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          email TEXT NOT NULL,
+          message TEXT NOT NULL,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
       `;
     })();
   }
   return schemaReady;
+}
+
+export async function getContactSettings(): Promise<ContactSettings> {
+  await ensureSchema();
+  const result = await sql`SELECT data FROM contact_settings WHERE id = 1;`;
+  return { ...defaultContactSettings, ...(result.rows[0]?.data ?? {}) };
+}
+
+export async function saveContactSettings(
+  settings: ContactSettings,
+): Promise<void> {
+  await ensureSchema();
+  await sql`
+    UPDATE contact_settings
+    SET data = ${JSON.stringify(settings)}::jsonb, updated_at = now()
+    WHERE id = 1;
+  `;
+}
+
+export async function insertContactMessage(input: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<ContactMessage> {
+  await ensureSchema();
+  const result = await sql`
+    INSERT INTO contact_messages (name, email, message)
+    VALUES (${input.name}, ${input.email}, ${input.message})
+    RETURNING id, name, email, message, created_at;
+  `;
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    message: row.message,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listContactMessages(): Promise<ContactMessage[]> {
+  await ensureSchema();
+  const result = await sql`
+    SELECT id, name, email, message, created_at FROM contact_messages ORDER BY created_at DESC;
+  `;
+  return result.rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    message: row.message,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function deleteContactMessages(ids: number[]): Promise<number> {
+  await ensureSchema();
+  if (ids.length === 0) return 0;
+  const result = await sql`
+    DELETE FROM contact_messages WHERE id = ANY(${ids});
+  `;
+  return result.rowCount;
 }

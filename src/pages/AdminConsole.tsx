@@ -6,7 +6,10 @@ import {
   Briefcase,
   Building2,
   Check,
+  CheckSquare,
   ChevronRight,
+  Eye,
+  EyeOff,
   ExternalLink,
   GraduationCap,
   KeyRound,
@@ -15,6 +18,8 @@ import {
   Lock,
   LogOut,
   type LucideIcon,
+  Mail,
+  MailOpen,
   Menu,
   Pencil,
   Plus,
@@ -22,13 +27,15 @@ import {
   RotateCcw,
   Save,
   Search,
+  Settings,
+  Square,
   Trash2,
   User,
   X,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { useMotionFlow } from "@/lib/motionflow";   
+import { useMotionFlow } from "@/lib/motionflow";
 import type {
   Education,
   Experience,
@@ -790,9 +797,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
       />
       <div className="relative my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl">
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-foreground">
-            Change password
-          </h3>
+          <h3 className="text-lg font-bold text-foreground">Change password</h3>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -942,6 +947,387 @@ function ProfileMenu({
   );
 }
 
+type ContactMessage = {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+};
+
+type ContactSettings = {
+  gmailAppPassword: string;
+  contactToEmail: string;
+  contactFromEmail: string;
+};
+
+function SettingsEditor() {
+  const [form, setForm] = useState<ContactSettings>({
+    gmailAppPassword: "",
+    contactToEmail: "",
+    contactFromEmail: "",
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/settings", {
+          credentials: "include",
+        });
+        if (!response.ok) throw new Error("Could not load settings.");
+        const body = await response.json();
+        if (!cancelled) setForm(body.settings);
+      } catch (err) {
+        if (!cancelled) setError((err as Error).message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Could not save settings.");
+      }
+      toast({
+        title: "Settings saved",
+        description: "The contact form will use these right away.",
+      });
+    } catch (err) {
+      setError((err as Error).message);
+      toast({
+        variant: "destructive",
+        title: "Save failed",
+        description: (err as Error).message,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground shadow-sm">
+        Loading settings…
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="rounded-xl border border-border bg-card shadow-sm p-5 md:p-8"
+    >
+      <div className="grid gap-6">
+        <label className="block">
+          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Gmail app password
+          </span>
+          <div className="relative">
+            <input
+              type={showKey ? "text" : "password"}
+              value={form.gmailAppPassword}
+              onChange={(event) =>
+                setForm({ ...form, gmailAppPassword: event.target.value })
+              }
+              placeholder="xxxxxxxxxxxxxxxxxxxx"
+              className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-11 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowKey((value) => !value)}
+              aria-label={showKey ? "Hide key" : "Show key"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Send notifications to
+          </span>
+          <input
+            type="email"
+            value={form.contactToEmail}
+            onChange={(event) =>
+              setForm({ ...form, contactToEmail: event.target.value })
+            }
+            placeholder="you@example.com"
+            className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            From address 
+          </span>
+          <input
+            value={form.contactFromEmail}
+            onChange={(event) =>
+              setForm({ ...form, contactFromEmail: event.target.value })
+            }
+            placeholder="contact@yourdomain.com"
+            className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+          />
+        </label>
+      </div>
+
+      {error && (
+        <p className="mt-4 rounded-lg bg-red-50 p-3 font-mono text-[10px] font-bold text-destructive">
+          {error}
+        </p>
+      )}
+
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 hover:shadow-md transition-all disabled:opacity-50 whitespace-nowrap"
+        >
+          <Save size={16} /> {saving ? "Saving…" : "Save settings"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function formatMessageDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function MessagesPanel() {
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/messages", { credentials: "include" });
+      if (!response.ok) throw new Error("Could not load messages.");
+      const body = await response.json();
+      setMessages(body.messages);
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Couldn't load messages",
+        description: (err as Error).message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const allSelected = messages.length > 0 && selected.size === messages.length;
+
+  const toggleOne = (id: number) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(messages.map((m) => m.id)));
+  };
+
+  const deleteIds = async (ids: number[]) => {
+    if (ids.length === 0) return;
+    const label =
+      ids.length === 1 ? "this message" : `these ${ids.length} messages`;
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+    setDeleting(true);
+    try {
+      const response = await fetch("/api/messages", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!response.ok) throw new Error("Could not delete.");
+      setMessages((current) => current.filter((m) => !ids.includes(m.id)));
+      setSelected((current) => {
+        const next = new Set(current);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      toast({
+        title:
+          ids.length === 1
+            ? "Message deleted"
+            : `${ids.length} messages deleted`,
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: (err as Error).message,
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold text-foreground">Messages</h2>
+          <p className="text-sm text-muted-foreground">
+            {messages.length} {messages.length === 1 ? "message" : "messages"}{" "}
+            from your contact form
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {selected.size > 0 && (
+            <button
+              onClick={() => deleteIds(Array.from(selected))}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-white hover:bg-red-700 transition-all disabled:opacity-50 whitespace-nowrap"
+            >
+              <Trash2 size={14} /> Delete selected ({selected.size})
+            </button>
+          )}
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary transition-all whitespace-nowrap"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="px-6 py-16 text-center text-sm text-muted-foreground">
+          Loading messages…
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-muted-foreground">
+            <MailOpen size={18} />
+          </span>
+          <p className="text-sm font-medium text-foreground">No messages yet</p>
+          <p className="max-w-xs text-xs text-muted-foreground">
+            Submissions from your site's contact form will show up here.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center gap-2 border-b border-border bg-secondary/30 px-5 py-2.5 sm:px-6">
+            <button
+              onClick={toggleAll}
+              className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              {allSelected ? <CheckSquare size={15} /> : <Square size={15} />}
+              Select all
+            </button>
+          </div>
+          <div className="divide-y divide-border">
+            {messages.map((msg) => {
+              const isOpen = expanded === msg.id;
+              return (
+                <div
+                  key={msg.id}
+                  className="group px-5 py-4 transition-colors hover:bg-secondary/20 sm:px-6"
+                >
+                  <div className="flex items-start gap-3">
+                    <button
+                      onClick={() => toggleOne(msg.id)}
+                      aria-label="Select message"
+                      className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground"
+                    >
+                      {selected.has(msg.id) ? (
+                        <CheckSquare size={16} className="text-primary" />
+                      ) : (
+                        <Square size={16} />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setExpanded(isOpen ? null : msg.id)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="font-semibold text-foreground">
+                          {msg.name}
+                        </span>
+                        <a
+                          href={`mailto:${msg.email}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="truncate text-xs text-primary hover:underline"
+                        >
+                          {msg.email}
+                        </a>
+                        <span className="ml-auto shrink-0 font-mono text-[10px] uppercase text-muted-foreground">
+                          {formatMessageDate(msg.createdAt)}
+                        </span>
+                      </div>
+                      <p
+                        className={
+                          isOpen
+                            ? "mt-2 whitespace-pre-wrap text-sm text-foreground/80"
+                            : "mt-1 truncate text-sm text-muted-foreground"
+                        }
+                      >
+                        {msg.message}
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => deleteIds([msg.id])}
+                      aria-label="Delete message"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-600 hover:text-white md:opacity-0 md:group-hover:opacity-100"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AdminArea({
   data,
   username,
@@ -949,25 +1335,52 @@ function AdminArea({
   data: PortfolioData;
   username?: string;
 }) {
-  const [section, setSection] = useState<"dashboard" | "profile" | Resource>(
-    "dashboard",
-  );
+  const [section, setSection] = useState<
+    "dashboard" | "profile" | "settings" | "messages" | Resource
+  >("dashboard");
   const [editing, setEditing] = useState<
     PortfolioData[Resource][number] | null
   >(null);
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [messageCount, setMessageCount] = useState<number | null>(null);
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const saveMutation = useSavePortfolioMutation();
   const resetMutation = useResetPortfolioMutation();
   const resource =
-    section === "profile" || section === "dashboard" ? null : section;
+    section === "profile" ||
+    section === "dashboard" ||
+    section === "settings" ||
+    section === "messages"
+      ? null
+      : section;
   const items = resource ? (data[resource] ?? []) : [];
 
   useEffect(() => {
     setSearch("");
+  }, [section]);
+
+  // Lightweight count for the sidebar badge — the Messages panel itself
+  // fetches the full list independently when it's open.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch("/api/messages", {
+          credentials: "include",
+        });
+        if (!response.ok) return;
+        const body = await response.json();
+        if (!cancelled) setMessageCount(body.messages?.length ?? 0);
+      } catch {
+        // Silently ignore — the badge just won't show a count.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [section]);
 
   const filteredItems = useMemo(() => {
@@ -980,7 +1393,9 @@ function AdminArea({
     );
   }, [items, search]);
 
-  const goToSection = (next: "dashboard" | "profile" | Resource) => {
+  const goToSection = (
+    next: "dashboard" | "profile" | "settings" | "messages" | Resource,
+  ) => {
     setSection(next);
     setEditing(null);
     setMobileNavOpen(false);
@@ -1048,7 +1463,11 @@ function AdminArea({
       ? "Dashboard"
       : section === "profile"
         ? "Profile"
-        : resourceMeta[section].label;
+        : section === "settings"
+          ? "Settings"
+          : section === "messages"
+            ? "Messages"
+            : resourceMeta[section].label;
   const resourceKeys = Object.keys(resourceMeta) as Resource[];
 
   return (
@@ -1118,6 +1537,39 @@ function AdminArea({
         </nav>
 
         <div className="border-t border-border p-3">
+          <button
+            onClick={() => goToSection("messages")}
+            className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              section === "messages"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Mail size={16} /> Messages
+            </span>
+            {messageCount !== null && messageCount > 0 && (
+              <span
+                className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                  section === "messages"
+                    ? "bg-primary/15 text-primary"
+                    : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                {messageCount}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => goToSection("settings")}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              section === "settings"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+            }`}
+          >
+            <Settings size={16} /> Settings
+          </button>
           <button
             onClick={() => setLocation("/")}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
@@ -1261,6 +1713,39 @@ function AdminArea({
 
               <div className="border-t border-border p-3">
                 <button
+                  onClick={() => goToSection("messages")}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    section === "messages"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Mail size={16} /> Messages
+                  </span>
+                  {messageCount !== null && messageCount > 0 && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                        section === "messages"
+                          ? "bg-primary/15 text-primary"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {messageCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => goToSection("settings")}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    section === "settings"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  }`}
+                >
+                  <Settings size={16} /> Settings
+                </button>
+                <button
                   onClick={() => {
                     setMobileNavOpen(false);
                     setLocation("/");
@@ -1287,14 +1772,19 @@ function AdminArea({
           {section === "dashboard" ? (
             <section className="min-w-0">
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-foreground">
-                  Dashboard
-                </h2>
+                <h2 className="text-xl font-bold text-foreground">Dashboard</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Overview of everything on your site.
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+                <StatTile
+                  icon={Mail}
+                  label="Messages"
+                  count={messageCount ?? 0}
+                  active={false}
+                  onClick={() => goToSection("messages")}
+                />
                 {resourceKeys.map((key) => (
                   <StatTile
                     key={key}
@@ -1322,6 +1812,27 @@ function AdminArea({
                 onSave={saveProfile}
                 saving={saveMutation.isPending}
               />
+            </section>
+          ) : section === "messages" ? (
+            <section className="min-w-0 flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Messages</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Everything submitted through your contact form, saved straight
+                  to the database.
+                </p>
+              </div>
+              <MessagesPanel />
+            </section>
+          ) : section === "settings" ? (
+            <section className="min-w-0">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-foreground">Settings</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Configure how contact-form messages reach you.
+                </p>
+              </div>
+              <SettingsEditor />
             </section>
           ) : (
             resource && (

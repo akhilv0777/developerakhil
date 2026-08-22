@@ -322,6 +322,15 @@
       "resolved": "26.2.0"
     },
     {
+      "name": "@types/nodemailer",
+      "type": "direct",
+      "scopes": [
+        "dev"
+      ],
+      "requested": "^8.0.1",
+      "resolved": ""
+    },
+    {
       "name": "@types/pg",
       "type": "direct",
       "scopes": [
@@ -475,6 +484,15 @@
       "resolved": "0.4.6"
     },
     {
+      "name": "nodemailer",
+      "type": "direct",
+      "scopes": [
+        "prod"
+      ],
+      "requested": "^9.0.5",
+      "resolved": ""
+    },
+    {
       "name": "pg",
       "type": "direct",
       "scopes": [
@@ -545,6 +563,15 @@
       ],
       "requested": "^2.15.2",
       "resolved": "2.15.4"
+    },
+    {
+      "name": "resend",
+      "type": "direct",
+      "scopes": [
+        "prod"
+      ],
+      "requested": "^6.22.0",
+      "resolved": ""
     },
     {
       "name": "sonner",

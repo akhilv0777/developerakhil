@@ -616,25 +616,41 @@ function Testimonials({ data }: { data: PortfolioData }) {
 
 function ContactForm({ email }: { email: string }) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const subject = encodeURIComponent(
-      `Hello from ${form.name || "your site"}`,
-    );
-    const body = encodeURIComponent(
-      `${form.message}\n\n— ${form.name}${form.email ? ` (${form.email})` : ""}`,
-    );
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-    setSent(true);
-    window.setTimeout(() => setSent(false), 4000);
+    setStatus("sending");
+    setErrorMessage("");
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.message || "Could not send your message.");
+      }
+      setStatus("sent");
+      setForm({ name: "", email: "", message: "" });
+      window.setTimeout(() => setStatus("idle"), 5000);
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(
+        (error as Error).message || "Something went wrong. Please try again.",
+      );
+    }
   };
 
   return (
     <form
       onSubmit={handleSubmit}
       className="mt-12 grid gap-6 rounded-3xl bg-card p-8 shadow-xl border border-card-border sm:grid-cols-2 sm:p-10"
+      data-testid="form-contact"
     >
       <label className="sm:col-span-1">
         <span className="mb-3 block font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
@@ -646,6 +662,7 @@ function ContactForm({ email }: { email: string }) {
           onChange={(event) => setForm({ ...form, name: event.target.value })}
           className="w-full rounded-2xl border border-border bg-secondary/50 px-5 py-4 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
           placeholder="Jane Doe"
+          data-testid="input-contact-name"
         />
       </label>
       <label className="sm:col-span-1">
@@ -659,6 +676,7 @@ function ContactForm({ email }: { email: string }) {
           onChange={(event) => setForm({ ...form, email: event.target.value })}
           className="w-full rounded-2xl border border-border bg-secondary/50 px-5 py-4 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
           placeholder="jane@example.com"
+          data-testid="input-contact-email"
         />
       </label>
       <label className="sm:col-span-2">
@@ -674,18 +692,27 @@ function ContactForm({ email }: { email: string }) {
           }
           className="w-full resize-y rounded-2xl border border-border bg-secondary/50 px-5 py-4 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
           placeholder="Tell me about your project..."
+          data-testid="input-contact-message"
         />
       </label>
       <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center mt-2">
         <button
           type="submit"
-          className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-primary-foreground transition-all hover:-translate-y-1 hover:shadow-lg"
+          disabled={status === "sending"}
+          className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-primary-foreground transition-all hover:-translate-y-1 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          data-testid="button-send-message"
         >
-          Send message <ArrowUpRight className="h-4 w-4" />
+          {status === "sending" ? "Sending…" : "Send message"}
+          <ArrowUpRight className="h-4 w-4" />
         </button>
-        {sent && (
+        {status === "sent" && (
           <span className="rounded-full bg-green-100 px-4 py-2 font-mono text-[10px] font-bold uppercase text-green-700">
-            Opening email app…
+            Message sent — thank you!
+          </span>
+        )}
+        {status === "error" && (
+          <span className="rounded-full bg-red-100 px-4 py-2 font-mono text-[10px] font-bold uppercase text-red-700">
+            {errorMessage}
           </span>
         )}
       </div>
