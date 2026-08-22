@@ -73,6 +73,7 @@ async function sendContactEmail(input: {
       </div>
     `,
 
+
     text: [
       `Name: ${input.name}`,
       `Email: ${input.email}`,
@@ -90,5 +91,4 @@ async function sendContactEmail(input: {
 
   return result;
 }
-
 export { sendContactEmail };

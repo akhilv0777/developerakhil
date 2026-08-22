@@ -1457,7 +1457,6 @@ function AdminArea({
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   };
-
   const currentLabel =
     section === "dashboard"
       ? "Dashboard"
