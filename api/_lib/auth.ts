@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const COOKIE_NAME = 'session';
-const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7;
 
 function getSecret(): string {
   const secret = process.env.JWT_SECRET;
