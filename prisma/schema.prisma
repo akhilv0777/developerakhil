@@ -1,0 +1,35 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin table for login
+model Admin {
+  id       String @id @default(uuid())
+  username String @unique
+  password String // Hashed password
+}
+
+// Projects table for dynamic portfolio items
+model Project {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  imageUrl    String
+  demoUrl     String?
+  githubUrl   String?
+  createdAt   DateTime @default(now())
+}
+
+// Skills table
+model Skill {
+  id    String @id @default(uuid())
+  name  String
+  icon  String?
+}

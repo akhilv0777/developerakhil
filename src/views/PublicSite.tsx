@@ -1,0 +1,1007 @@
+"use client";
+
+import { useEffect, useState, type ReactNode, type FormEvent } from "react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Download,
+  Mail,
+  MapPin,
+  Menu,
+  MessageCircle,
+  Phone,
+  X,
+} from "lucide-react";
+import { FaGithub, FaLinkedin } from "react-icons/fa";
+import Link from "next/link";
+import { useMotionFlow } from "@/lib/motionflow";
+import type {
+  PortfolioData,
+  Profile,
+  Service,
+  Stat,
+} from "@/lib/portfolio-types";
+import { usePortfolioQuery } from "@/lib/portfolio-api";
+
+function hexToHsl(hex: string): string {
+  let cleanHex = hex.replace(/^#/, '');
+  if (cleanHex.length === 3) {
+    cleanHex = cleanHex.split('').map(char => char + char).join('');
+  }
+  const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
+  const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
+  const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+function Nav({ data }: { data: PortfolioData }) {
+  const profile = data.profile;
+  const [open, setOpen] = useState(false);
+  const [activeHash, setActiveHash] = useState("");
+  const links: Array<[string, string]> = [];
+  if (data.sectionVisibility?.about) links.push(["about", "About"]);
+  if (data.sectionVisibility?.projects) links.push(["work", "Work"]);
+  if (data.sectionVisibility?.contact) links.push(["contact", "Contact"]);
+  const initials =
+    profile.name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || "AV";
+
+  useEffect(() => {
+    const updateActiveHash = () => {
+      const nextHash = window.location.hash.replace("#", "");
+      setActiveHash(nextHash || "about");
+    };
+
+    updateActiveHash();
+    window.addEventListener("hashchange", updateActiveHash);
+
+    const sections = links
+      .map(([href]) => document.getElementById(href))
+      .filter(Boolean) as HTMLElement[];
+
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+        if (visible) {
+          setActiveHash(visible.target.id);
+          if (typeof window.history?.replaceState === "function") {
+            const nextHash = `#${visible.target.id}`;
+            if (window.location.hash !== nextHash) {
+              window.history.replaceState(null, "", nextHash);
+            }
+          }
+        }
+      },
+      { threshold: [0.2, 0.5, 0.8], rootMargin: "-15% 0px -35% 0px" },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => {
+      window.removeEventListener("hashchange", updateActiveHash);
+      observer.disconnect();
+    };
+  }, [links]);
+
+  return (
+    <header className="fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-full border border-border bg-background/80 px-6 py-4 backdrop-blur-md transition-all">
+      <div className="flex items-center justify-between">
+        <Link
+          href="/"
+          className="flex items-center gap-3 group"
+          data-testid="link-home"
+        >
+          {profile.image ? (
+            <img
+              src={profile.image}
+              alt={profile.name}
+              className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110"
+            />
+          ) : (
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">
+              {initials}
+            </span>
+          )}
+          <span className="font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground">
+            {profile.name}
+          </span>
+        </Link>
+
+        <nav
+          className={`${
+            open
+              ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
+              : "hidden"
+          } md:static md:flex md:w-auto md:flex-row md:items-center md:gap-8 md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+        >
+          {links.map(([href, label]) => {
+            const isActive = activeHash === href || (!activeHash && href === "about");
+            return (
+              <a
+                key={href}
+                href={`#${href}`}
+                onClick={() => setOpen(false)}
+                className={`font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${
+                  isActive
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-primary"
+                }`}
+                data-testid={`link-nav-${href}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {label}
+              </a>
+            );
+          })}
+        </nav>
+
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-full bg-secondary p-2 text-foreground md:hidden hover:text-primary"
+          aria-label="Toggle navigation"
+          data-testid="button-toggle-nav"
+        >
+          {open ? <X size={20} /> : <Menu size={20} />}
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function SectionLabel({
+  number,
+  children,
+}: {
+  number: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-12 flex items-center gap-4">
+      <span className="font-mono text-primary font-bold">{number}</span>
+      <span className="font-mono text-[12px] uppercase tracking-[.2em] text-foreground font-semibold">
+        // {children}
+      </span>
+      <span className="h-px w-16 bg-border" />
+    </div>
+  );
+}
+
+function TypingRoles({ roles }: { roles: string[] }) {
+  const [text, setText] = useState("");
+  const [roleIndex, setRoleIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const safeRoles = roles.filter(Boolean);
+
+  useEffect(() => {
+    if (!safeRoles.length) return;
+
+    const currentRole = safeRoles[roleIndex % safeRoles.length];
+    const timeout = window.setTimeout(() => {
+      if (!isDeleting) {
+        const nextText = currentRole.slice(0, text.length + 1);
+        setText(nextText);
+
+        if (nextText === currentRole) {
+          window.setTimeout(() => setIsDeleting(true), 1200);
+        }
+        return;
+      }
+
+      const nextText = currentRole.slice(0, Math.max(0, text.length - 1));
+      setText(nextText);
+
+      if (nextText.length === 0) {
+        setIsDeleting(false);
+        setRoleIndex((previous) => (previous + 1) % safeRoles.length);
+      }
+    }, isDeleting ? 45 : 90);
+
+    return () => window.clearTimeout(timeout);
+  }, [safeRoles, roleIndex, isDeleting, text]);
+
+  if (!safeRoles.length) {
+    return <span className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">Developer</span>;
+  }
+
+  return (
+    <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+      <span>I am a</span>
+      <span className="inline-flex min-w-[120px] items-center">
+        {text}
+        <span className="ml-1 inline-block h-3 w-[0.18rem] animate-pulse bg-primary" />
+      </span>
+    </span>
+  );
+}
+
+function Hero({ profile }: { profile: Profile }) {
+  const roles = (profile.roles?.length ? profile.roles : [profile.tagline]).filter(Boolean);
+  const heroBadge = profile.tagline === "Editor • Developer • YouTuber" || profile.tagline === "Editor • Developer • Youtuber"
+    ? "Available for freelance work"
+    : profile.tagline || "Available for freelance work";
+  const whatsappNumber = (profile.whatsapp || profile.phone || "").replace(/[^\d+]/g, "");
+  const whatsappLink = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\+/g, "")}` : "#contact";
+  const resumeHref = profile.resume || "#contact";
+
+  return (
+    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-5 pb-16 pt-32 md:px-10 md:pb-20 grid-dots">
+      <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="flex flex-col items-start">
+          <div className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+              {heroBadge}
+            </p>
+          </div>
+
+          <h1 className="display-title reveal reveal-delay-1 max-w-5xl text-[clamp(3rem,7vw,6rem)] font-bold leading-[1.05] text-foreground tracking-tight">
+            {profile.name}
+          </h1>
+
+          <div className="reveal reveal-delay-2 mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-muted-foreground">
+            <TypingRoles roles={roles} />
+          </div>
+
+          <p className="reveal reveal-delay-3 mt-8 max-w-2xl text-lg leading-[1.8] text-muted-foreground">
+            {profile.bio1}
+          </p>
+
+          <div className="reveal reveal-delay-4 mt-12 flex flex-wrap items-center gap-4">
+            <a
+              href="#work"
+              className="group inline-flex w-fit items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all duration-300 hover:scale-105 glow-border"
+              data-testid="link-hero-work"
+            >
+              See my work{" "}
+              <ArrowDownRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
+            </a>
+
+            <a
+              href={resumeHref}
+              download={profile.resume ? profile.resumeName || "resume.pdf" : undefined}
+              className="group inline-flex w-fit items-center gap-3 rounded-full border border-primary/60 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground transition-all duration-300 hover:border-primary hover:text-primary"
+              data-testid="link-hero-resume"
+            >
+              <Download className="h-4 w-4" />
+              Download resume
+            </a>
+          </div>
+        </div>
+
+        {profile.image && (
+          <div className="reveal reveal-delay-2 relative mx-auto w-full max-w-[420px]">
+            <div className="absolute inset-0 -z-10 rounded-[2rem] bg-primary/10 blur-3xl" />
+            <div className="rounded-[2rem] border border-border bg-card/70 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+              <img
+                src={profile.image}
+                alt={profile.name}
+                className="h-[420px] w-full rounded-[1.5rem] object-cover"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function About({ profile }: { profile: Profile }) {
+  return (
+    <section
+      id="about"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
+      <div className="bento-card p-8 md:p-16">
+        <SectionLabel number="01">ABOUT</SectionLabel>
+        <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
+          <div className="space-y-6">
+            {profile.image ? (
+              <div className="overflow-hidden rounded-[1.75rem] border border-border bg-secondary/50 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+                <img
+                  src={profile.image}
+                  alt={profile.name}
+                  className="h-[420px] w-full rounded-[1.25rem] object-cover"
+                />
+              </div>
+            ) : null}
+            <p
+              data-mf-animation="fade-up"
+              className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold leading-[1.3] text-foreground"
+            >
+              {profile.bio1}
+            </p>
+            {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
+              <div data-mf-animation="fade-up" className="mt-8 flex flex-wrap gap-2">
+                {profile.skills?.map(skill => (
+                  <span key={skill} className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground">{skill}</span>
+                ))}
+                {profile.languages?.map(lang => (
+                  <span key={lang} className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">{lang}</span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div
+            data-mf-stagger-animation="fade-up"
+            data-mf-stagger-gap="120"
+            className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
+          >
+            <p>{profile.bio2}</p>
+            <p>{profile.bio3}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatValue({ value }: { value: string }) {
+  const match = value.match(/^(\d[\d,]*)(.*)$/);
+  if (!match) {
+    return <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">{value}</span>;
+  }
+  const [, digits, suffix] = match;
+  const target = Number(digits.replace(/,/g, ""));
+  return (
+    <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">
+      <span
+        data-mf-count-to={target}
+        data-mf-count-duration="1600"
+        data-mf-count-once="true"
+        data-mf-count-trigger="top 95%"
+      >
+        0
+      </span>
+      <span className="text-primary">{suffix}</span>
+    </span>
+  );
+}
+
+function Stats({ stats }: { stats: Stat[] }) {
+  return (
+    <section className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
+      <div
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-gap="100"
+        className="grid grid-cols-2 gap-6 md:grid-cols-4"
+      >
+        {stats.map((stat) => (
+          <div
+            key={stat.id}
+            className="bento-card flex flex-col items-center justify-center p-10 text-center transition-transform hover:-translate-y-1"
+          >
+            <p data-testid={`stat-${stat.id}`}>
+              <StatValue value={stat.value} />
+            </p>
+            <p className="mt-4 font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+              {stat.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Marquee({ services }: { services: Service[] }) {
+  const words =
+    services.length > 0
+      ? services.map((service) => service.title)
+      : ["Research", "Design", "Code", "Ship", "Learn"];
+
+  return (
+    <div className="my-10 overflow-hidden bg-secondary py-6 border-y border-border">
+      <div
+        data-mf-ticker
+        data-mf-ticker-speed="45"
+        data-mf-ticker-pause-on-hover="true"
+        className="font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
+      >
+        {words.map((word, index) => (
+          <span
+            key={`${word}-${index}`}
+            className="px-6 flex items-center gap-6"
+          >
+            {word} <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Timeline({ data }: { data: PortfolioData }) {
+  return (
+    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+      <div className="grid gap-16 md:grid-cols-[1fr_1.2fr]">
+        <div data-mf-animation="fade-up">
+          <SectionLabel number="02">EDUCATION</SectionLabel>
+          <h2 className="display-title text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
+            Academic <br />
+            <span className="text-gradient">Timeline.</span>
+          </h2>
+        </div>
+
+        <div
+          data-mf-stagger-animation="fade-left"
+          data-mf-stagger-gap="100"
+          className="grid gap-6"
+        >
+          {data.education.map((item) => (
+            <div
+              className="bento-card group flex flex-col sm:flex-row gap-6 p-8 transition-all hover:-translate-y-1"
+              key={item.id}
+            >
+              <div className="sm:w-32 shrink-0">
+                <span className="font-mono text-[12px] font-bold text-primary tracking-wider">
+                  {item.period}
+                </span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">
+                  {item.degree}
+                </h3>
+                <p className="mt-2 font-mono text-[12px] text-muted-foreground">
+                  {item.institution}
+                </p>
+                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                  {item.detail}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ExperienceSection({ data }: { data: PortfolioData }) {
+  return (
+    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+      <SectionLabel number="03">EXPERIENCE</SectionLabel>
+      <div
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-gap="90"
+        className="grid gap-6 md:grid-cols-2 mt-12"
+      >
+        {data.experience.map((item) => (
+          <div
+            className="bento-card group p-8 transition-all hover:-translate-y-1"
+            key={item.id}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-2xl font-bold text-foreground">
+                  {item.role}
+                </h3>
+                <p className="mt-2 font-mono text-[12px] font-bold text-primary">
+                  {item.company}
+                </p>
+              </div>
+              <span className="inline-flex h-8 items-center rounded-full border border-border px-4 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {item.period}
+              </span>
+            </div>
+            <p className="text-base leading-[1.7] text-muted-foreground">
+              {item.detail}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Services({ data }: { data: PortfolioData }) {
+  return (
+    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+      <SectionLabel number="04">SERVICES</SectionLabel>
+
+      <div
+        data-mf-stagger-animation="zoom-in"
+        data-mf-stagger-gap="110"
+        className="grid gap-6 md:grid-cols-3 mt-12"
+      >
+        {data.services.map((service) => (
+          <article
+            key={service.id}
+            className="bento-card group p-10 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full"
+          >
+            <div className="font-mono text-[2rem] font-bold text-primary mb-6">
+              {service.number}
+            </div>
+
+            <h3 className="text-2xl font-bold leading-tight text-foreground mb-4">
+              {service.title}
+            </h3>
+
+            <p className="text-sm leading-[1.8] text-muted-foreground flex-grow">
+              {service.description}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Work({ data }: { data: PortfolioData }) {
+  return (
+    <section
+      id="work"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end mb-12">
+        <SectionLabel number="05">PROJECTS</SectionLabel>
+      </div>
+
+      <div
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-gap="90"
+        className="grid gap-8 md:grid-cols-2"
+      >
+        {data.projects.map((project) => (
+          <article
+            key={project.id}
+            className="bento-card group flex flex-col transition-all hover:-translate-y-2 overflow-hidden"
+          >
+            <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
+              {project.image ? (
+                <>
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center bg-secondary">
+                  <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+                </div>
+              )}
+              <div className="absolute top-4 right-4 inline-flex rounded-full border border-border bg-background/80 backdrop-blur-md px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">
+                {project.category}
+              </div>
+              <div className="absolute bottom-4 left-4 inline-flex rounded-full bg-background/90 backdrop-blur-md px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground z-10">
+                {project.tags}
+              </div>
+            </div>
+
+            <div className="flex flex-col flex-grow p-8">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
+                  {project.title}
+                </h3>
+                <span className="font-mono text-[11px] font-semibold text-muted-foreground">
+                  {project.year}
+                </span>
+              </div>
+
+              <p className="text-sm leading-[1.8] text-muted-foreground mb-8 flex-grow">
+                {project.description}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function Testimonials({ data }: { data: PortfolioData }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (!data.testimonials || data.testimonials.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % data.testimonials.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [data.testimonials]);
+
+  if (!data.testimonials || data.testimonials.length === 0) return null;
+  const item = data.testimonials[currentIndex];
+
+  return (
+    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+      <SectionLabel number="06">TESTIMONIALS</SectionLabel>
+      <div className="bento-card relative overflow-hidden p-8 md:p-16 border-l-4 border-l-primary">
+        <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none">
+          "
+        </div>
+        <div className="relative z-10 flex flex-col justify-center min-h-[250px]">
+          <div
+            key={currentIndex}
+            className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out"
+          >
+            <p className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold leading-[1.4] tracking-tight text-foreground max-w-4xl">
+              {item?.quote ||
+                "The best work makes the difficult feel possible."}
+            </p>
+            <div className="mt-12 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full border border-border bg-secondary flex items-center justify-center font-mono font-bold text-primary">
+                {item?.name.charAt(0)}
+              </div>
+              <div>
+                <p className="font-mono text-[12px] font-bold uppercase tracking-[.1em] text-foreground">
+                  {item?.name}
+                </p>
+                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
+                  {item?.role}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 flex gap-3">
+            {data.testimonials.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`h-1.5 rounded-full transition-all duration-500 ease-in-out ${
+                  currentIndex === idx
+                    ? "w-8 bg-primary"
+                    : "w-2 bg-border hover:bg-muted-foreground"
+                }`}
+                aria-label={`View testimonial ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContactForm({ email }: { email: string }) {
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setStatus("sending");
+    setErrorMessage("");
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.message || "Could not send your message.");
+      }
+      setStatus("sent");
+      setForm({ name: "", email: "", message: "" });
+      window.setTimeout(() => setStatus("idle"), 5000);
+    } catch (error) {
+      setStatus("error");
+      setErrorMessage(
+        (error as Error).message || "Something went wrong. Please try again.",
+      );
+    }
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="bento-card mt-12 grid gap-6 p-8 sm:grid-cols-2 sm:p-10"
+      data-testid="form-contact"
+    >
+      <label className="sm:col-span-1">
+        <span className="mb-3 block font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+          Your name
+        </span>
+        <input
+          required
+          value={form.name}
+          onChange={(event) => setForm({ ...form, name: event.target.value })}
+          className="w-full rounded-xl border border-border bg-secondary px-5 py-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background"
+          placeholder="Jane Doe"
+          data-testid="input-contact-name"
+        />
+      </label>
+      <label className="sm:col-span-1">
+        <span className="mb-3 block font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+          Your email
+        </span>
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(event) => setForm({ ...form, email: event.target.value })}
+          className="w-full rounded-xl border border-border bg-secondary px-5 py-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background"
+          placeholder="jane@example.com"
+          data-testid="input-contact-email"
+        />
+      </label>
+      <label className="sm:col-span-2">
+        <span className="mb-3 block font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+          Message
+        </span>
+        <textarea
+          required
+          rows={5}
+          value={form.message}
+          onChange={(event) =>
+            setForm({ ...form, message: event.target.value })
+          }
+          className="w-full resize-y rounded-xl border border-border bg-secondary px-5 py-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:bg-background"
+          placeholder="Tell me about your project..."
+          data-testid="input-contact-message"
+        />
+      </label>
+      <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center mt-2">
+        <button
+          type="submit"
+          disabled={status === "sending"}
+          className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all hover:scale-105 glow-border disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+          data-testid="button-send-message"
+        >
+          {status === "sending" ? "Sending…" : "Send message"}
+          <ArrowUpRight className="h-4 w-4" />
+        </button>
+        {status === "sent" && (
+          <span className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase text-primary">
+            Message sent — thank you!
+          </span>
+        )}
+        {status === "error" && (
+          <span className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 font-mono text-[10px] font-bold uppercase text-red-500">
+            {errorMessage}
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function Contact({ profile }: { profile: Profile }) {
+  const titleLines = profile.contactTitle.split("\n");
+  return (
+    <section
+      id="contact"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
+      <SectionLabel number="07">CONTACT</SectionLabel>
+      <div className="grid gap-16 md:grid-cols-[1.5fr_1fr] items-start">
+        <div data-mf-animation="fade-up">
+          <h2 className="display-title text-[clamp(3rem,6vw,5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
+            {titleLines.map((line, index) => (
+              <span key={index}>
+                {line}
+                {index < titleLines.length - 1 && <br />}
+              </span>
+            ))}
+          </h2>
+          {profile.contactNote && (
+            <p className="mt-8 max-w-md text-base leading-[1.8] text-muted-foreground">
+              {profile.contactNote}
+            </p>
+          )}
+          <ContactForm email={profile.email} />
+        </div>
+
+        <div
+          data-mf-animation="fade-left"
+          className="flex flex-col gap-4 mt-0 md:mt-24"
+        >
+          <a
+            href={`https://${profile.github.replace(/^https?:\/\//, "")}`}
+            className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
+              <FaGithub size={18} />
+            </div>
+            {profile.github}
+          </a>
+
+          {profile.linkedin && (
+            <a
+              href={`https://${profile.linkedin.replace(/^https?:\/\//, "")}`}
+              className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
+                <FaLinkedin size={18} />
+              </div>
+              {profile.linkedin}
+            </a>
+          )}
+
+          <a
+            href={`mailto:${profile.email}`}
+            className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
+              <Mail size={18} />
+            </div>
+            say hello
+          </a>
+
+          {profile.phone && (
+            <a
+              href={`tel:${profile.phone}`}
+              className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
+                <Phone size={18} />
+              </div>
+              {profile.phone}
+            </a>
+          )}
+
+          <div className="bento-card flex items-center gap-4 p-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary">
+              <MapPin size={18} />
+            </div>
+            {profile.location}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer({ profile }: { profile: Profile }) {
+  return (
+    <footer className="border-t border-border bg-background px-5 py-12 md:px-10">
+      <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 md:flex-row">
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          © {new Date().getFullYear()} {profile.name}
+        </span>
+        <span className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          Built with code & coffee
+        </span>
+        <a
+          href="#top"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-transform hover:-translate-y-1 hover:bg-primary hover:text-background"
+          aria-label="Back to top"
+        >
+          ↑
+        </a>
+      </div>
+    </footer>
+  );
+}
+
+export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
+  return (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-6 text-center overflow-hidden">
+      {error ? (
+        <div className="bento-card p-8 max-w-sm border-red-500/20 bg-red-500/5">
+          <p className="font-mono text-[12px] font-bold uppercase tracking-wider text-red-500 mb-3">
+            Error Loading Portfolio
+          </p>
+          <p className="text-sm text-red-400">
+            The database did not return the content. Refresh the page and try again.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-5">
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
+            <div className="absolute inset-3 rounded-full border border-primary/15 bg-primary/5" />
+          </div>
+          <div className="text-center">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">
+              Loading portfolio
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Preparing your content...</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function PublicPortfolio() {
+  const { data, isLoading, isError } = usePortfolioQuery();
+  useMotionFlow([data]);
+
+  if (isLoading) return <PortfolioLoading />;
+  if (isError || !data) return <PortfolioLoading error />;
+
+  const themeMode = data.themeSettings?.mode ?? "dark";
+  const prefersLightMode =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: light)").matches;
+  const resolvedMode =
+    themeMode === "auto" ? (prefersLightMode ? "light" : "dark") : themeMode;
+
+  const customStyle = {
+    "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
+    ...(resolvedMode === "light"
+      ? {
+          "--background": "0 0% 98%",
+          "--foreground": "220 25% 12%",
+          "--border": "220 18% 86%",
+          "--input": "220 18% 92%",
+          "--card": "0 0% 100%",
+          "--card-foreground": "220 25% 12%",
+          "--card-border": "220 18% 88%",
+          "--primary-foreground": "220 25% 12%",
+          "--secondary": "220 17% 96%",
+          "--secondary-foreground": "220 25% 12%",
+          "--muted": "220 18% 95%",
+          "--muted-foreground": "220 9% 40%",
+          "--accent": "152 100% 45%",
+          "--accent-foreground": "220 25% 12%",
+          "--destructive": "0 84% 60%",
+          "--destructive-foreground": "0 0% 100%",
+        }
+      : {}),
+  } as React.CSSProperties;
+
+  const whatsappNumber = (data.profile.whatsapp || data.profile.phone || "").replace(/[^\d+]/g, "");
+  const whatsappLink = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\+/g, "")}` : "#contact";
+
+  return (
+    <div
+      id="top"
+      className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary"
+      style={customStyle}
+    >
+      <Nav data={data} />
+      <main>
+        {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
+        {data.sectionVisibility?.about && <About profile={data.profile} />}
+        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
+        {data.sectionVisibility?.services && <Marquee services={data.services} />}
+        {data.sectionVisibility?.education && <Timeline data={data} />}
+        {data.sectionVisibility?.experience && <ExperienceSection data={data} />}
+        {data.sectionVisibility?.services && <Services data={data} />}
+        {data.sectionVisibility?.projects && <Work data={data} />}
+        {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
+        {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
+      </main>
+      <Footer profile={data.profile} />
+
+      {whatsappNumber && (
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Chat on WhatsApp"
+          className="fixed bottom-5 left-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary shadow-[0_0_20px_rgba(0,255,136,0.18)] backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary hover:bg-primary/15"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </a>
+      )}
+    </div>
+  );
+}
