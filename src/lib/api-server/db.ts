@@ -12,6 +12,7 @@ function resolveConnectionString(): string {
   const candidates = [
     process.env.POSTGRES_URL,
     process.env.POSTGRES_URL_NON_POOLING,
+    process.env.PRISMA_DATABASE_URL,
     process.env.DATABASE_URL,
   ].filter((value): value is string => Boolean(value));
 
