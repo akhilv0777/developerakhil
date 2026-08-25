@@ -47,7 +47,13 @@ function resolveConnectionString(): string {
 
   if (connectionString) {
     const parsed = new URL(connectionString);
-    parsed.searchParams.set("sslmode", "verify-full");
+    // Use the SSL mode from the original URL if present, otherwise default
+    // to "require". Most managed Postgres providers (including Prisma
+    // Postgres) do not support "verify-full" because their CA certificates
+    // are not in Node's default trust store.
+    if (!parsed.searchParams.has("sslmode")) {
+      parsed.searchParams.set("sslmode", "require");
+    }
     return parsed.toString();
   }
 
@@ -70,7 +76,7 @@ function getPool(): Pool {
   if (!pool) {
     pool = new Pool({
       connectionString: resolveConnectionString(),
-      ssl: { rejectUnauthorized: true },
+      ssl: { rejectUnauthorized: false },
       max: 1, // keep connections per serverless instance low
     });
     // IMPORTANT: pg emits a background 'error' event on the pool when an
