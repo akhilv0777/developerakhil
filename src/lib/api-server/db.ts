@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { Pool } from "pg";
+import { Pool, type QueryResultRow } from "pg";
 
 /**
  * Different Postgres providers on the Vercel Marketplace name their env
@@ -93,7 +93,7 @@ function getPool(): Pool {
   return pool;
 }
 
-type QueryResult = { rows: any[]; rowCount: number };
+type QueryResult = { rows: QueryResultRow[]; rowCount: number };
 
 /** Tagged template helper mirroring the `sql\`...\`` style used throughout this project. */
 export async function sql(
