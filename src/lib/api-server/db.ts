@@ -1,18 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 
-// Suppress the pg driver's SSL deprecation warning.  We already force
-// `sslmode=verify-full` in resolveConnectionString(), so the warning
-// ("The SSL modes 'prefer', 'require', and 'verify-ca' are treated as
-// aliases for 'verify-full'") is noise.  Suppress it once at import
-// time so it never reaches the Vercel function logs.
-const _origEmitWarning = process.emitWarning;
-process.emitWarning = ((...args: Parameters<typeof process.emitWarning>) => {
-  const msg = typeof args[0] === "string" ? args[0] : args[0]?.toString() ?? "";
-  if (msg.includes("SECURITY WARNING") && msg.includes("sslmode")) return;
-  return _origEmitWarning.apply(process, args);
-}) as typeof process.emitWarning;
-
 /**
  * Different Postgres providers on the Vercel Marketplace name their env
  * vars differently, and some (like Prisma Postgres's DATABASE_URL) use a
@@ -58,7 +46,9 @@ function resolveConnectionString(): string {
   }
 
   if (connectionString) {
-    return connectionString.replace(/sslmode=(?:require|prefer|verify-ca)/g, "sslmode=verify-full");
+    const parsed = new URL(connectionString);
+    parsed.searchParams.set("sslmode", "verify-full");
+    return parsed.toString();
   }
 
   if (candidates.length > 0) {
@@ -80,7 +70,7 @@ function getPool(): Pool {
   if (!pool) {
     pool = new Pool({
       connectionString: resolveConnectionString(),
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: true },
       max: 1, // keep connections per serverless instance low
     });
     // IMPORTANT: pg emits a background 'error' event on the pool when an
