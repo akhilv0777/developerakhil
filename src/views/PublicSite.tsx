@@ -4,11 +4,17 @@ import { useEffect, useState, type ReactNode, type FormEvent } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
   Download,
+  ExternalLink,
   Mail,
   MapPin,
   Menu,
-  MessageCircle,
+  Moon,
+  Sun,
   Phone,
   X,
 } from "lucide-react";
@@ -18,6 +24,7 @@ import { useMotionFlow } from "@/lib/motionflow";
 import type {
   PortfolioData,
   Profile,
+  Project,
   Service,
   Stat,
 } from "@/lib/portfolio-types";
@@ -50,14 +57,32 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-function Nav({ data }: { data: PortfolioData }) {
+function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: boolean; onToggleTheme: () => void }) {
   const profile = data.profile;
   const [open, setOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
-  const links: Array<[string, string]> = [];
-  if (data.sectionVisibility?.about) links.push(["about", "About"]);
-  if (data.sectionVisibility?.projects) links.push(["work", "Work"]);
-  if (data.sectionVisibility?.contact) links.push(["contact", "Contact"]);
+  const [openGroup, setOpenGroup] = useState<string | null>("Profile");
+  const profileLinks: Array<[string, string]> = [];
+  if (data.sectionVisibility?.about) profileLinks.push(["about", "About"]);
+  if (data.sectionVisibility?.skills ?? true) profileLinks.push(["skills", "Skills"]);
+  if (data.sectionVisibility?.education) profileLinks.push(["education", "Education"]);
+  if (data.sectionVisibility?.experience) profileLinks.push(["experience", "Experience"]);
+  const workLinks: Array<[string, string]> = [];
+  if (data.sectionVisibility?.services) workLinks.push(["services", "Services"]);
+  if (data.sectionVisibility?.projects) workLinks.push(["work", "Projects"]);
+  if (data.sectionVisibility?.testimonials) workLinks.push(["testimonials", "Testimonials"]);
+  const groups: Array<{ label: string; items: Array<[string, string]> }> = [
+    {
+      label: "Profile",
+      items: profileLinks,
+    },
+    {
+      label: "Work",
+      items: workLinks,
+    },
+    ...(data.sectionVisibility?.contact ? [{ label: "Hire me", items: [["contact", "Hire me"] as [string, string]] }] : []),
+  ];
+  const links = groups.flatMap((group) => group.items);
   const initials =
     profile.name
       .split(" ")
@@ -117,9 +142,9 @@ function Nav({ data }: { data: PortfolioData }) {
           className="flex items-center gap-3 group"
           data-testid="link-home"
         >
-          {profile.image ? (
+          {(profile.heroImage || profile.image) ? (
             <img
-              src={profile.image}
+              src={profile.heroImage || profile.image}
               alt={profile.name}
               className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110"
             />
@@ -136,40 +161,55 @@ function Nav({ data }: { data: PortfolioData }) {
         <nav
           className={`${
             open
-              ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
+                ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
               : "hidden"
-          } md:static md:flex md:w-auto md:flex-row md:items-center md:gap-8 md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+              } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-x-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
         >
-          {links.map(([href, label]) => {
-            const isActive = activeHash === href || (!activeHash && href === "about");
+          {groups.map((group) => {
+            const isSingle = group.items.length === 1 && group.label === "Hire me";
+            const groupActive = group.items.some(([href]) => activeHash === href);
+            if (isSingle) {
+              const [href, label] = group.items[0];
+              return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>{label}</a>;
+            }
             return (
-              <a
-                key={href}
-                href={`#${href}`}
-                onClick={() => setOpen(false)}
-                className={`font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-primary"
-                }`}
-                data-testid={`link-nav-${href}`}
-                aria-current={isActive ? "page" : undefined}
-              >
-                {label}
-              </a>
+              <div key={group.label} className="relative shrink-0">
+                <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex cursor-pointer items-center gap-1 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
+                  {group.label} <ChevronDown size={13} className={`transition-transform ${openGroup === group.label ? "rotate-180" : ""}`} />
+                </button>
+                {openGroup === group.label && (
+                  <div className="mt-3 flex flex-col gap-3 border-l border-border pl-4 md:absolute md:left-1/2 md:top-full md:mt-4 md:min-w-44 md:-translate-x-1/2 md:rounded-xl md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl">
+                    {group.items.map(([href, label]) => {
+                      const isActive = activeHash === href || (!activeHash && href === "about");
+                      return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
 
-        <button
-          type="button"
-          onClick={() => setOpen((value) => !value)}
-          className="rounded-full bg-secondary p-2 text-foreground md:hidden hover:text-primary"
-          aria-label="Toggle navigation"
-          data-testid="button-toggle-nav"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className="rounded-full border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary"
+            aria-label={`Switch to ${isLight ? "dark" : "light"} theme`}
+            data-testid="button-toggle-theme"
+          >
+            {isLight ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpen((value) => !value)}
+            className="rounded-full bg-secondary p-2 text-foreground md:hidden hover:text-primary"
+            aria-label="Toggle navigation"
+            data-testid="button-toggle-nav"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
     </header>
   );
@@ -194,38 +234,7 @@ function SectionLabel({
 }
 
 function TypingRoles({ roles }: { roles: string[] }) {
-  const [text, setText] = useState("");
-  const [roleIndex, setRoleIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const safeRoles = roles.filter(Boolean);
-
-  useEffect(() => {
-    if (!safeRoles.length) return;
-
-    const currentRole = safeRoles[roleIndex % safeRoles.length];
-    const timeout = window.setTimeout(() => {
-      if (!isDeleting) {
-        const nextText = currentRole.slice(0, text.length + 1);
-        setText(nextText);
-
-        if (nextText === currentRole) {
-          window.setTimeout(() => setIsDeleting(true), 1200);
-        }
-        return;
-      }
-
-      const nextText = currentRole.slice(0, Math.max(0, text.length - 1));
-      setText(nextText);
-
-      if (nextText.length === 0) {
-        setIsDeleting(false);
-        setRoleIndex((previous) => (previous + 1) % safeRoles.length);
-      }
-    }, isDeleting ? 45 : 90);
-
-    return () => window.clearTimeout(timeout);
-  }, [safeRoles, roleIndex, isDeleting, text]);
 
   if (!safeRoles.length) {
     return <span className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">Developer</span>;
@@ -234,9 +243,8 @@ function TypingRoles({ roles }: { roles: string[] }) {
   return (
     <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
       <span>I am a</span>
-      <span className="inline-flex min-w-[120px] items-center">
-        {text}
-        <span className="ml-1 inline-block h-3 w-[0.18rem] animate-pulse bg-primary" />
+      <span data-mf-text-type="typing" data-mf-text-typing-speed="85" data-mf-text-typing-delete-speed="45" data-mf-text-typing-interval="1200" data-mf-text-typing-loop="true" data-mf-text-typing-cursor="true" className="inline-flex min-w-[120px] items-center text-primary">
+        {safeRoles.map((role) => <span key={role}>{role}</span>)}
       </span>
     </span>
   );
@@ -247,8 +255,6 @@ function Hero({ profile }: { profile: Profile }) {
   const heroBadge = profile.tagline === "Editor • Developer • YouTuber" || profile.tagline === "Editor • Developer • Youtuber"
     ? "Available for freelance work"
     : profile.tagline || "Available for freelance work";
-  const whatsappNumber = (profile.whatsapp || profile.phone || "").replace(/[^\d+]/g, "");
-  const whatsappLink = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\+/g, "")}` : "#contact";
   const resumeHref = profile.resume || "#contact";
 
   return (
@@ -296,12 +302,12 @@ function Hero({ profile }: { profile: Profile }) {
           </div>
         </div>
 
-        {profile.image && (
+        {(profile.heroImage || profile.image) && (
           <div className="reveal reveal-delay-2 relative mx-auto w-full max-w-[420px]">
             <div className="absolute inset-0 -z-10 rounded-[2rem] bg-primary/10 blur-3xl" />
             <div className="rounded-[2rem] border border-border bg-card/70 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
               <img
-                src={profile.image}
+                src={profile.heroImage || profile.image}
                 alt={profile.name}
                 className="h-[420px] w-full rounded-[1.5rem] object-cover"
               />
@@ -323,10 +329,10 @@ function About({ profile }: { profile: Profile }) {
         <SectionLabel number="01">ABOUT</SectionLabel>
         <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="space-y-6">
-            {profile.image ? (
+            {(profile.aboutImage || profile.heroImage || profile.image) ? (
               <div className="overflow-hidden rounded-[1.75rem] border border-border bg-secondary/50 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
                 <img
-                  src={profile.image}
+                  src={profile.aboutImage || profile.heroImage || profile.image}
                   alt={profile.name}
                   className="h-[420px] w-full rounded-[1.25rem] object-cover"
                 />
@@ -387,7 +393,7 @@ function StatValue({ value }: { value: string }) {
 
 function Stats({ stats }: { stats: Stat[] }) {
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
+    <section id="stats" className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
       <div
         data-mf-stagger-animation="fade-up"
         data-mf-stagger-gap="100"
@@ -411,6 +417,28 @@ function Stats({ stats }: { stats: Stat[] }) {
   );
 }
 
+function Skills({ profile }: { profile: Profile }) {
+  const skills = profile.skills || [];
+  if (!skills.length) return null;
+  return (
+    <section id="skills" className="mx-auto max-w-[1400px] px-5 py-16 md:px-10 md:py-24">
+      <div className="bento-card flex flex-col gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-12">
+        <div className="max-w-sm">
+          <SectionLabel number="02">CAPABILITIES</SectionLabel>
+          <h2 className="display-title text-3xl font-bold text-foreground">Tools I use to ship.</h2>
+        </div>
+        <div className="flex max-w-2xl flex-wrap gap-3">
+          {skills.map((skill) => (
+            <span key={skill} className="cursor-default rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary">
+              {skill}
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Marquee({ services }: { services: Service[] }) {
   const words =
     services.length > 0
@@ -418,7 +446,7 @@ function Marquee({ services }: { services: Service[] }) {
       : ["Research", "Design", "Code", "Ship", "Learn"];
 
   return (
-    <div className="my-10 overflow-hidden bg-secondary py-6 border-y border-border">
+    <div id="services-strip" className="my-10 overflow-hidden bg-secondary py-6 border-y border-border">
       <div
         data-mf-ticker
         data-mf-ticker-speed="45"
@@ -440,13 +468,13 @@ function Marquee({ services }: { services: Service[] }) {
 
 function Timeline({ data }: { data: PortfolioData }) {
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section id="education" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
       <div className="grid gap-16 md:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
           <SectionLabel number="02">EDUCATION</SectionLabel>
           <h2 className="display-title text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
             Academic <br />
-            <span className="text-gradient">Timeline.</span>
+            <span>Timeline.</span>
           </h2>
         </div>
 
@@ -486,7 +514,7 @@ function Timeline({ data }: { data: PortfolioData }) {
 
 function ExperienceSection({ data }: { data: PortfolioData }) {
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section id="experience" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
       <SectionLabel number="03">EXPERIENCE</SectionLabel>
       <div
         data-mf-stagger-animation="fade-up"
@@ -523,7 +551,7 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
 
 function Services({ data }: { data: PortfolioData }) {
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section id="services" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
       <SectionLabel number="04">SERVICES</SectionLabel>
 
       <div
@@ -555,6 +583,7 @@ function Services({ data }: { data: PortfolioData }) {
 }
 
 function Work({ data }: { data: PortfolioData }) {
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   return (
     <section
       id="work"
@@ -582,7 +611,7 @@ function Work({ data }: { data: PortfolioData }) {
                     alt={project.title}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-transparent" />
+                  <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
                 </>
               ) : (
                 <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center bg-secondary">
@@ -592,28 +621,45 @@ function Work({ data }: { data: PortfolioData }) {
               <div className="absolute top-4 right-4 inline-flex rounded-full border border-border bg-background/80 backdrop-blur-md px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">
                 {project.category}
               </div>
-              <div className="absolute bottom-4 left-4 inline-flex rounded-full bg-background/90 backdrop-blur-md px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground z-10">
-                {project.tags}
+              <div className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground backdrop-blur-md z-10">
+                <CalendarDays size={12} className="text-primary" />
+                {project.year}
               </div>
             </div>
 
             <div className="flex flex-col flex-grow p-8">
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4">
                 <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
                   {project.title}
                 </h3>
-                <span className="font-mono text-[11px] font-semibold text-muted-foreground">
-                  {project.year}
-                </span>
               </div>
 
-              <p className="text-sm leading-[1.8] text-muted-foreground mb-8 flex-grow">
+              <p className="mb-8 line-clamp-6 text-sm leading-[1.8] text-muted-foreground">
                 {project.description}
               </p>
+              <div className="flex w-full flex-wrap items-center gap-3 opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+                <button type="button" onClick={() => setSelectedProject(project)} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto">
+                  View project details <ArrowUpRight size={13} />
+                </button>
+                {project.liveUrl && <a href={project.liveUrl} target="_blank" rel="noreferrer" className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto">
+                  View live project <ExternalLink size={13} />
+                </a>}
+              </div>
             </div>
           </article>
         ))}
       </div>
+      {selectedProject && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`${selectedProject.title} details`}>
+          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-7 md:p-10">
+            <button type="button" onClick={() => setSelectedProject(null)} className="absolute right-5 top-5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary" aria-label="Close project details">×</button>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">{selectedProject.category} · {selectedProject.year}</p>
+            <h3 className="display-title mt-4 pr-10 text-3xl font-bold text-foreground">{selectedProject.title}</h3>
+            <p className="mt-6 whitespace-pre-line text-base leading-[1.8] text-muted-foreground">{selectedProject.description}</p>
+            {selectedProject.liveUrl && <a href={selectedProject.liveUrl} target="_blank" rel="noreferrer" className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background"><ExternalLink size={14} /> Open live project</a>}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -631,9 +677,12 @@ function Testimonials({ data }: { data: PortfolioData }) {
 
   if (!data.testimonials || data.testimonials.length === 0) return null;
   const item = data.testimonials[currentIndex];
+  const changeTestimonial = (direction: number) => {
+    setCurrentIndex((index) => (index + direction + data.testimonials.length) % data.testimonials.length);
+  };
 
   return (
-    <section className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section id="testimonials" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
       <div className="bento-card relative overflow-hidden p-8 md:p-16 border-l-4 border-l-primary">
         <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none">
@@ -663,12 +712,16 @@ function Testimonials({ data }: { data: PortfolioData }) {
             </div>
           </div>
 
-          <div className="mt-12 flex gap-3">
+          <div className="mt-12 flex items-center gap-3">
+            {data.testimonials.length > 1 && <button type="button" onClick={() => changeTestimonial(-1)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary" aria-label="Previous testimonial">
+              <ChevronLeft size={16} />
+            </button>}
             {data.testimonials.map((_, idx) => (
               <button
                 key={idx}
+                type="button"
                 onClick={() => setCurrentIndex(idx)}
-                className={`h-1.5 rounded-full transition-all duration-500 ease-in-out ${
+                className={`h-2 cursor-pointer rounded-full transition-all duration-500 ease-in-out ${
                   currentIndex === idx
                     ? "w-8 bg-primary"
                     : "w-2 bg-border hover:bg-muted-foreground"
@@ -676,6 +729,9 @@ function Testimonials({ data }: { data: PortfolioData }) {
                 aria-label={`View testimonial ${idx + 1}`}
               />
             ))}
+            {data.testimonials.length > 1 && <button type="button" onClick={() => changeTestimonial(1)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary" aria-label="Next testimonial">
+              <ChevronRight size={16} />
+            </button>}
           </div>
         </div>
       </div>
@@ -931,6 +987,22 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
+  const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const updateProgress = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
+    };
+    updateProgress();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", updateProgress);
+    return () => {
+      window.removeEventListener("scroll", updateProgress);
+      window.removeEventListener("resize", updateProgress);
+    };
+  }, []);
 
   if (isLoading) return <PortfolioLoading />;
   if (isError || !data) return <PortfolioLoading error />;
@@ -942,10 +1014,11 @@ export function PublicPortfolio() {
     window.matchMedia("(prefers-color-scheme: light)").matches;
   const resolvedMode =
     themeMode === "auto" ? (prefersLightMode ? "light" : "dark") : themeMode;
+  const activeMode = themeOverride ?? resolvedMode;
 
   const customStyle = {
     "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
-    ...(resolvedMode === "light"
+    ...(activeMode === "light"
       ? {
           "--background": "0 0% 98%",
           "--foreground": "220 25% 12%",
@@ -967,20 +1040,25 @@ export function PublicPortfolio() {
       : {}),
   } as React.CSSProperties;
 
-  const whatsappNumber = (data.profile.whatsapp || data.profile.phone || "").replace(/[^\d+]/g, "");
-  const whatsappLink = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\+/g, "")}` : "#contact";
-
   return (
     <div
       id="top"
       className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary"
       style={customStyle}
     >
-      <Nav data={data} />
+      <div className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40" aria-hidden="true">
+        <div className="h-full bg-primary transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
+      </div>
+      <Nav
+        data={data}
+        isLight={activeMode === "light"}
+        onToggleTheme={() => setThemeOverride(activeMode === "light" ? "dark" : "light")}
+      />
       <main>
         {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
         {data.sectionVisibility?.about && <About profile={data.profile} />}
         {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
+        {(data.sectionVisibility?.skills ?? true) && <Skills profile={data.profile} />}
         {data.sectionVisibility?.services && <Marquee services={data.services} />}
         {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && <ExperienceSection data={data} />}
@@ -991,17 +1069,6 @@ export function PublicPortfolio() {
       </main>
       <Footer profile={data.profile} />
 
-      {whatsappNumber && (
-        <a
-          href={whatsappLink}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Chat on WhatsApp"
-          className="fixed bottom-5 left-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-full border border-primary/40 bg-primary/10 text-primary shadow-[0_0_20px_rgba(0,255,136,0.18)] backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:border-primary hover:bg-primary/15"
-        >
-          <MessageCircle className="h-5 w-5" />
-        </a>
-      )}
     </div>
   );
 }

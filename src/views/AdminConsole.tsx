@@ -34,6 +34,9 @@ import {
   Search,
   Settings,
   Square,
+  Sun,
+  Moon,
+  Monitor,
   Trash2,
   User,
   X,
@@ -61,14 +64,45 @@ import {
 import { PortfolioLoading } from "./PublicSite";
 
 // ---------------------------------------------------------------------
-// Console / Admin area â€” content editing, protected by /api/auth.
+// Console / Admin area - content editing, protected by /api/auth.
 // ---------------------------------------------------------------------
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  required = true,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        required={required}
+        type={visible ? "text" : "password"}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-11 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+      />
+      <button type="button" onClick={() => setVisible((current) => !current)} aria-label={visible ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-muted-foreground hover:text-primary">
+        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
 
 function LoginPage() {
   const queryClient = useQueryClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -80,7 +114,7 @@ function LoginPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ identifier: username, password }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
@@ -95,9 +129,30 @@ function LoginPage() {
     }
   };
 
+  const handleForgotPassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setForgotMessage(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: username }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Could not send reset email.");
+      setForgotMessage(body.message);
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex min-h-[100dvh] bg-background grid-dots">
-      {/* Brand panel â€” desktop only */}
+      {/* Brand panel - desktop only */}
       <div className="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-card border-r border-border p-12 text-foreground lg:flex">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-[100px]" />
         <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-primary/10 blur-[100px]" />
@@ -118,7 +173,7 @@ function LoginPage() {
             <span className="text-gradient">from one place.</span>
           </h1>
           <p className="mt-5 max-w-sm text-sm leading-[1.7] text-muted-foreground">
-            Profile, projects, timeline, testimonials â€” every section of the
+            Profile, projects, timeline, testimonials - every section of the
             portfolio is editable here and reflected on the live site right
             away.
           </p>
@@ -143,7 +198,7 @@ function LoginPage() {
         </div>
 
         <p className="relative font-mono text-[10px] uppercase tracking-wider text-muted-foreground/60">
-          Â© {new Date().getFullYear()} Â· Secure admin access
+          (c) {new Date().getFullYear()} - Secure admin access
         </p>
       </div>
 
@@ -156,16 +211,16 @@ function LoginPage() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-foreground">
-            Sign in to Console
+            {forgotMode ? "Reset your password" : "Sign in to Console"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Enter your credentials to manage the site.
+            {forgotMode ? "Enter your username or admin email to receive a reset link." : "Enter your credentials to manage the site."}
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+          <form onSubmit={forgotMode ? handleForgotPassword : handleSubmit} className="mt-8 flex flex-col gap-5">
             <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Username
+                {forgotMode ? "Username or admin email" : "Username or admin email"}
               </span>
               <input
                 required
@@ -175,30 +230,28 @@ function LoginPage() {
                 className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 text-foreground"
               />
             </label>
-            <label className="block">
+            {!forgotMode && <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Password
               </span>
-              <input
-                required
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 text-foreground"
-              />
-            </label>
+              <PasswordInput value={password} onChange={setPassword} />
+            </label>}
             {error && (
               <p className="rounded-lg bg-red-900/30 border border-red-500/50 p-3 font-mono text-[10px] font-bold text-red-400 text-center">
                 {error}
               </p>
             )}
+            {forgotMessage && <p className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-center font-mono text-[10px] font-bold text-primary">{forgotMessage}</p>}
             <button
               type="submit"
               disabled={submitting}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background transition-all hover:bg-primary/90 disabled:opacity-50 hover:shadow-[0_0_15px_rgba(0,255,136,0.4)]"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background transition-all hover:bg-primary/90 disabled:opacity-50 hover:shadow-[0_0_15px_hsl(var(--primary)/0.35)]"
             >
-              <Lock size={14} />
-              {submitting ? "Checkingâ€¦" : "Sign in"}
+              {forgotMode ? <Mail size={14} /> : <Lock size={14} />}
+              {submitting ? "Please wait..." : forgotMode ? "Send reset link" : "Sign in"}
+            </button>
+            <button type="button" onClick={() => { setForgotMode((value) => !value); setError(null); setForgotMessage(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">
+              {forgotMode ? "Back to sign in" : "Forgot password?"}
             </button>
           </form>
         </div>
@@ -234,6 +287,7 @@ const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
       tags: "",
       accent: "lime",
       image: "",
+      liveUrl: "",
     } as Project;
   if (resource === "education")
     return {
@@ -251,7 +305,7 @@ const itemTitle = (
   item: Stat | Service | Project | Education | Experience | Testimonial,
 ): string => {
   if ("value" in item && "label" in item)
-    return `${item.value || "â€”"} Â· ${item.label || "Untitled"}`;
+    return `${item.value || "-"} - ${item.label || "Untitled"}`;
   if ("title" in item) return item.title || "Untitled";
   if ("degree" in item) return item.degree || "Untitled";
   if ("role" in item && "company" in item) return item.role || "Untitled";
@@ -276,7 +330,7 @@ function fileToResizedDataUrl(file: File, maxDimension = 480): Promise<string> {
     reader.onload = () => {
       const img = new Image();
       img.onerror = () =>
-        reject(new Error("That file doesnâ€™t look like a valid image."));
+        reject(new Error("That file does not look like a valid image."));
       img.onload = () => {
         const scale = Math.min(
           1,
@@ -330,13 +384,14 @@ function AdminForm({
       "tags",
       "accent",
       "image",
+      "liveUrl",
     ],
     education: ["degree", "institution", "period", "detail"],
     experience: ["role", "company", "period", "detail"],
     testimonials: ["quote", "name", "role"],
   };
   const labels: Record<string, string> = {
-    value: "Value (e.g. 06, 100+, âˆž)",
+    value: "Value (e.g. 06, 100+, infinity)",
     label: "Label (e.g. years making)",
     number: "Index",
     title: "Title",
@@ -354,6 +409,7 @@ function AdminForm({
     quote: "Quote",
     name: "Name",
     image: "Project Image (Optional)",
+    liveUrl: "Live Project URL (Optional)",
   };
 
   const handleImageUpload = async (
@@ -444,6 +500,22 @@ function AdminForm({
                   {form[field] ? "Replace Image" : "Upload Image"}
                 </label>
               </div>
+            ) : field === "description" && resource === "projects" ? (
+              <div className="overflow-hidden rounded-lg border border-border bg-secondary/50">
+                <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2">
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Classic editor</span>
+                  <button type="button" onClick={() => document.execCommand("bold")} className="ml-auto cursor-pointer rounded px-2 py-1 font-bold text-foreground hover:bg-background">B</button>
+                  <button type="button" onClick={() => document.execCommand("italic")} className="cursor-pointer rounded px-2 py-1 italic text-foreground hover:bg-background">I</button>
+                </div>
+                <textarea
+                  required
+                  value={form[field] || ""}
+                  rows={6}
+                  onChange={(event) => setForm({ ...form, [field]: event.target.value })}
+                  className="w-full resize-y bg-transparent px-4 py-3 text-sm text-foreground outline-none"
+                  placeholder="Explain the project, your contribution, and the result..."
+                />
+              </div>
             ) : field === "accent" ? (
               <select
                 value={form[field] || ""}
@@ -470,7 +542,7 @@ function AdminForm({
               />
             ) : (
               <input
-                required
+                required={field !== "liveUrl"}
                 value={form[field] || ""}
                 onChange={(event) =>
                   setForm({ ...form, [field]: event.target.value })
@@ -538,13 +610,16 @@ function ProfileEditor({
     { key: "contactNote", label: "Contact note" },
   ];
 
-  const handleImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImage = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    field: "heroImage" | "aboutImage",
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setImageError(null);
     try {
       const dataUrl = await fileToResizedDataUrl(file);
-      setForm((current) => ({ ...current, image: dataUrl }));
+      setForm((current) => ({ ...current, [field]: dataUrl }));
     } catch (error) {
       setImageError((error as Error).message);
     } finally {
@@ -557,7 +632,7 @@ function ProfileEditor({
     if (!file) return;
     setResumeError(null);
     if (file.size > 2 * 1024 * 1024) {
-      setResumeError("That file is too large â€” please keep it under 2MB.");
+      setResumeError("That file is too large - please keep it under 2MB.");
       event.target.value = "";
       return;
     }
@@ -594,54 +669,52 @@ function ProfileEditor({
         }}
       className="bento-card p-5 md:p-8"
     >
-      <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-        <div className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-border bg-secondary transition-colors hover:border-primary">
-          {form.image ? (
-            <img
-              src={form.image}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span className="font-mono text-[10px] uppercase text-muted-foreground">
-              No photo
-            </span>
-          )}
-        </div>
-        <div className="flex flex-col gap-3 w-full sm:w-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+      <div className="mb-8 grid gap-6 md:grid-cols-2">
+        <div className="flex items-center gap-5">
+          <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary transition-colors hover:border-primary">
+            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+              {form.heroImage || form.image ? (
+                <img
+                  src={form.heroImage || form.image}
+                  alt="Profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : <User size={22} className="text-muted-foreground" />}
+            </div>
+            <label className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background shadow-md transition-transform hover:scale-110" title="Change hero image">
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleImage}
+                onChange={(event) => handleImage(event, "heroImage")}
                 className="hidden"
-              />{" "}
-              Upload new photo
+              />
+              <Pencil size={12} />
             </label>
-            {form.image && (
-              <button
-                type="button"
-                onClick={() =>
-                  setForm((current) => ({ ...current, image: "" }))
-                }
-                className="w-full sm:w-auto rounded-md border border-red-500/50 bg-red-900/20 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-red-500 hover:bg-red-900/40 transition-colors whitespace-nowrap"
-              >
-                Remove
-              </button>
-            )}
           </div>
-          {imageError && (
-            <p className="font-mono text-[11px] text-red-400">
-              {imageError}
-            </p>
-          )}
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">Hero image</p>
+            <p className="mt-1 text-xs text-muted-foreground">Click the pencil to change it.</p>
+          </div>
         </div>
+        <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+            {form.aboutImage ? <img src={form.aboutImage} alt="About" className="h-full w-full object-cover" /> : <span className="font-mono text-[9px] uppercase text-muted-foreground">No image</span>}
+            <label className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background shadow-md transition-transform hover:scale-110" title="Change about image">
+              <input type="file" accept="image/*" onChange={(event) => handleImage(event, "aboutImage")} className="hidden" />
+              <Pencil size={11} />
+            </label>
+          </div>
+          <div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">About image</p>
+            <p className="mt-1 text-xs text-muted-foreground">Use a different image for the About section.</p>
+          </div>
+        </div>
+        {imageError && <p className="font-mono text-[11px] text-red-400 md:col-span-2">{imageError}</p>}
       </div>
 
       <div className="mb-10 rounded-lg bg-secondary/30 p-5 md:p-6 border border-border min-w-0">
         <span className="mb-4 block font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
-          RÃ©sumÃ© Document
+          Resume Document
         </span>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
@@ -799,7 +872,7 @@ function StatTile({
   );
 }
 
-function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+function ChangePasswordModal({ onClose, isLight }: { onClose: () => void; isLight: boolean }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -849,7 +922,10 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         className="fixed inset-0 bg-black/60 backdrop-blur-sm"
       />
-      <div className="relative my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto bento-card p-6 shadow-2xl">
+      <div
+        style={isLight ? { "--background": "0 0% 98%", "--foreground": "220 25% 12%", "--border": "220 18% 86%", "--card": "0 0% 100%", "--card-border": "220 18% 88%", "--secondary": "220 17% 96%", "--muted-foreground": "220 9% 40%" } as React.CSSProperties : undefined}
+        className="relative my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto bento-card bg-card p-6 shadow-2xl"
+      >
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-bold text-foreground">Change password</h3>
           <button
@@ -865,37 +941,19 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Current password
             </span>
-            <input
-              required
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-            />
+            <PasswordInput value={currentPassword} onChange={setCurrentPassword} />
           </label>
           <label className="block">
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               New password
             </span>
-            <input
-              required
-              type="password"
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-            />
+            <PasswordInput value={newPassword} onChange={setNewPassword} />
           </label>
           <label className="block">
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               Confirm new password
             </span>
-            <input
-              required
-              type="password"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-            />
+            <PasswordInput value={confirmPassword} onChange={setConfirmPassword} />
           </label>
           {error && (
             <p className="rounded-lg bg-red-900/30 border border-red-500/50 p-3 font-mono text-[10px] font-bold text-red-400 text-center">
@@ -916,19 +974,80 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function ChangeUsernameModal({ onClose, isLight }: { onClose: () => void; isLight: boolean }) {
+  const [newUsername, setNewUsername] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/change-username", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUsername, currentPassword }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Could not change username.");
+      toast({ title: "Username updated", description: "Your new username is active." });
+      onClose();
+      window.location.reload();
+    } catch (requestError) {
+      setError((requestError as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
+      <button aria-label="Close" onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        style={isLight ? { "--background": "0 0% 98%", "--foreground": "220 25% 12%", "--border": "220 18% 86%", "--card": "0 0% 100%", "--card-border": "220 18% 88%", "--secondary": "220 17% 96%", "--muted-foreground": "220 9% 40%" } as React.CSSProperties : undefined}
+        className="relative my-auto w-full max-w-sm bento-card bg-card p-6 shadow-2xl"
+      >
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-foreground">Change username</h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"><X size={16} /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="block">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">New username</span>
+            <input required minLength={3} maxLength={32} value={newUsername} onChange={(event) => setNewUsername(event.target.value)} className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:ring-4 focus:ring-primary/20" />
+          </label>
+          <label className="block">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Current password</span>
+            <PasswordInput value={currentPassword} onChange={setCurrentPassword} />
+          </label>
+          {error && <p className="rounded-lg border border-red-500/50 bg-red-900/30 p-3 text-center font-mono text-[10px] font-bold text-red-400">{error}</p>}
+          <button type="submit" disabled={submitting} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-background transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"><User size={16} /> {submitting ? "Updating..." : "Update username"}</button>
+        </form>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function ProfileMenu({
   image,
   username,
+  isLight,
   onEditProfile,
   onLogout,
 }: {
   image?: string;
   username?: string;
+  isLight: boolean;
   onEditProfile: () => void;
   onLogout: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+  const [changingUsername, setChangingUsername] = useState(false);
 
   return (
     <div className="relative">
@@ -975,6 +1094,15 @@ function ProfileMenu({
             <button
               onClick={() => {
                 setOpen(false);
+                setChangingUsername(true);
+              }}
+              className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary group"
+            >
+              <User size={14} className="group-hover:text-primary transition-colors" /> Change username
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
                 setChangingPassword(true);
               }}
               className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary group"
@@ -995,8 +1123,9 @@ function ProfileMenu({
       )}
 
       {changingPassword && (
-        <ChangePasswordModal onClose={() => setChangingPassword(false)} />
+        <ChangePasswordModal isLight={isLight} onClose={() => setChangingPassword(false)} />
       )}
+      {changingUsername && <ChangeUsernameModal isLight={isLight} onClose={() => setChangingUsername(false)} />}
     </div>
   );
 }
@@ -1092,7 +1221,7 @@ function SettingsEditor() {
   if (loading) {
     return (
       <div className="bento-card p-8 text-sm text-muted-foreground shadow-sm">
-        Loading settingsâ€¦
+        <span className="flex items-center gap-3"><span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/25 border-t-primary" /> Loading settings...</span>
       </div>
     );
   }
@@ -1170,7 +1299,7 @@ function SettingsEditor() {
           disabled={saving}
           className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)] transition-all disabled:opacity-50 whitespace-nowrap"
         >
-          <Save size={16} /> {saving ? "Savingâ€¦" : "Save settings"}
+          <Save size={16} /> {saving ? "Saving..." : "Save settings"}
         </button>
       </div>
     </form>
@@ -1343,7 +1472,7 @@ function MessagesPanel() {
 
       {loading ? (
         <div className="px-6 py-16 text-center text-sm text-muted-foreground">
-          Loading messagesâ€¦
+          <span className="flex items-center justify-center gap-3"><span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/25 border-t-primary" /> Loading messages...</span>
         </div>
       ) : loadError ? (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
@@ -1523,6 +1652,7 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [messageCount, setMessageCount] = useState<number | null>(null);
+  const [adminLight, setAdminLight] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
   const saveMutation = useSavePortfolioMutation();
@@ -1541,6 +1671,38 @@ function AdminArea({
   useEffect(() => {
     setSearch("");
   }, [section]);
+
+  useEffect(() => {
+    const requested = window.location.hash.slice(1);
+    const validSections = [
+      "dashboard", "profile", "settings", "messages", "sections", "theme",
+      ...Object.keys(resourceMeta),
+    ];
+    if (validSections.includes(requested)) {
+      setSection(requested as typeof section);
+    }
+  }, []);
+
+  useEffect(() => {
+    setAdminLight(window.localStorage.getItem("admin-theme") === "light");
+  }, []);
+
+  const adminThemeStyle = adminLight
+    ? ({
+        "--background": "0 0% 98%",
+        "--foreground": "220 25% 12%",
+        "--border": "220 18% 86%",
+        "--input": "220 18% 92%",
+        "--card": "0 0% 100%",
+        "--card-foreground": "220 25% 12%",
+        "--card-border": "220 18% 88%",
+        "--primary-foreground": "220 25% 12%",
+        "--secondary": "220 17% 96%",
+        "--secondary-foreground": "220 25% 12%",
+        "--muted": "220 18% 95%",
+        "--muted-foreground": "220 9% 40%",
+      } as React.CSSProperties)
+    : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -1576,16 +1738,17 @@ function AdminArea({
     setSection(next);
     setEditing(null);
     setMobileNavOpen(false);
+    window.history.replaceState(null, "", next === "dashboard" ? window.location.pathname : `#${next}`);
   };
 
-  const persist = (next: PortfolioData, onDone?: () => void) => {
+  const persist = (next: PortfolioData, onDone?: () => void, description?: string) => {
     saveMutation.mutate(next, {
       onSuccess: () => {
         setSaved(true);
         window.setTimeout(() => setSaved(false), 1800);
         toast({
-          title: "Saved âœ¨",
-          description: "Your beautiful changes are live!",
+          title: "Saved",
+          description: description || "Your beautiful changes are live!",
         });
         onDone?.();
       },
@@ -1651,12 +1814,14 @@ function AdminArea({
   const resourceKeys = Object.keys(resourceMeta) as Resource[];
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
-      {/* Sidebar â€” desktop */}
-      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card">
+    <div className="admin-console flex h-[100dvh] overflow-hidden bg-background text-foreground" style={adminThemeStyle}>
+      {/* Sidebar - desktop */}
+      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90">
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-mono text-xs font-bold text-background">
-            AV
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
+            {data.profile?.heroImage || data.profile?.aboutImage || data.profile?.image ? (
+              <img src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" className="h-full w-full object-cover" />
+            ) : "AV"}
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
@@ -1788,7 +1953,7 @@ function AdminArea({
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 border-b border-border bg-card/80 backdrop-blur-md">
+        <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-md">
           <div className="flex h-16 items-center gap-4 px-4 md:px-8">
             <button
               onClick={() => setMobileNavOpen(true)}
@@ -1812,9 +1977,22 @@ function AdminArea({
             </div>
 
             <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !adminLight;
+                  setAdminLight(next);
+                  window.localStorage.setItem("admin-theme", next ? "light" : "dark");
+                  toast({ title: `${next ? "Light" : "Dark"} theme enabled` });
+                }}
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
+                aria-label={`Switch to ${adminLight ? "dark" : "light"} admin theme`}
+              >
+                {adminLight ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
               {saveMutation.isPending && (
                 <span className="hidden font-mono text-[10px] uppercase text-primary sm:inline">
-                  Savingâ€¦
+                  Saving...
                 </span>
               )}
               {saved && (
@@ -1823,8 +2001,9 @@ function AdminArea({
                 </span>
               )}
               <ProfileMenu
-                image={data.profile?.image}
+                image={data.profile?.heroImage || data.profile?.aboutImage || data.profile?.image}
                 username={username}
+                isLight={adminLight}
                 onEditProfile={() => goToSection("profile")}
                 onLogout={logout}
               />
@@ -1832,7 +2011,7 @@ function AdminArea({
           </div>
         </header>
 
-        {/* Nav drawer â€” mobile */}
+        {/* Nav drawer - mobile */}
         {mobileNavOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <button
@@ -1843,8 +2022,10 @@ function AdminArea({
             <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85%] flex-col border-r border-border bg-card shadow-2xl">
               <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary font-mono text-xs font-bold text-background">
-                    AV
+                  <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
+                    {data.profile?.heroImage || data.profile?.aboutImage || data.profile?.image ? (
+                      <img src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" className="h-full w-full object-cover" />
+                    ) : "AV"}
                   </span>
                   <div className="min-w-0">
                     <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
@@ -2018,19 +2199,19 @@ function AdminArea({
                 ))}
               </div>
 
-              <div className="mt-10 flex items-center justify-between gap-4 bento-card border-dashed border-red-500/30 bg-red-950/10 px-5 py-4">
-                <div>
-                  <p className="text-sm font-semibold text-red-400">
+              <div className="mt-10 flex flex-col gap-5 bento-card border-red-500/25 bg-red-500/[0.04] px-5 py-5 sm:flex-row sm:items-center sm:justify-between md:px-6">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-red-600 dark:text-red-400">
                     Reset all content
                   </p>
-                  <p className="text-xs text-red-400/70">
+                  <p className="mt-1 text-xs leading-5 text-red-600/70 dark:text-red-400/70">
                     Replaces everything with the original portfolio defaults.
                   </p>
                 </div>
                 <button
                   onClick={resetAll}
                   disabled={resetMutation.isPending}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-red-500/30 bg-red-950/30 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-900/50 hover:text-red-300 transition-colors"
+                  className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wider text-red-600 transition-colors hover:bg-red-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:text-white"
                 >
                   <RotateCcw size={13} /> Reset
                 </button>
@@ -2073,27 +2254,36 @@ function AdminArea({
               </div>
               <div className="bento-card p-5 md:p-8">
                 <div className="grid gap-6 md:grid-cols-2">
-                  {["hero", "about", "stats", "marquee", "education", "experience", "services", "projects", "testimonials", "contact"].map((key) => {
+                  {["hero", "about", "stats", "skills", "marquee", "education", "experience", "services", "projects", "testimonials", "contact"].map((key) => {
                     const isVisible = data.sectionVisibility?.[key as keyof typeof data.sectionVisibility] ?? true;
                     return (
-                      <label key={key} className="flex items-center justify-between p-4 rounded-lg border border-border bg-secondary/30">
+                      <label key={key} className="flex items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
                         <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
                           {key}
                         </span>
-                        <input
-                          type="checkbox"
-                          checked={isVisible}
-                          onChange={(e) => {
-                            persist({
-                              ...data,
-                              sectionVisibility: {
-                                ...data.sectionVisibility,
-                                [key]: e.target.checked,
-                              } as any,
-                            });
-                          }}
-                          className="h-5 w-5 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
-                        />
+                        <span className="flex items-center gap-2">
+                          <span className={`font-mono text-[10px] font-bold uppercase ${isVisible ? "text-primary" : "text-muted-foreground"}`}>
+                            {isVisible ? "On" : "Off"}
+                          </span>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={isVisible}
+                            aria-label={`${isVisible ? "Hide" : "Show"} ${key} section`}
+                            onClick={() => {
+                              persist({
+                                ...data,
+                                sectionVisibility: {
+                                  ...data.sectionVisibility,
+                                  [key]: !isVisible,
+                                } as any,
+                              }, undefined, `${key} section is now ${isVisible ? "hidden" : "visible"}.`);
+                            }}
+                            className={`relative h-8 w-14 shrink-0 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isVisible ? "border-primary bg-primary" : "border-muted-foreground/50 bg-secondary"}`}
+                          >
+                            <span className={`absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${isVisible ? "translate-x-6" : "translate-x-0"}`} />
+                          </button>
+                        </span>
                       </label>
                     );
                   })}
@@ -2108,7 +2298,7 @@ function AdminArea({
                   Customize the look and feel of your portfolio.
                 </p>
               </div>
-              <div className="bento-card p-5 md:p-8 flex flex-col gap-6">
+              <div className="bento-card p-5 md:p-8 flex flex-col gap-8">
                 <label className="block">
                   <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Accent Color (Hex)
@@ -2126,7 +2316,7 @@ function AdminArea({
                           },
                         });
                       }}
-                      className="h-10 w-16 cursor-pointer border-none bg-transparent p-0 rounded-lg"
+                      className="h-11 w-16 cursor-pointer rounded-lg border border-border bg-secondary p-1"
                     />
                     <input
                       type="text"
@@ -2140,7 +2330,7 @@ function AdminArea({
                           },
                         });
                       }}
-                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-2 text-sm outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground uppercase"
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-2 text-sm uppercase text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                     />
                   </div>
                 </label>
@@ -2148,23 +2338,26 @@ function AdminArea({
                   <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Theme Mode
                   </span>
-                  <select
-                    value={data.themeSettings?.mode || "dark"}
-                    onChange={(e) => {
-                      persist({
-                        ...data,
-                        themeSettings: {
-                          ...data.themeSettings,
-                          mode: e.target.value as "dark" | "light" | "auto",
-                        },
-                      });
-                    }}
-                    className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-                  >
-                    <option value="dark">Dark</option>
-                    <option value="light">Light</option>
-                    <option value="auto">Auto (System Default)</option>
-                  </select>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      ["dark", "Dark", Moon],
+                      ["light", "Light", Sun],
+                      ["auto", "System", Monitor],
+                    ] as const).map(([mode, label, Icon]) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        aria-pressed={(data.themeSettings?.mode || "dark") === mode}
+                        onClick={() => persist({
+                          ...data,
+                          themeSettings: { ...data.themeSettings, mode },
+                        })}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "dark") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
+                      >
+                        <Icon size={14} /> {label}
+                      </button>
+                    ))}
+                  </div>
                 </label>
               </div>
             </section>
@@ -2216,7 +2409,7 @@ function AdminArea({
                         <input
                           value={search}
                           onChange={(event) => setSearch(event.target.value)}
-                          placeholder="Searchâ€¦"
+                          placeholder="Search..."
                           className="w-36 rounded-lg border border-border bg-secondary/50 py-2 pl-8 pr-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground sm:w-48"
                         />
                       </div>

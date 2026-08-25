@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { ensureSchema, sql } from '@/lib/api-server/db';
+import { getContactSettings } from '@/lib/api-server/db';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
 
 // Very small in-memory rate limiter per serverless instance. Not a
@@ -54,15 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
-  const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
-  if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
+  const { identifier, username, password } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string };
+  const loginIdentifier = (identifier || username || '').trim();
+  if (!loginIdentifier || !password || typeof loginIdentifier !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
   const defaultAdminUsername = process.env.ADMIN_USERNAME?.trim() || 'admin';
   const defaultAdminPassword = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
 
-  if (username === defaultAdminUsername && password === defaultAdminPassword) {
+  if (loginIdentifier === defaultAdminUsername && password === defaultAdminPassword) {
     const token = signSession(defaultAdminUsername);
     setSessionCookie(res, token);
     return res.status(200).json({ ok: true, username: defaultAdminUsername });
@@ -70,21 +72,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await ensureSchema();
-    const result = await sql`SELECT username, password_hash FROM admin_users WHERE username = ${username} LIMIT 1;`;
+    const settings = await getContactSettings();
+    const adminEmail = (settings.contactToEmail || process.env.GMAIL_USER || '').trim().toLowerCase();
+    const result = await sql`SELECT username, password_hash FROM admin_users WHERE username = ${loginIdentifier} LIMIT 1;`;
     const user = result.rows[0];
+    const emailUser = !user && adminEmail && loginIdentifier.toLowerCase() === adminEmail
+      ? (await sql`SELECT username, password_hash FROM admin_users ORDER BY id ASC LIMIT 1;`).rows[0]
+      : undefined;
+    const matchedUser = user || emailUser;
 
     // Always run bcrypt.compare (even with a dummy hash) so responses
     // take the same time whether or not the username exists.
-    const hashToCheck = user?.password_hash ?? '$2a$10$invalidsaltinvalidsaltinvalidsaltinvalidsal';
+    const hashToCheck = matchedUser?.password_hash ?? '$2a$10$invalidsaltinvalidsaltinvalidsaltinvalidsal';
     const passwordMatches = await bcrypt.compare(password, hashToCheck);
 
-    if (!user || !passwordMatches) {
+    if (!matchedUser || !passwordMatches) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
-    const token = signSession(user.username);
+    const token = signSession(matchedUser.username);
     setSessionCookie(res, token);
-    return res.status(200).json({ ok: true, username: user.username });
+    return res.status(200).json({ ok: true, username: matchedUser.username });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
       return res.status(401).json({ error: 'Database is unavailable. Please try again later.' });

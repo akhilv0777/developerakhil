@@ -18,6 +18,7 @@ export type Project = {
   tags: string;
   accent: string;
   image?: string;
+  liveUrl?: string;
 };
 
 export type Education = {
@@ -59,6 +60,8 @@ export type Profile = {
   github: string;
   linkedin: string;
   image: string;
+  heroImage?: string;
+  aboutImage?: string;
   resume: string;
   resumeName: string;
   contactTitle: string;
@@ -71,6 +74,7 @@ export type SectionVisibility = {
   hero: boolean;
   about: boolean;
   stats: boolean;
+  skills: boolean;
   marquee: boolean;
   education: boolean;
   experience: boolean;

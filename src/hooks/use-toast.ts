@@ -1,5 +1,6 @@
 import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
+import { toast as toastify } from 'react-toastify';
 
 const TOAST_LIMIT = 1;
 // NOTE: this was 1000000ms (~16.6 minutes) — a leftover placeholder from the
@@ -142,6 +143,9 @@ type Toast = Omit<ToasterToast, 'id'>;
 
 function toast({ ...props }: Toast) {
   const id = genId();
+
+  const message = [props.title, props.description].filter(Boolean).join(' - ');
+  toastify(message || 'Done', { type: props.variant === 'destructive' ? 'error' : 'success' });
 
   const update = (props: ToasterToast) =>
     dispatch({

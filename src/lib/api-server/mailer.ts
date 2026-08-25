@@ -87,3 +87,19 @@ async function sendContactEmail(input: {
   return result;
 }
 export { sendContactEmail };
+
+export async function sendPasswordResetEmail(input: { recipient: string; resetUrl: string }) {
+  const settings = await getContactSettings();
+  const gmailUser = (settings.contactFromEmail || settings.contactToEmail || process.env.GMAIL_USER || '').trim();
+  const gmailAppPassword = (settings.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
+  if (!gmailUser || !gmailAppPassword) throw new Error('Email settings are not configured.');
+
+  const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: gmailUser, pass: gmailAppPassword } });
+  await transporter.sendMail({
+    from: gmailUser,
+    to: input.recipient,
+    subject: 'Reset your admin password',
+    text: `Use this link within 15 minutes to reset your password: ${input.resetUrl}`,
+    html: `<p>Use the link below within 15 minutes to reset your admin password.</p><p><a href="${escapeHtml(input.resetUrl)}">Reset password</a></p>`,
+  });
+}

@@ -16,6 +16,19 @@ export function signSession(username: string): string {
   return jwt.sign({ sub: username }, getSecret(), { expiresIn: SESSION_DURATION_SECONDS });
 }
 
+export function signPasswordResetToken(username: string): string {
+  return jwt.sign({ sub: username, purpose: 'password-reset' }, getSecret(), { expiresIn: 15 * 60 });
+}
+
+export function verifyPasswordResetToken(token: string): string | null {
+  try {
+    const payload = jwt.verify(token, getSecret()) as { sub?: string; purpose?: string };
+    return payload.purpose === 'password-reset' && payload.sub ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 export function parseCookies(header: string | undefined): Record<string, string> {
   const cookies: Record<string, string> = {};
   if (!header) return cookies;

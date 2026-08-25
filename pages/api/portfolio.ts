@@ -5,6 +5,19 @@ import { getSessionUser } from '@/lib/api-server/auth';
 const RESOURCE_KEYS = ['stats', 'services', 'projects', 'education', 'experience', 'testimonials'] as const;
 let inMemoryPortfolioData = JSON.parse(JSON.stringify(seedPortfolioData));
 
+function normalizePortfolioData(value: unknown) {
+  const normalized = JSON.parse(JSON.stringify(value)) as typeof seedPortfolioData;
+  normalized.profile.heroImage ||= normalized.profile.image || "";
+  normalized.profile.aboutImage ||= normalized.profile.image || "";
+  normalized.sectionVisibility.skills ??= true;
+  const existingIds = new Set(normalized.testimonials.map((item) => item.id));
+  normalized.testimonials = [
+    ...normalized.testimonials,
+    ...seedPortfolioData.testimonials.filter((item) => !existingIds.has(item.id)),
+  ];
+  return normalized;
+}
+
 function isDatabaseUnavailableError(error: unknown): boolean {
   if (error instanceof AggregateError) {
     return error.errors.some((err) => isDatabaseUnavailableError(err));
@@ -81,10 +94,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === 'GET') {
       try {
         const result = await sql`SELECT data FROM portfolio_content WHERE id = 1;`;
-        return res.status(200).json(result.rows[0]?.data ?? inMemoryPortfolioData);
+        return res.status(200).json(normalizePortfolioData(result.rows[0]?.data ?? inMemoryPortfolioData));
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
-          return res.status(200).json(inMemoryPortfolioData);
+          return res.status(200).json(normalizePortfolioData(inMemoryPortfolioData));
         }
         throw error;
       }
