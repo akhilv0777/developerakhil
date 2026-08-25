@@ -204,7 +204,7 @@ function LoginPage() {
 
       {/* Form panel */}
       <div className="flex flex-1 items-center justify-center px-5 py-16">
-        <div className="w-full max-w-sm bento-card glow-border p-8 rounded-2xl">
+        <div className="w-full max-w-sm bento-card glow-border p-6 rounded-xl">
           <div className="mb-8 flex flex-col gap-2 lg:hidden">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-background">
               <Lock size={18} />
@@ -667,7 +667,7 @@ function ProfileEditor({
             languages: languagesRaw.split(",").map((s) => s.trim()).filter(Boolean),
           });
         }}
-      className="bento-card p-5 md:p-8"
+      className="bento-card p-5 md:p-6"
     >
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         <div className="flex items-center gap-5">
@@ -924,7 +924,7 @@ function ChangePasswordModal({ onClose, isLight }: { onClose: () => void; isLigh
       />
       <div
         style={isLight ? { "--background": "0 0% 98%", "--foreground": "220 25% 12%", "--border": "220 18% 86%", "--card": "0 0% 100%", "--card-border": "220 18% 88%", "--secondary": "220 17% 96%", "--muted-foreground": "220 9% 40%" } as React.CSSProperties : undefined}
-        className="relative my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto bento-card bg-card p-6 shadow-2xl"
+        className="relative my-auto max-h-[90vh] w-full max-w-sm overflow-y-auto bento-card bg-card p-5 shadow-2xl"
       >
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-bold text-foreground">Change password</h3>
@@ -1008,7 +1008,7 @@ function ChangeUsernameModal({ onClose, isLight }: { onClose: () => void; isLigh
       <button aria-label="Close" onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         style={isLight ? { "--background": "0 0% 98%", "--foreground": "220 25% 12%", "--border": "220 18% 86%", "--card": "0 0% 100%", "--card-border": "220 18% 88%", "--secondary": "220 17% 96%", "--muted-foreground": "220 9% 40%" } as React.CSSProperties : undefined}
-        className="relative my-auto w-full max-w-sm bento-card bg-card p-6 shadow-2xl"
+        className="relative my-auto w-full max-w-sm bento-card bg-card p-5 shadow-2xl"
       >
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-lg font-bold text-foreground">Change username</h3>
@@ -1220,7 +1220,7 @@ function SettingsEditor() {
 
   if (loading) {
     return (
-      <div className="bento-card p-8 text-sm text-muted-foreground shadow-sm">
+      <div className="bento-card p-6 text-sm text-muted-foreground shadow-sm">
         <span className="flex items-center gap-3"><span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/25 border-t-primary" /> Loading settings...</span>
       </div>
     );
@@ -1229,7 +1229,7 @@ function SettingsEditor() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bento-card shadow-sm p-5 md:p-8"
+      className="bento-card shadow-sm p-5 md:p-6"
     >
       <div className="grid gap-6">
         <label className="block">
@@ -2252,7 +2252,7 @@ function AdminArea({
                   Toggle the visibility of sections on your portfolio.
                 </p>
               </div>
-              <div className="bento-card p-5 md:p-8">
+              <div className="bento-card p-5 md:p-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   {["hero", "about", "stats", "skills", "marquee", "education", "experience", "services", "projects", "testimonials", "contact"].map((key) => {
                     const isVisible = data.sectionVisibility?.[key as keyof typeof data.sectionVisibility] ?? true;
@@ -2298,7 +2298,7 @@ function AdminArea({
                   Customize the look and feel of your portfolio.
                 </p>
               </div>
-              <div className="bento-card p-5 md:p-8 flex flex-col gap-8">
+              <div className="bento-card p-5 md:p-6 flex flex-col gap-6">
                 <label className="block">
                   <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Accent Color (Hex)

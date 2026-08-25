@@ -334,7 +334,7 @@ function About({ profile }: { profile: Profile }) {
       id="about"
       className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
     >
-      <div className="bento-card p-8 md:p-16">
+      <div className="bento-card p-6 md:p-10">
         <SectionLabel number="01">ABOUT</SectionLabel>
         <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="space-y-6">
@@ -411,7 +411,7 @@ function Stats({ stats }: { stats: Stat[] }) {
         {stats.map((stat) => (
           <div
             key={stat.id}
-            className="bento-card flex flex-col items-center justify-center p-10 text-center transition-transform hover:-translate-y-1"
+            className="bento-card flex flex-col items-center justify-center p-6 text-center transition-transform hover:-translate-y-1"
           >
             <p data-testid={`stat-${stat.id}`}>
               <StatValue value={stat.value} />
@@ -431,7 +431,7 @@ function Skills({ profile }: { profile: Profile }) {
   if (!skills.length) return null;
   return (
     <section id="skills" className="mx-auto max-w-[1400px] px-5 py-16 md:px-10 md:py-24">
-      <div className="bento-card flex flex-col gap-8 p-8 md:flex-row md:items-center md:justify-between md:p-12">
+      <div className="bento-card flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div className="max-w-sm">
           <SectionLabel number="02">CAPABILITIES</SectionLabel>
           <h2 className="display-title text-3xl font-bold text-foreground">Tools I use to ship.</h2>
@@ -494,7 +494,7 @@ function Timeline({ data }: { data: PortfolioData }) {
         >
           {data.education.map((item) => (
             <div
-              className="bento-card group flex flex-col sm:flex-row gap-6 p-8 transition-all hover:-translate-y-1"
+              className="bento-card group flex flex-col sm:flex-row gap-5 p-6 transition-all hover:-translate-y-1"
               key={item.id}
             >
               <div className="sm:w-32 shrink-0">
@@ -532,7 +532,7 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
       >
         {data.experience.map((item) => (
           <div
-            className="bento-card group p-8 transition-all hover:-translate-y-1"
+            className="bento-card group p-6 transition-all hover:-translate-y-1"
             key={item.id}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -571,7 +571,7 @@ function Services({ data }: { data: PortfolioData }) {
         {data.services.map((service) => (
           <article
             key={service.id}
-            className="bento-card group p-10 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full"
+            className="bento-card group p-7 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full"
           >
             <div className="font-mono text-[2rem] font-bold text-primary mb-6">
               {service.number}
@@ -636,7 +636,7 @@ function Work({ data }: { data: PortfolioData }) {
               </div>
             </div>
 
-            <div className="flex flex-col flex-grow p-8">
+            <div className="flex flex-col flex-grow p-6">
               <div className="mb-4">
                 <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
                   {project.title}
@@ -660,7 +660,7 @@ function Work({ data }: { data: PortfolioData }) {
       </div>
       {selectedProject && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`${selectedProject.title} details`}>
-          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-7 md:p-10">
+          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6 md:p-8">
             <button type="button" onClick={() => setSelectedProject(null)} className="absolute right-5 top-5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary" aria-label="Close project details">×</button>
             <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">{selectedProject.category} · {selectedProject.year}</p>
             <h3 className="display-title mt-4 pr-10 text-3xl font-bold text-foreground">{selectedProject.title}</h3>
@@ -693,7 +693,7 @@ function Testimonials({ data }: { data: PortfolioData }) {
   return (
     <section id="testimonials" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
-      <div className="bento-card relative overflow-hidden p-8 md:p-16 border-l-4 border-l-primary">
+      <div className="bento-card relative overflow-hidden p-6 md:p-10 border-l-4 border-l-primary">
         <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none">
           "
         </div>
