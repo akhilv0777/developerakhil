@@ -8,17 +8,21 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
   Download,
   ExternalLink,
   Mail,
   MapPin,
   Menu,
+  Minus,
   Moon,
+  Plus,
   Sun,
   Phone,
   X,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
 import { useMotionFlow } from "@/lib/motionflow";
 import type {
@@ -61,7 +65,7 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
   const profile = data.profile;
   const [open, setOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
-  const [openGroup, setOpenGroup] = useState<string | null>("Profile");
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
   const profileLinks: Array<[string, string]> = [];
   if (data.sectionVisibility?.about) profileLinks.push(["about", "About"]);
   if (data.sectionVisibility?.skills ?? true) profileLinks.push(["skills", "Skills"]);
@@ -163,7 +167,7 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
             open
                 ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
               : "hidden"
-              } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-x-auto md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+              } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
         >
           {groups.map((group) => {
             const isSingle = group.items.length === 1 && group.label === "Hire me";
@@ -173,18 +177,23 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
               return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>{label}</a>;
             }
             return (
-              <div key={group.label} className="relative shrink-0">
-                <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex cursor-pointer items-center gap-1 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
-                  {group.label} <ChevronDown size={13} className={`transition-transform ${openGroup === group.label ? "rotate-180" : ""}`} />
+              <div key={group.label} className="group relative w-full shrink-0 md:w-auto">
+                <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors md:w-auto md:border-0 md:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
+                  {group.label}
+                  <span className="md:hidden" aria-hidden="true">
+                    {openGroup === group.label ? <Minus size={15} /> : <Plus size={15} />}
+                  </span>
+                  <ChevronDown size={13} className={`hidden transition-transform md:block ${openGroup === group.label ? "rotate-180" : ""}`} />
                 </button>
-                {openGroup === group.label && (
-                  <div className="mt-3 flex flex-col gap-3 border-l border-border pl-4 md:absolute md:left-1/2 md:top-full md:mt-4 md:min-w-44 md:-translate-x-1/2 md:rounded-xl md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl">
+                <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl md:absolute md:left-1/2 md:top-full md:mt-2 md:hidden md:-translate-x-1/2 md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl md:before:absolute md:before:-top-2 md:before:left-0 md:before:right-0 md:before:h-2 md:before:content-[''] md:group-hover:flex`}>
+                  <span className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground md:flex" aria-hidden="true">
+                    <ChevronUp size={12} strokeWidth={2.5} />
+                  </span>
                     {group.items.map(([href, label]) => {
                       const isActive = activeHash === href || (!activeHash && href === "about");
                       return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
                     })}
-                  </div>
-                )}
+                </div>
               </div>
             );
           })}
@@ -741,15 +750,11 @@ function Testimonials({ data }: { data: PortfolioData }) {
 
 function ContactForm({ email }: { email: string }) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
-    "idle",
-  );
-  const [errorMessage, setErrorMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending">("idle");
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setStatus("sending");
-    setErrorMessage("");
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -758,16 +763,14 @@ function ContactForm({ email }: { email: string }) {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(result?.message || "Could not send your message.");
+        throw new Error(result?.message);
       }
-      setStatus("sent");
       setForm({ name: "", email: "", message: "" });
-      window.setTimeout(() => setStatus("idle"), 5000);
-    } catch (error) {
-      setStatus("error");
-      setErrorMessage(
-        (error as Error).message || "Something went wrong. Please try again.",
-      );
+      setStatus("idle");
+      toast.success("Message sent successfully!");
+    } catch {
+      setStatus("idle");
+      toast.error("Something went wrong");
     }
   };
 
@@ -830,16 +833,6 @@ function ContactForm({ email }: { email: string }) {
           {status === "sending" ? "Sending…" : "Send message"}
           <ArrowUpRight className="h-4 w-4" />
         </button>
-        {status === "sent" && (
-          <span className="rounded-full border border-primary/20 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase text-primary">
-            Message sent — thank you!
-          </span>
-        )}
-        {status === "error" && (
-          <span className="rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 font-mono text-[10px] font-bold uppercase text-red-500">
-            {errorMessage}
-          </span>
-        )}
       </div>
     </form>
   );
@@ -1046,6 +1039,7 @@ export function PublicPortfolio() {
       className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary"
       style={customStyle}
     >
+      <ToastContainer position="top-left" autoClose={5000} theme={activeMode} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <div className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40" aria-hidden="true">
         <div className="h-full bg-primary transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
       </div>

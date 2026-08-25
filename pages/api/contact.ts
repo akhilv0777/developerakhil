@@ -40,15 +40,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await insertContactMessage({ name: name.trim(), email: email.trim(), message: message.trim() });
   } catch (error) {
     console.error("Failed to save contact message:", error);
-    return res.status(500).json({
-      message: (error as Error).message || "Could not send your message. Please try again.",
-    });
+    return res.status(500).json({ message: "Something went wrong" });
   }
 
   try {
     await sendContactEmail({ name: name.trim(), email: email.trim(), message: message.trim() });
   } catch (error) {
-    console.warn("Contact email delivery failed, but the message was saved to Postgres:", error);
+    console.error("Contact email delivery failed:", error);
+    return res.status(500).json({ message: "Something went wrong" });
   }
 
   return res.status(200).json({ ok: true, saved: true });
