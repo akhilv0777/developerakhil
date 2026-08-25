@@ -15,33 +15,38 @@ function resolveConnectionString(): string {
     process.env.DATABASE_URL,
   ].filter((value): value is string => Boolean(value));
 
-  const usable = candidates.find(
+  let connectionString: string | undefined = candidates.find(
     (url) => url.startsWith("postgres://") || url.startsWith("postgresql://"),
   );
-  if (usable) return usable;
 
-  // Handle Prisma Postgres local proxy URLs by decoding the api_key base64 payload
-  const prismaPgUrl = candidates.find((url) => url.startsWith("prisma+postgres://"));
-  if (prismaPgUrl) {
-    try {
-      const urlObj = new URL(prismaPgUrl);
-      let apiKey = urlObj.searchParams.get("api_key");
-      if (apiKey) {
-        // Fix base64url encoding
-        apiKey = apiKey.replace(/-/g, "+").replace(/_/g, "/");
-        const pad = apiKey.length % 4;
-        if (pad) {
-          apiKey += "=".repeat(4 - pad);
+  if (!connectionString) {
+    // Handle Prisma Postgres local proxy URLs by decoding the api_key base64 payload
+    const prismaPgUrl = candidates.find((url) => url.startsWith("prisma+postgres://"));
+    if (prismaPgUrl) {
+      try {
+        const urlObj = new URL(prismaPgUrl);
+        let apiKey = urlObj.searchParams.get("api_key");
+        if (apiKey) {
+          // Fix base64url encoding
+          apiKey = apiKey.replace(/-/g, "+").replace(/_/g, "/");
+          const pad = apiKey.length % 4;
+          if (pad) {
+            apiKey += "=".repeat(4 - pad);
+          }
+          const decoded = Buffer.from(apiKey, "base64").toString("utf8");
+          const payload = JSON.parse(decoded);
+          if (payload.databaseUrl) {
+            connectionString = payload.databaseUrl;
+          }
         }
-        const decoded = Buffer.from(apiKey, "base64").toString("utf8");
-        const payload = JSON.parse(decoded);
-        if (payload.databaseUrl) {
-          return payload.databaseUrl;
-        }
+      } catch (err) {
+        console.warn("Failed to parse prisma+postgres URL", err);
       }
-    } catch (err) {
-      console.warn("Failed to parse prisma+postgres URL", err);
     }
+  }
+
+  if (connectionString) {
+    return connectionString.replace(/sslmode=(?:require|prefer|verify-ca)/g, "sslmode=verify-full");
   }
 
   if (candidates.length > 0) {
