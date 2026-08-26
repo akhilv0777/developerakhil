@@ -100,4 +100,3 @@ export type PortfolioData = {
   sectionVisibility: SectionVisibility;
   themeSettings: ThemeSettings;
 };
-

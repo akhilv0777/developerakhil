@@ -36,9 +36,12 @@ import { usePortfolioQuery } from "@/lib/portfolio-api";
 import Image from "next/image";
 
 function hexToHsl(hex: string): string {
-  let cleanHex = hex.replace(/^#/, '');
+  let cleanHex = hex.replace(/^#/, "");
   if (cleanHex.length === 3) {
-    cleanHex = cleanHex.split('').map(char => char + char).join('');
+    cleanHex = cleanHex
+      .split("")
+      .map((char) => char + char)
+      .join("");
   }
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
   const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
@@ -46,16 +49,23 @@ function hexToHsl(hex: string): string {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0;
+  let h = 0,
+    s = 0;
   const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -63,20 +73,33 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: boolean; onToggleTheme: () => void }) {
+function Nav({
+  data,
+  isLight,
+  onToggleTheme,
+}: {
+  data: PortfolioData;
+  isLight: boolean;
+  onToggleTheme: () => void;
+}) {
   const profile = data.profile;
   const [open, setOpen] = useState(false);
   const [activeHash, setActiveHash] = useState("");
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const profileLinks: Array<[string, string]> = [];
   if (data.sectionVisibility?.about) profileLinks.push(["about", "About"]);
-  if (data.sectionVisibility?.skills ?? true) profileLinks.push(["skills", "Skills"]);
-  if (data.sectionVisibility?.education) profileLinks.push(["education", "Education"]);
-  if (data.sectionVisibility?.experience) profileLinks.push(["experience", "Experience"]);
+  if (data.sectionVisibility?.skills ?? true)
+    profileLinks.push(["skills", "Skills"]);
+  if (data.sectionVisibility?.education)
+    profileLinks.push(["education", "Education"]);
+  if (data.sectionVisibility?.experience)
+    profileLinks.push(["experience", "Experience"]);
   const workLinks: Array<[string, string]> = [];
-  if (data.sectionVisibility?.services) workLinks.push(["services", "Services"]);
+  if (data.sectionVisibility?.services)
+    workLinks.push(["services", "Services"]);
   if (data.sectionVisibility?.projects) workLinks.push(["work", "Projects"]);
-  if (data.sectionVisibility?.testimonials) workLinks.push(["testimonials", "Testimonials"]);
+  if (data.sectionVisibility?.testimonials)
+    workLinks.push(["testimonials", "Testimonials"]);
   const groups: Array<{ label: string; items: Array<[string, string]> }> = [
     {
       label: "Profile",
@@ -86,7 +109,14 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
       label: "Work",
       items: workLinks,
     },
-    ...(data.sectionVisibility?.contact ? [{ label: "Hire me", items: [["contact", "Hire me"] as [string, string]] }] : []),
+    ...(data.sectionVisibility?.contact
+      ? [
+          {
+            label: "Hire me",
+            items: [["contact", "Hire me"] as [string, string]],
+          },
+        ]
+      : []),
   ];
   const links = groups.flatMap((group) => group.items);
   const initials =
@@ -148,7 +178,7 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
           className="flex items-center gap-3 group"
           data-testid="link-home"
         >
-          {(profile.heroImage || profile.image) ? (
+          {profile.heroImage || profile.image ? (
             <Image
               src={profile.heroImage || profile.image}
               alt={profile.name}
@@ -169,34 +199,87 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
         <nav
           className={`${
             open
-                ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
+              ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
               : "hidden"
-              } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+          } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
         >
           {groups.map((group) => {
-            const isSingle = group.items.length === 1 && group.label === "Hire me";
-            const groupActive = group.items.some(([href]) => activeHash === href);
+            const isSingle =
+              group.items.length === 1 && group.label === "Hire me";
+            const groupActive = group.items.some(
+              ([href]) => activeHash === href,
+            );
             if (isSingle) {
               const [href, label] = group.items[0];
-              return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>{label}</a>;
+              return (
+                <a
+                  key={href}
+                  href={`#${href}`}
+                  onClick={() => setOpen(false)}
+                  className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                  data-testid={`link-nav-${href}`}
+                  aria-current={groupActive ? "page" : undefined}
+                >
+                  {label}
+                </a>
+              );
             }
             return (
-              <div key={group.label} className="group relative w-full shrink-0 md:w-auto">
-                <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors md:w-auto md:border-0 md:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
+              <div
+                key={group.label}
+                className="group relative w-full shrink-0 md:w-auto"
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenGroup((current) =>
+                      current === group.label ? null : group.label,
+                    )
+                  }
+                  className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors md:w-auto md:border-0 md:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                  aria-expanded={openGroup === group.label}
+                >
                   {group.label}
                   <span className="md:hidden" aria-hidden="true">
-                    {openGroup === group.label ? <Minus size={15} /> : <Plus size={15} />}
+                    {openGroup === group.label ? (
+                      <Minus size={15} />
+                    ) : (
+                      <Plus size={15} />
+                    )}
                   </span>
-                  <ChevronDown size={13} className={`hidden transition-transform md:block ${openGroup === group.label ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    size={13}
+                    className={`hidden transition-transform md:block ${openGroup === group.label ? "rotate-180" : ""}`}
+                  />
                 </button>
-                <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl md:absolute md:left-1/2 md:top-full md:mt-2 md:hidden md:-translate-x-1/2 md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl md:before:absolute md:before:-top-2 md:before:left-0 md:before:right-0 md:before:h-2 md:before:content-[''] md:group-hover:flex`}>
-                  <span className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground md:flex" aria-hidden="true">
+                <div
+                  className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl md:absolute md:left-1/2 md:top-full md:mt-2 md:hidden md:-translate-x-1/2 md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl md:before:absolute md:before:-top-2 md:before:left-0 md:before:right-0 md:before:h-2 md:before:content-[''] md:group-hover:flex`}
+                >
+                  <span
+                    className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground md:flex"
+                    aria-hidden="true"
+                  >
                     <ChevronUp size={12} strokeWidth={2.5} />
                   </span>
-                    {group.items.map(([href, label]) => {
-                      const isActive = activeHash === href || (!activeHash && href === "about");
-                      return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
-                    })}
+                  {group.items.map(([href, label]) => {
+                    const isActive =
+                      activeHash === href || (!activeHash && href === "about");
+                    return (
+                      <a
+                        key={href}
+                        href={`#${href}`}
+                        onClick={() => {
+                          setOpen(false);
+                          setOpenGroup(null);
+                        }}
+                        className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                        data-testid={`link-nav-${href}`}
+                        aria-current={isActive ? "page" : undefined}
+                      >
+                        {label}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -250,24 +333,42 @@ function TypingRoles({ roles }: { roles: string[] }) {
   const safeRoles = roles.filter(Boolean);
 
   if (!safeRoles.length) {
-    return <span className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">Developer</span>;
+    return (
+      <span className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+        Developer
+      </span>
+    );
   }
 
   return (
     <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
       <span>I am a</span>
-      <span data-mf-text-type="typing" data-mf-text-typing-speed="85" data-mf-text-typing-delete-speed="45" data-mf-text-typing-interval="1200" data-mf-text-typing-loop="true" data-mf-text-typing-cursor="true" className="inline-flex min-w-[120px] items-center text-primary">
-        {safeRoles.map((role) => <span key={role}>{role}</span>)}
+      <span
+        data-mf-text-type="typing"
+        data-mf-text-typing-speed="85"
+        data-mf-text-typing-delete-speed="45"
+        data-mf-text-typing-interval="1200"
+        data-mf-text-typing-loop="true"
+        data-mf-text-typing-cursor="true"
+        className="inline-flex min-w-[120px] items-center text-primary"
+      >
+        {safeRoles.map((role) => (
+          <span key={role}>{role}</span>
+        ))}
       </span>
     </span>
   );
 }
 
 function Hero({ profile }: { profile: Profile }) {
-  const roles = (profile.roles?.length ? profile.roles : [profile.tagline]).filter(Boolean);
-  const heroBadge = profile.tagline === "Editor • Developer • YouTuber" || profile.tagline === "Editor • Developer • Youtuber"
-    ? "Available for freelance work"
-    : profile.tagline || "Available for freelance work";
+  const roles = (
+    profile.roles?.length ? profile.roles : [profile.tagline]
+  ).filter(Boolean);
+  const heroBadge =
+    profile.tagline === "Editor • Developer • YouTuber" ||
+    profile.tagline === "Editor • Developer • Youtuber"
+      ? "Available for freelance work"
+      : profile.tagline || "Available for freelance work";
   const resumeHref = profile.resume || "#contact";
 
   return (
@@ -305,7 +406,9 @@ function Hero({ profile }: { profile: Profile }) {
 
             <a
               href={resumeHref}
-              download={profile.resume ? profile.resumeName || "resume.pdf" : undefined}
+              download={
+                profile.resume ? profile.resumeName || "resume.pdf" : undefined
+              }
               className="group inline-flex w-fit items-center gap-3 rounded-full border border-primary/60 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground transition-all duration-300 hover:border-primary hover:text-primary"
               data-testid="link-hero-resume"
             >
@@ -327,15 +430,30 @@ function Hero({ profile }: { profile: Profile }) {
               <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
               <div className="absolute inset-x-7 bottom-7 z-10 flex items-end justify-between gap-4">
                 <div>
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">Currently building</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Digital products with purpose.</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    Currently building
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    Digital products with purpose.
+                  </p>
                 </div>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/20 text-primary backdrop-blur-md"><ArrowUpRight size={15} /></span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/20 text-primary backdrop-blur-md">
+                  <ArrowUpRight size={15} />
+                </span>
               </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 font-mono text-[10px] uppercase tracking-wider">
-              <div className="glass-surface rounded-lg px-3 py-3 text-muted-foreground"><span className="mb-1 block text-primary">Based in</span>{profile.location}</div>
-              <a href={`mailto:${profile.email}`} className="glass-surface rounded-lg px-3 py-3 text-muted-foreground transition-colors hover:text-primary"><span className="mb-1 block text-primary">Open to</span>Collaborations</a>
+              <div className="glass-surface rounded-lg px-3 py-3 text-muted-foreground">
+                <span className="mb-1 block text-primary">Based in</span>
+                {profile.location}
+              </div>
+              <a
+                href={`mailto:${profile.email}`}
+                className="glass-surface rounded-lg px-3 py-3 text-muted-foreground transition-colors hover:text-primary"
+              >
+                <span className="mb-1 block text-primary">Open to</span>
+                Collaborations
+              </a>
             </div>
           </div>
         )}
@@ -354,7 +472,7 @@ function About({ profile }: { profile: Profile }) {
         <SectionLabel number="01">ABOUT</SectionLabel>
         <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="space-y-6">
-            {(profile.aboutImage || profile.heroImage || profile.image) ? (
+            {profile.aboutImage || profile.heroImage || profile.image ? (
               <div className="portrait-frame aspect-[4/5] p-3">
                 <Image
                   src={profile.aboutImage || profile.heroImage || profile.image}
@@ -365,8 +483,12 @@ function About({ profile }: { profile: Profile }) {
                 />
                 <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
                 <div className="absolute bottom-7 left-7 z-10">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">Profile / Snapshot</p>
-                  <p className="mt-1 text-sm font-semibold text-white">Developer · Creator · Problem solver</p>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    Profile / Snapshot
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    Developer · Creator · Problem solver
+                  </p>
                 </div>
               </div>
             ) : null}
@@ -377,12 +499,25 @@ function About({ profile }: { profile: Profile }) {
               {profile.bio1}
             </p>
             {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
-              <div data-mf-animation="fade-up" className="mt-8 flex flex-wrap gap-2">
-                {profile.skills?.map(skill => (
-                  <span key={skill} className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground">{skill}</span>
+              <div
+                data-mf-animation="fade-up"
+                className="mt-8 flex flex-wrap gap-2"
+              >
+                {profile.skills?.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
+                  >
+                    {skill}
+                  </span>
                 ))}
-                {profile.languages?.map(lang => (
-                  <span key={lang} className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">{lang}</span>
+                {profile.languages?.map((lang) => (
+                  <span
+                    key={lang}
+                    className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
+                  >
+                    {lang}
+                  </span>
                 ))}
               </div>
             )}
@@ -404,7 +539,11 @@ function About({ profile }: { profile: Profile }) {
 function StatValue({ value }: { value: string }) {
   const match = value.match(/^(\d[\d,]*)(.*)$/);
   if (!match) {
-    return <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">{value}</span>;
+    return (
+      <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">
+        {value}
+      </span>
+    );
   }
   const [, digits, suffix] = match;
   const target = Number(digits.replace(/,/g, ""));
@@ -453,15 +592,23 @@ function Skills({ profile }: { profile: Profile }) {
   const skills = profile.skills || [];
   if (!skills.length) return null;
   return (
-    <section id="skills" className="mx-auto max-w-[1400px] px-5 py-16 md:px-10 md:py-24">
+    <section
+      id="skills"
+      className="mx-auto max-w-[1400px] px-5 py-16 md:px-10 md:py-24"
+    >
       <div className="bento-card flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div className="max-w-sm">
           <SectionLabel number="02">CAPABILITIES</SectionLabel>
-          <h2 className="display-title text-3xl font-bold text-foreground">Tools I use to ship.</h2>
+          <h2 className="display-title text-3xl font-bold text-foreground">
+            Tools I use to ship.
+          </h2>
         </div>
         <div className="flex max-w-2xl flex-wrap gap-3">
           {skills.map((skill) => (
-            <span key={skill} className="cursor-default rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary">
+            <span
+              key={skill}
+              className="cursor-default rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
+            >
               {skill}
             </span>
           ))}
@@ -478,7 +625,10 @@ function Marquee({ services }: { services: Service[] }) {
       : ["Research", "Design", "Code", "Ship", "Learn"];
 
   return (
-    <div id="services-strip" className="my-10 overflow-hidden bg-secondary py-6 border-y border-border">
+    <div
+      id="services-strip"
+      className="my-10 overflow-hidden bg-secondary py-6 border-y border-border"
+    >
       <div
         data-mf-ticker
         data-mf-ticker-speed="45"
@@ -490,7 +640,8 @@ function Marquee({ services }: { services: Service[] }) {
             key={`${word}-${index}`}
             className="px-6 flex items-center gap-6"
           >
-            {word} <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            {word}{" "}
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
           </span>
         ))}
       </div>
@@ -500,7 +651,10 @@ function Marquee({ services }: { services: Service[] }) {
 
 function Timeline({ data }: { data: PortfolioData }) {
   return (
-    <section id="education" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section
+      id="education"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
       <div className="grid gap-16 md:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
           <SectionLabel number="02">EDUCATION</SectionLabel>
@@ -546,7 +700,10 @@ function Timeline({ data }: { data: PortfolioData }) {
 
 function ExperienceSection({ data }: { data: PortfolioData }) {
   return (
-    <section id="experience" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section
+      id="experience"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
       <SectionLabel number="03">EXPERIENCE</SectionLabel>
       <div
         data-mf-stagger-animation="fade-up"
@@ -583,7 +740,10 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
 
 function Services({ data }: { data: PortfolioData }) {
   return (
-    <section id="services" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section
+      id="services"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
       <SectionLabel number="04">SERVICES</SectionLabel>
 
       <div
@@ -670,25 +830,63 @@ function Work({ data }: { data: PortfolioData }) {
                 {project.description}
               </p>
               <div className="flex w-full flex-wrap items-center gap-3 opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
-                <button type="button" onClick={() => setSelectedProject(project)} className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProject(project)}
+                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
+                >
                   View project details <ArrowUpRight size={13} />
                 </button>
-                {project.liveUrl && <a href={project.liveUrl} target="_blank" rel="noreferrer" className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto">
-                  View live project <ExternalLink size={13} />
-                </a>}
+                {project.liveUrl && (
+                  <a
+                    href={project.liveUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto"
+                  >
+                    View live project <ExternalLink size={13} />
+                  </a>
+                )}
               </div>
             </div>
           </article>
         ))}
       </div>
       {selectedProject && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md" role="dialog" aria-modal="true" aria-label={`${selectedProject.title} details`}>
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${selectedProject.title} details`}
+        >
           <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6 md:p-8">
-            <button type="button" onClick={() => setSelectedProject(null)} className="absolute right-5 top-5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary" aria-label="Close project details">×</button>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">{selectedProject.category} · {selectedProject.year}</p>
-            <h3 className="display-title mt-4 pr-10 text-3xl font-bold text-foreground">{selectedProject.title}</h3>
-            <p className="mt-6 whitespace-pre-line text-base leading-[1.8] text-muted-foreground">{selectedProject.description}</p>
-            {selectedProject.liveUrl && <a href={selectedProject.liveUrl} target="_blank" rel="noreferrer" className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background"><ExternalLink size={14} /> Open live project</a>}
+            <button
+              type="button"
+              onClick={() => setSelectedProject(null)}
+              className="absolute right-5 top-5 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary"
+              aria-label="Close project details"
+            >
+              ×
+            </button>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+              {selectedProject.category} · {selectedProject.year}
+            </p>
+            <h3 className="display-title mt-4 pr-10 text-3xl font-bold text-foreground">
+              {selectedProject.title}
+            </h3>
+            <p className="mt-6 whitespace-pre-line text-base leading-[1.8] text-muted-foreground">
+              {selectedProject.description}
+            </p>
+            {selectedProject.liveUrl && (
+              <a
+                href={selectedProject.liveUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background"
+              >
+                <ExternalLink size={14} /> Open live project
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -710,15 +908,21 @@ function Testimonials({ data }: { data: PortfolioData }) {
   if (!data.testimonials || data.testimonials.length === 0) return null;
   const item = data.testimonials[currentIndex];
   const changeTestimonial = (direction: number) => {
-    setCurrentIndex((index) => (index + direction + data.testimonials.length) % data.testimonials.length);
+    setCurrentIndex(
+      (index) =>
+        (index + direction + data.testimonials.length) %
+        data.testimonials.length,
+    );
   };
 
   return (
-    <section id="testimonials" className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32">
+    <section
+      id="testimonials"
+      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+    >
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
       <div className="bento-card relative overflow-hidden p-6 md:p-10 border-l-4 border-l-primary">
-        <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none">
-        </div>
+        <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none"></div>
         <div className="relative z-10 flex flex-col justify-center min-h-[250px]">
           <div
             key={currentIndex}
@@ -744,9 +948,16 @@ function Testimonials({ data }: { data: PortfolioData }) {
           </div>
 
           <div className="mt-12 flex items-center gap-3">
-            {data.testimonials.length > 1 && <button type="button" onClick={() => changeTestimonial(-1)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary" aria-label="Previous testimonial">
-              <ChevronLeft size={16} />
-            </button>}
+            {data.testimonials.length > 1 && (
+              <button
+                type="button"
+                onClick={() => changeTestimonial(-1)}
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
+                aria-label="Previous testimonial"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
             {data.testimonials.map((_, idx) => (
               <button
                 key={idx}
@@ -760,9 +971,16 @@ function Testimonials({ data }: { data: PortfolioData }) {
                 aria-label={`View testimonial ${idx + 1}`}
               />
             ))}
-            {data.testimonials.length > 1 && <button type="button" onClick={() => changeTestimonial(1)} className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary" aria-label="Next testimonial">
-              <ChevronRight size={16} />
-            </button>}
+            {data.testimonials.length > 1 && (
+              <button
+                type="button"
+                onClick={() => changeTestimonial(1)}
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
+                aria-label="Next testimonial"
+              >
+                <ChevronRight size={16} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -975,22 +1193,40 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
       {error ? (
         <div className="loader-panel glass-surface max-w-sm p-8">
           <div className="loader-mark loader-mark-error mx-auto mb-6">!</div>
-          <p className="font-mono text-[12px] font-bold uppercase tracking-wider text-red-400 mb-3">Unable to load portfolio</p>
-          <p className="text-sm leading-6 text-muted-foreground">The content is taking a little longer than expected. Refresh the page and try again.</p>
+          <p className="font-mono text-[12px] font-bold uppercase tracking-wider text-red-400 mb-3">
+            Unable to load portfolio
+          </p>
+          <p className="text-sm leading-6 text-muted-foreground">
+            The content is taking a little longer than expected. Refresh the
+            page and try again.
+          </p>
         </div>
       ) : (
         <div className="loader-panel glass-surface w-full max-w-sm p-8">
           <div className="loader-mark mx-auto">AV</div>
           <div className="loader-terminal mt-7 text-left" aria-hidden="true">
-            <p><span className="text-primary">$</span> ./initialize-portfolio<span className="loader-cursor" /></p>
-            <p className="loader-line"><span className="text-accent">[ok]</span> loading projects...</p>
-            <p className="loader-line loader-line-delay"><span className="text-accent">[ok]</span> loading experience...</p>
+            <p>
+              <span className="text-primary">$</span> ./initialize-portfolio
+              <span className="loader-cursor" />
+            </p>
+            <p className="loader-line">
+              <span className="text-accent">[ok]</span> loading projects...
+            </p>
+            <p className="loader-line loader-line-delay">
+              <span className="text-accent">[ok]</span> loading experience...
+            </p>
           </div>
           <div className="mt-6 text-center">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">Compiling portfolio</p>
-            <p className="mt-2 text-sm text-muted-foreground">Building a sharper view of the work.</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">
+              Compiling portfolio
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Building a sharper view of the work.
+            </p>
           </div>
-          <div className="loader-track mt-7"><span /></div>
+          <div className="loader-track mt-7">
+            <span />
+          </div>
         </div>
       )}
     </div>
@@ -1000,7 +1236,9 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
-  const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(null);
+  const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(
+    null,
+  );
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -1009,7 +1247,9 @@ export function PublicPortfolio() {
       .then((settings: { siteName?: string; faviconUrl?: string }) => {
         if (settings.siteName) document.title = settings.siteName;
         if (settings.faviconUrl) {
-          document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]').forEach((link) => link.remove());
+          document
+            .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
+            .forEach((link) => link.remove());
           const icon = document.createElement("link");
           icon.id = "site-favicon";
           icon.rel = "icon";
@@ -1024,7 +1264,8 @@ export function PublicPortfolio() {
 
   useEffect(() => {
     const updateProgress = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
     };
     updateProgress();
@@ -1078,30 +1319,52 @@ export function PublicPortfolio() {
       className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary"
       style={customStyle}
     >
-      <ToastContainer position="top-left" autoClose={5000} theme={activeMode} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
-      <div className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40" aria-hidden="true">
-        <div className="h-full bg-primary transition-[width] duration-150" style={{ width: `${scrollProgress}%` }} />
+      <ToastContainer
+        position="top-left"
+        autoClose={5000}
+        theme={activeMode}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      <div
+        className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40"
+        aria-hidden="true"
+      >
+        <div
+          className="h-full bg-primary transition-[width] duration-150"
+          style={{ width: `${scrollProgress}%` }}
+        />
       </div>
       <Nav
         data={data}
         isLight={activeMode === "light"}
-        onToggleTheme={() => setThemeOverride(activeMode === "light" ? "dark" : "light")}
+        onToggleTheme={() =>
+          setThemeOverride(activeMode === "light" ? "dark" : "light")
+        }
       />
       <main>
         {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
         {data.sectionVisibility?.about && <About profile={data.profile} />}
         {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
-        {(data.sectionVisibility?.skills ?? true) && <Skills profile={data.profile} />}
-        {data.sectionVisibility?.services && <Marquee services={data.services} />}
+        {(data.sectionVisibility?.skills ?? true) && (
+          <Skills profile={data.profile} />
+        )}
+        {data.sectionVisibility?.services && (
+          <Marquee services={data.services} />
+        )}
         {data.sectionVisibility?.education && <Timeline data={data} />}
-        {data.sectionVisibility?.experience && <ExperienceSection data={data} />}
+        {data.sectionVisibility?.experience && (
+          <ExperienceSection data={data} />
+        )}
         {data.sectionVisibility?.services && <Services data={data} />}
         {data.sectionVisibility?.projects && <Work data={data} />}
         {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
         {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
       </main>
       <Footer profile={data.profile} />
-
     </div>
   );
 }

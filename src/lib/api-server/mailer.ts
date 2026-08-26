@@ -17,12 +17,27 @@ async function sendContactEmail(input: {
 }) {
   const settings = await getContactSettings();
 
-  const gmailUser = (settings.contactFromEmail || settings.contactToEmail || process.env.GMAIL_USER || "").trim();
-  const recipient = (settings.contactToEmail || process.env.GMAIL_USER || "").trim();
-  const gmailAppPassword = (settings.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || "").replace(/\s/g, "");
+  const gmailUser = (
+    settings.contactFromEmail ||
+    settings.contactToEmail ||
+    process.env.GMAIL_USER ||
+    ""
+  ).trim();
+  const recipient = (
+    settings.contactToEmail ||
+    process.env.GMAIL_USER ||
+    ""
+  ).trim();
+  const gmailAppPassword = (
+    settings.gmailAppPassword ||
+    process.env.GMAIL_APP_PASSWORD ||
+    ""
+  ).replace(/\s/g, "");
 
   if (!gmailUser) {
-    throw new Error("Missing sender Gmail address. Configure contactFromEmail or GMAIL_USER.");
+    throw new Error(
+      "Missing sender Gmail address. Configure contactFromEmail or GMAIL_USER.",
+    );
   }
 
   if (!recipient) {
@@ -30,7 +45,9 @@ async function sendContactEmail(input: {
   }
 
   if (!gmailAppPassword) {
-    throw new Error("Missing Gmail app password. Configure gmailAppPassword or GMAIL_APP_PASSWORD.");
+    throw new Error(
+      "Missing Gmail app password. Configure gmailAppPassword or GMAIL_APP_PASSWORD.",
+    );
   }
 
   const transporter = nodemailer.createTransport({
@@ -88,26 +105,42 @@ async function sendContactEmail(input: {
 }
 export { sendContactEmail };
 
-export async function sendPasswordResetEmail(input: { recipient: string; resetUrl: string }) {
+export async function sendPasswordResetEmail(input: {
+  recipient: string;
+  resetUrl: string;
+}) {
   const settings = await getContactSettings();
-  const gmailUser = (settings.contactFromEmail || settings.contactToEmail || process.env.GMAIL_USER || '').trim();
-  const gmailAppPassword = (settings.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-  if (!gmailUser || !gmailAppPassword) throw new Error('Email settings are not configured.');
+  const gmailUser = (
+    settings.contactFromEmail ||
+    settings.contactToEmail ||
+    process.env.GMAIL_USER ||
+    ""
+  ).trim();
+  const gmailAppPassword = (
+    settings.gmailAppPassword ||
+    process.env.GMAIL_APP_PASSWORD ||
+    ""
+  ).replace(/\s/g, "");
+  if (!gmailUser || !gmailAppPassword)
+    throw new Error("Email settings are not configured.");
 
-  const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: gmailUser, pass: gmailAppPassword } });
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: gmailUser, pass: gmailAppPassword },
+  });
   await transporter.sendMail({
     from: gmailUser,
     to: input.recipient,
-    subject: 'Reset your admin password | Portfolio Console',
+    subject: "Reset your admin password | Portfolio Console",
     text: [
-      'Reset your admin password',
-      '',
-      'We received a request to reset the password for your Portfolio Console.',
-      'This link expires in 15 minutes:',
+      "Reset your admin password",
+      "",
+      "We received a request to reset the password for your Portfolio Console.",
+      "This link expires in 15 minutes:",
       input.resetUrl,
-      '',
-      'If you did not request this, you can safely ignore this email.',
-    ].join('\n'),
+      "",
+      "If you did not request this, you can safely ignore this email.",
+    ].join("\n"),
     html: `
       <div style="margin:0;background:#f4f7f6;padding:32px 16px;font-family:Arial,sans-serif;color:#17201d;">
         <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dce7e2;border-radius:12px;overflow:hidden;">
@@ -127,17 +160,33 @@ export async function sendPasswordResetEmail(input: { recipient: string; resetUr
   });
 }
 
-export async function sendLoginOtpEmail(input: { recipient: string; otp: string }) {
+export async function sendLoginOtpEmail(input: {
+  recipient: string;
+  otp: string;
+}) {
   const settings = await getContactSettings();
-  const gmailUser = (settings.contactFromEmail || settings.contactToEmail || process.env.GMAIL_USER || '').trim();
-  const gmailAppPassword = (settings.gmailAppPassword || process.env.GMAIL_APP_PASSWORD || '').replace(/\s/g, '');
-  if (!gmailUser || !gmailAppPassword) throw new Error('Email settings are not configured.');
+  const gmailUser = (
+    settings.contactFromEmail ||
+    settings.contactToEmail ||
+    process.env.GMAIL_USER ||
+    ""
+  ).trim();
+  const gmailAppPassword = (
+    settings.gmailAppPassword ||
+    process.env.GMAIL_APP_PASSWORD ||
+    ""
+  ).replace(/\s/g, "");
+  if (!gmailUser || !gmailAppPassword)
+    throw new Error("Email settings are not configured.");
 
-  const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: gmailUser, pass: gmailAppPassword } });
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: gmailUser, pass: gmailAppPassword },
+  });
   await transporter.sendMail({
     from: gmailUser,
     to: input.recipient,
-    subject: 'Your Portfolio Console verification code',
+    subject: "Your Portfolio Console verification code",
     text: `Your Portfolio Console verification code is ${input.otp}. It expires in 10 minutes. If you did not try to sign in, secure your account immediately.`,
     html: `<div style="margin:0;background:#f4f7f6;padding:32px 16px;font-family:Arial,sans-serif;color:#17201d;"><div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dce7e2;border-radius:12px;overflow:hidden;"><div style="background:#173b35;padding:28px 32px;color:#ffffff;"><p style="margin:0 0 8px;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:#a9d8c7;">Portfolio Console</p><h1 style="margin:0;font-size:26px;line-height:1.2;">Verify your sign-in</h1></div><div style="padding:32px;"><p style="margin:0 0 16px;font-size:16px;line-height:1.6;">Use this one-time code to finish signing in:</p><p style="margin:0 0 24px;background:#edf7f3;border:1px solid #c4e4d8;border-radius:8px;padding:18px;text-align:center;color:#173b35;font-size:32px;font-weight:bold;letter-spacing:8px;">${escapeHtml(input.otp)}</p><p style="margin:0;font-size:12px;line-height:1.6;color:#71807a;">This code expires in 10 minutes. If you did not try to sign in, you can safely ignore this email.</p></div></div></div>`,
   });

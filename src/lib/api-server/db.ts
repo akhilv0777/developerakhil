@@ -22,7 +22,9 @@ function resolveConnectionString(): string {
 
   if (!connectionString) {
     // Handle Prisma Postgres local proxy URLs by decoding the api_key base64 payload
-    const prismaPgUrl = candidates.find((url) => url.startsWith("prisma+postgres://"));
+    const prismaPgUrl = candidates.find((url) =>
+      url.startsWith("prisma+postgres://"),
+    );
     if (prismaPgUrl) {
       try {
         const urlObj = new URL(prismaPgUrl);
@@ -133,8 +135,17 @@ export const seedPortfolioData = {
     resumeName: "",
     contactTitle: "Have a\ngood one?",
     contactNote: "Currently accepting a few good problems.",
-    skills: ["WordPress", "Gutenberg", "React.js", "PHP", "Laravel", "MySQL", "JavaScript", "HTML5/CSS3"],
-    languages: ["English (Professional)", "Hindi (Native)"]
+    skills: [
+      "WordPress",
+      "Gutenberg",
+      "React.js",
+      "PHP",
+      "Laravel",
+      "MySQL",
+      "JavaScript",
+      "HTML5/CSS3",
+    ],
+    languages: ["English (Professional)", "Hindi (Native)"],
   },
   stats: [
     { id: "stat-1", value: "02", label: "Years Experience" },
@@ -147,19 +158,22 @@ export const seedPortfolioData = {
       id: "svc-1",
       number: "01",
       title: "WordPress Development",
-      description: "Custom Gutenberg Blocks (React-driven), Block Validation Management, Theme/Plugin Development.",
+      description:
+        "Custom Gutenberg Blocks (React-driven), Block Validation Management, Theme/Plugin Development.",
     },
     {
       id: "svc-2",
       number: "02",
       title: "Backend Development",
-      description: "PHP (Core & OOP), Laravel Framework, MVC Architecture, RESTful API Development, Query Optimization.",
+      description:
+        "PHP (Core & OOP), Laravel Framework, MVC Architecture, RESTful API Development, Query Optimization.",
     },
     {
       id: "svc-3",
       number: "03",
       title: "Frontend Development",
-      description: "React.js, JavaScript (ES6+), HTML5, CSS3, Bootstrap, Responsive UI.",
+      description:
+        "React.js, JavaScript (ES6+), HTML5, CSS3, Bootstrap, Responsive UI.",
     },
   ],
   projects: [
@@ -168,7 +182,8 @@ export const seedPortfolioData = {
       title: "Custom Font-Icon Block Architecture for Gutenberg",
       category: "WordPress / React / PHP",
       year: "2024",
-      description: "Designed a specialized custom Gutenberg block extension enabling streamlined integration of customized font icons directly inside the block builder interface. Engineered an advanced save function to guarantee high-fidelity serialization of UI elements without breaking core editor validation rules.",
+      description:
+        "Designed a specialized custom Gutenberg block extension enabling streamlined integration of customized font icons directly inside the block builder interface. Engineered an advanced save function to guarantee high-fidelity serialization of UI elements without breaking core editor validation rules.",
       tags: "WordPress, React, PHP",
       accent: "lime",
     },
@@ -177,7 +192,8 @@ export const seedPortfolioData = {
       title: "Dynamic Multi-Tenant Application Platform",
       category: "Laravel / MySQL / REST API",
       year: "2023",
-      description: "Engineered a production-ready Laravel portal featuring comprehensive administrative controllers, automated routing, and robust middleware security configurations. Built fully decoupled RESTful endpoints handling asynchronous communications between responsive front-end interfaces and relational database frameworks.",
+      description:
+        "Engineered a production-ready Laravel portal featuring comprehensive administrative controllers, automated routing, and robust middleware security configurations. Built fully decoupled RESTful endpoints handling asynchronous communications between responsive front-end interfaces and relational database frameworks.",
       tags: "Laravel, REST API, MySQL",
       accent: "coral",
     },
@@ -211,39 +227,45 @@ export const seedPortfolioData = {
       role: "PHP & WordPress Developer",
       company: "SLICEmyPAGE | Lucknow, Uttar Pradesh",
       period: "July 2024 — PRESENT",
-      detail: "Spearheading the architecture and implementation of dynamic, React-based custom Gutenberg blocks tailored for complex layout and typography configurations.",
+      detail:
+        "Spearheading the architecture and implementation of dynamic, React-based custom Gutenberg blocks tailored for complex layout and typography configurations.",
     },
     {
       id: "exp-2",
       role: "PHP Developer",
       company: "Eucoders Technology | Lucknow, Uttar Pradesh",
       period: "2023 — 2024",
-      detail: "Built and maintained dynamic web application backends and client-facing business portals powered by core PHP and Laravel frameworks.",
+      detail:
+        "Built and maintained dynamic web application backends and client-facing business portals powered by core PHP and Laravel frameworks.",
     },
     {
       id: "exp-3",
       role: "Web Development Intern",
       company: "Eucoders Technologies",
       period: "4 Months",
-      detail: "Acquired real-world industry experience managing version control workflows and contributing to full-stack web application development lifecycles.",
+      detail:
+        "Acquired real-world industry experience managing version control workflows and contributing to full-stack web application development lifecycles.",
     },
   ],
   testimonials: [
     {
       id: "tst-1",
-      quote: "Akhilesh brings the rare combination of a sharp eye and the patience to make the hard parts simple.",
+      quote:
+        "Akhilesh brings the rare combination of a sharp eye and the patience to make the hard parts simple.",
       name: "Riya Menon",
       role: "Founder, Common Thread",
     },
     {
       id: "tst-2",
-      quote: "He turned a messy content workflow into a fast, thoughtful system our whole team could use.",
+      quote:
+        "He turned a messy content workflow into a fast, thoughtful system our whole team could use.",
       name: "Arjun Malhotra",
       role: "Product Lead, Northstar Labs",
     },
     {
       id: "tst-3",
-      quote: "A rare developer who cares equally about reliable code and the experience around it.",
+      quote:
+        "A rare developer who cares equally about reliable code and the experience around it.",
       name: "Meera Kapoor",
       role: "Creative Director, Field Notes",
     },
@@ -264,7 +286,7 @@ export const seedPortfolioData = {
   themeSettings: {
     accentColor: "#00FF88",
     mode: "dark",
-  }
+  },
 };
 
 export type ContactSettings = {
@@ -343,8 +365,10 @@ export function ensureSchema(): Promise<void> {
           `;
         }
 
-        const defaultAdminUsername = process.env.ADMIN_USERNAME?.trim() || "admin";
-        const defaultAdminPassword = process.env.ADMIN_PASSWORD?.trim() || "admin123";
+        const defaultAdminUsername =
+          process.env.ADMIN_USERNAME?.trim() || "admin";
+        const defaultAdminPassword =
+          process.env.ADMIN_PASSWORD?.trim() || "admin123";
         const defaultAdminHash = await bcrypt.hash(defaultAdminPassword, 10);
         await sql`
           INSERT INTO admin_users (username, password_hash)
