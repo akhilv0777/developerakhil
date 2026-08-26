@@ -10,6 +10,7 @@ let inMemorySettings: ContactSettings = {
   gmailAppPassword: "",
   contactToEmail: "",
   contactFromEmail: "",
+  twoFactorEnabled: false,
 };
 
 function isDatabaseUnavailableError(error: unknown): boolean {
@@ -36,7 +37,8 @@ function isValidSettings(value: unknown): value is ContactSettings {
   return (
     typeof record.gmailAppPassword === "string" &&
     typeof record.contactToEmail === "string" &&
-    typeof record.contactFromEmail === "string"
+    typeof record.contactFromEmail === "string" &&
+    typeof record.twoFactorEnabled === "boolean"
   );
 }
 
@@ -68,6 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         gmailAppPassword: req.body.gmailAppPassword.trim(),
         contactToEmail: req.body.contactToEmail.trim(),
         contactFromEmail: req.body.contactFromEmail.trim(),
+        twoFactorEnabled: req.body.twoFactorEnabled,
       };
 
       try {

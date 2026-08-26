@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
+import { randomInt, randomUUID } from 'crypto';
 import { ensureSchema, sql } from '@/lib/api-server/db';
 import { getContactSettings } from '@/lib/api-server/db';
+import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
 
 // Very small in-memory rate limiter per serverless instance. Not a
@@ -44,6 +46,16 @@ function isRateLimited(key: string): boolean {
   return record.count > MAX_ATTEMPTS;
 }
 
+async function startOtpChallenge(username: string, recipient: string, res: NextApiResponse) {
+  const otp = String(randomInt(100000, 1000000));
+  const challengeId = randomUUID();
+  const otpHash = await bcrypt.hash(otp, 10);
+  await sql`DELETE FROM admin_login_challenges WHERE expires_at <= now() OR username = ${username};`;
+  await sql`INSERT INTO admin_login_challenges (id, username, otp_hash, expires_at) VALUES (${challengeId}::uuid, ${username}, ${otpHash}, now() + interval '10 minutes');`;
+  await sendLoginOtpEmail({ recipient, otp });
+  return res.status(200).json({ requiresOtp: true, challengeId, username });
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -61,19 +73,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
-  const defaultAdminUsername = process.env.ADMIN_USERNAME?.trim() || 'admin';
-  const defaultAdminPassword = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
-
-  if (loginIdentifier === defaultAdminUsername && password === defaultAdminPassword) {
-    const token = signSession(defaultAdminUsername);
-    setSessionCookie(res, token);
-    return res.status(200).json({ ok: true, username: defaultAdminUsername });
-  }
-
   try {
     await ensureSchema();
     const settings = await getContactSettings();
     const adminEmail = (settings.contactToEmail || process.env.GMAIL_USER || '').trim().toLowerCase();
+    const defaultAdminUsername = process.env.ADMIN_USERNAME?.trim() || 'admin';
+    const defaultAdminPassword = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
+
+    if (loginIdentifier === defaultAdminUsername && password === defaultAdminPassword) {
+      if (settings.twoFactorEnabled) {
+        if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
+        return startOtpChallenge(defaultAdminUsername, adminEmail, res);
+      }
+      const token = signSession(defaultAdminUsername);
+      setSessionCookie(res, token);
+      return res.status(200).json({ ok: true, username: defaultAdminUsername });
+    }
+
     const result = await sql`SELECT username, password_hash FROM admin_users WHERE username = ${loginIdentifier} LIMIT 1;`;
     const user = result.rows[0];
     const emailUser = !user && adminEmail && loginIdentifier.toLowerCase() === adminEmail
@@ -88,6 +104,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (!matchedUser || !passwordMatches) {
       return res.status(401).json({ error: 'Invalid username or password.' });
+    }
+
+    if (settings.twoFactorEnabled) {
+      if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
+      return startOtpChallenge(matchedUser.username, adminEmail, res);
     }
 
     const token = signSession(matchedUser.username);

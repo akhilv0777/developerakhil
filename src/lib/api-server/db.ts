@@ -271,12 +271,14 @@ export type ContactSettings = {
   gmailAppPassword: string;
   contactToEmail: string;
   contactFromEmail: string;
+  twoFactorEnabled: boolean;
 };
 
 const defaultContactSettings: ContactSettings = {
   gmailAppPassword: "",
   contactToEmail: "",
   contactFromEmail: "",
+  twoFactorEnabled: false,
 };
 
 export type ContactMessage = {
@@ -305,6 +307,16 @@ export function ensureSchema(): Promise<void> {
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `;
+        await sql`
+          CREATE TABLE IF NOT EXISTS admin_login_challenges (
+            id UUID PRIMARY KEY,
+            username TEXT NOT NULL,
+            otp_hash TEXT NOT NULL,
+            expires_at TIMESTAMPTZ NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;

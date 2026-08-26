@@ -103,6 +103,8 @@ function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -116,9 +118,38 @@ function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ identifier: username, password }),
       });
+      const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
         setError(body.error || "Login failed.");
+        return;
+      }
+      if (body.requiresOtp) {
+        setOtpChallengeId(body.challengeId);
+        setPassword("");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    } catch {
+      setError("Could not reach the server. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOtpSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challengeId: otpChallengeId, otp }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setError(body.error || "Verification failed.");
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
@@ -211,14 +242,14 @@ function LoginPage() {
             </div>
           </div>
           <h2 className="text-2xl font-bold text-foreground">
-            {forgotMode ? "Reset your password" : "Sign in to Console"}
+            {forgotMode ? "Reset your password" : otpChallengeId ? "Enter verification code" : "Sign in to Console"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {forgotMode ? "Enter your username or admin email to receive a reset link." : "Enter your credentials to manage the site."}
+            {forgotMode ? "Enter your username or admin email to receive a reset link." : otpChallengeId ? "Your password was accepted. We sent a 6-digit code to your admin email." : "Enter your credentials to manage the site."}
           </p>
 
-          <form onSubmit={forgotMode ? handleForgotPassword : handleSubmit} className="mt-8 flex flex-col gap-5">
-            <label className="block">
+          <form onSubmit={forgotMode ? handleForgotPassword : otpChallengeId ? handleOtpSubmit : handleSubmit} className="mt-8 flex flex-col gap-5">
+            {!otpChallengeId && <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {forgotMode ? "Username or admin email" : "Username or admin email"}
               </span>
@@ -229,12 +260,16 @@ function LoginPage() {
                 onChange={(event) => setUsername(event.target.value)}
                 className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 text-foreground"
               />
-            </label>
-            {!forgotMode && <label className="block">
+            </label>}
+            {!forgotMode && !otpChallengeId && <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Password
               </span>
               <PasswordInput value={password} onChange={setPassword} />
+            </label>}
+            {otpChallengeId && <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">6-digit OTP</span>
+              <input required autoFocus inputMode="numeric" pattern="[0-9]{6}" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-center text-lg tracking-[.45em] text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10" />
             </label>}
             {error && (
               <p className="rounded-lg bg-red-900/30 border border-red-500/50 p-3 font-mono text-[10px] font-bold text-red-400 text-center">
@@ -247,12 +282,10 @@ function LoginPage() {
               disabled={submitting}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background transition-all hover:bg-primary/90 disabled:opacity-50 hover:shadow-[0_0_15px_hsl(var(--primary)/0.35)]"
             >
-              {forgotMode ? <Mail size={14} /> : <Lock size={14} />}
-              {submitting ? "Please wait..." : forgotMode ? "Send reset link" : "Sign in"}
+              {forgotMode ? <Mail size={14} /> : otpChallengeId ? <KeyRound size={14} /> : <Lock size={14} />}
+              {submitting ? "Please wait..." : forgotMode ? "Send reset link" : otpChallengeId ? "Verify and sign in" : "Sign in"}
             </button>
-            <button type="button" onClick={() => { setForgotMode((value) => !value); setError(null); setForgotMessage(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">
-              {forgotMode ? "Back to sign in" : "Forgot password?"}
-            </button>
+            {otpChallengeId ? <button type="button" onClick={() => { setOtpChallengeId(null); setOtp(""); setError(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">Start over</button> : <button type="button" onClick={() => { setForgotMode((value) => !value); setError(null); setForgotMessage(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">{forgotMode ? "Back to sign in" : "Forgot password?"}</button>}
           </form>
         </div>
       </div>
@@ -1144,6 +1177,7 @@ type ContactSettings = {
   gmailAppPassword: string;
   contactToEmail: string;
   contactFromEmail: string;
+  twoFactorEnabled: boolean;
 };
 
 function SettingsEditor() {
@@ -1151,6 +1185,7 @@ function SettingsEditor() {
     gmailAppPassword: "",
     contactToEmail: "",
     contactFromEmail: "",
+    twoFactorEnabled: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1172,6 +1207,7 @@ function SettingsEditor() {
           gmailAppPassword: "",
           contactToEmail: "",
           contactFromEmail: "",
+          twoFactorEnabled: false,
         });
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
@@ -1232,6 +1268,18 @@ function SettingsEditor() {
       className="bento-card shadow-sm p-5 md:p-6"
     >
       <div className="grid gap-6">
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+          <input
+            type="checkbox"
+            checked={form.twoFactorEnabled}
+            onChange={(event) => setForm({ ...form, twoFactorEnabled: event.target.checked })}
+            className="mt-1 h-4 w-4 accent-primary"
+          />
+          <span>
+            <span className="block text-sm font-semibold text-foreground">Require 2-step verification</span>
+            <span className="mt-1 block text-xs leading-5 text-muted-foreground">After the correct password, send a one-time code to the admin email. Both steps are required.</span>
+          </span>
+        </label>
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Gmail app password
