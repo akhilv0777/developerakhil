@@ -422,10 +422,12 @@ function Hero({ profile }: { profile: Profile }) {
           <div className="reveal reveal-delay-2 relative mx-auto w-full max-w-[420px]">
             <div className="absolute -inset-8 -z-10 rounded-full bg-primary/10 blur-3xl" />
             <div className="portrait-frame aspect-[4/5] p-3">
-              <img
+              <Image
                 src={profile.heroImage || profile.image}
                 alt={profile.name}
                 className="h-full w-full rounded-[1.1rem] object-cover"
+                width={420}
+                height={300}
               />
               <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
               <div className="absolute inset-x-7 bottom-7 z-10 flex items-end justify-between gap-4">
