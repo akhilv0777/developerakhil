@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
         <h1 className="display-title text-3xl font-bold text-foreground">Set new password</h1>
         <p className="mt-2 text-sm text-muted-foreground">Choose a new password for your admin account.</p>
         <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
-          <div ref={turnstileRef} aria-hidden="true" />
+          <div><div ref={turnstileRef} aria-hidden="true" /></div>
           <PasswordInput placeholder="New password" value={password} onChange={setPassword} />
           <PasswordInput placeholder="Confirm password" value={confirm} onChange={setConfirm} />
           {error && <p className="rounded-lg border border-red-500/50 bg-red-900/30 p-3 text-center text-xs text-red-400">{error}</p>}

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { insertContactMessage } from "@/lib/api-server/db";
+import { createAdminNotification, insertContactMessage, recordAdminNotification } from "@/lib/api-server/db";
 import { sendContactEmail } from "@/lib/api-server/mailer";
 import { verifyTurnstile } from "@/lib/api-server/turnstile";
 
@@ -29,8 +29,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  if (!(await verifyTurnstile(req.body?.["cf-turnstile-response"], req, "contact"))) {
-    return res.status(403).json({ message: "Cloudflare verification failed. Please try again." });
+  let turnstilePassed = false;
+  try {
+    turnstilePassed = await verifyTurnstile(req.body?.["cf-turnstile-response"], req, "contact");
+  } catch (error) {
+    console.error("Turnstile verification error:", error);
   }
 
   if (!isValidPayload(req.body)) {
@@ -48,11 +51,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: "Something went wrong" });
   }
 
+  if (!turnstilePassed) {
+    await recordAdminNotification({
+      title: "Cloudflare Turnstile needs attention",
+      message: `Contact form submission from ${name.trim()} was accepted, but Cloudflare verification was unavailable or failed.`,
+    });
+  }
+
+  await recordAdminNotification({
+    title: "New contact form submission",
+    message: `${name.trim()} (${email.trim()}) submitted a new contact message.`,
+  });
+
   try {
     await sendContactEmail({ name: name.trim(), email: email.trim(), message: message.trim() });
   } catch (error) {
     console.error("Contact email delivery failed:", error);
-    return res.status(500).json({ message: "Something went wrong" });
+    try {
+      await createAdminNotification({
+        title: "Contact email delivery failed",
+        message: `The contact message from ${name.trim()} was saved, but email delivery failed: ${(error as Error).message || "Unknown mailer error"}`,
+      });
+    } catch (notificationError) {
+      console.error("Failed to create email notification:", notificationError);
+    }
   }
 
   return res.status(200).json({ ok: true, saved: true });

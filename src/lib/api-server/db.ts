@@ -358,6 +358,7 @@ export const seedPortfolioData = {
     testimonials: true,
     contact: true,
   },
+  sectionPatterns: {},
   themeSettings: {
     accentColor: "#00FF88",
     mode: "dark",
@@ -396,6 +397,14 @@ export type ContactMessage = {
   createdAt: string;
   replied: boolean;
   repliedAt: string | null;
+};
+
+export type AdminNotification = {
+  id: number;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
 };
 
 let schemaReady: Promise<void> | null = null;
@@ -499,6 +508,16 @@ export function ensureSchema(): Promise<void> {
         } catch (e) {
           // Ignore if error
         }
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS admin_notifications (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            read BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `;
       } catch (error) {
         schemaReady = null;
         throw error;
@@ -572,4 +591,50 @@ export async function deleteContactMessages(ids: number[]): Promise<number> {
 export async function markMessageReplied(id: number): Promise<void> {
   await ensureSchema();
   await updateRecord("contact_messages", { replied: true, replied_at: new Date() }, { id });
+}
+
+export async function createAdminNotification(input: {
+  title: string;
+  message: string;
+}): Promise<AdminNotification> {
+  await ensureSchema();
+  const result = await insertRecord("admin_notifications", input);
+  const row = result.rows[0];
+  return { id: row.id, title: row.title, message: row.message, read: row.read, createdAt: row.created_at };
+}
+
+export async function recordAdminNotification(input: {
+  title: string;
+  message: string;
+}): Promise<void> {
+  try {
+    await createAdminNotification(input);
+  } catch (error) {
+    console.error("Failed to record admin notification:", error);
+  }
+}
+
+export async function listAdminNotifications(): Promise<AdminNotification[]> {
+  await ensureSchema();
+  const result = await sql`SELECT id, title, message, read, created_at FROM admin_notifications ORDER BY created_at DESC;`;
+  return result.rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    message: row.message,
+    read: row.read,
+    createdAt: row.created_at,
+  }));
+}
+
+export async function markAdminNotificationsRead(ids: number[]): Promise<void> {
+  await ensureSchema();
+  if (ids.length === 0) return;
+  await sql`UPDATE admin_notifications SET read = true WHERE id = ANY(${ids});`;
+}
+
+export async function deleteAdminNotifications(ids: number[]): Promise<number> {
+  await ensureSchema();
+  if (ids.length === 0) return 0;
+  const result = await sql`DELETE FROM admin_notifications WHERE id = ANY(${ids});`;
+  return result.rowCount;
 }

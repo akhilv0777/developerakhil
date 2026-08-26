@@ -8,6 +8,7 @@ declare global {
       render: (container: HTMLElement, options: { sitekey: string; size: "invisible"; execution: "execute"; action: string; callback: (token: string) => void; "error-callback": () => void; "expired-callback": () => void }) => string;
       execute: (widgetId: string) => void;
       reset: (widgetId: string) => void;
+      remove: (widgetId: string) => void;
     };
   }
 }
@@ -62,6 +63,10 @@ export function useTurnstile(action: string) {
       cancelled = true;
       pendingRef.current = null;
       readyRef.current = null;
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = null;
+      }
     };
   }, [action, siteKey]);
 

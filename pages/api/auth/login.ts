@@ -6,6 +6,7 @@ import { getContactSettings } from '@/lib/api-server/db';
 import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
 import { verifyTurnstile } from '@/lib/api-server/turnstile';
+import { recordAdminNotification } from '@/lib/api-server/db';
 
 // Very small in-memory rate limiter per serverless instance. Not a
 // substitute for a real WAF, but it slows down naive brute forcing.
@@ -65,11 +66,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const ip = (req.headers['x-forwarded-for'] as string) || req.socket?.remoteAddress || 'unknown';
   if (isRateLimited(ip)) {
+    await recordAdminNotification({ title: 'Login rate limit reached', message: `Too many login attempts were detected from ${ip}.` });
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
   const { identifier, username, password, loginMode = 'password', turnstileToken } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; turnstileToken?: string };
   if (!(await verifyTurnstile(turnstileToken, req, 'auth'))) {
+    await recordAdminNotification({ title: 'Cloudflare login verification failed', message: `A login attempt from ${ip} was blocked by Turnstile.` });
     return res.status(403).json({ error: 'Cloudflare verification failed. Please try again.' });
   }
   const loginIdentifier = (identifier || username || '').trim();
@@ -109,6 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       const token = signSession(defaultAdminUsername);
       setSessionCookie(res, token);
+      await recordAdminNotification({ title: 'Admin login successful', message: `${defaultAdminUsername} signed in successfully.` });
       return res.status(200).json({ ok: true, username: defaultAdminUsername });
     }
 
@@ -125,6 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const passwordMatches = await bcrypt.compare(passwordValue, hashToCheck);
 
     if (!matchedUser || !passwordMatches) {
+      await recordAdminNotification({ title: 'Failed admin login', message: `Invalid credentials were used for ${loginIdentifier}.` });
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
@@ -135,6 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const token = signSession(matchedUser.username);
     setSessionCookie(res, token);
+    await recordAdminNotification({ title: 'Admin login successful', message: `${matchedUser.username} signed in successfully.` });
     return res.status(200).json({ ok: true, username: matchedUser.username });
   } catch (error) {
     if (isDatabaseUnavailableError(error)) {
@@ -142,6 +148,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.error('Login error:', error);
+    await recordAdminNotification({ title: 'Admin login error', message: (error as Error).message || 'An unexpected login error occurred.' });
     return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 }

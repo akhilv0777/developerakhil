@@ -76,6 +76,15 @@
   .font-mono { font-family: var(--app-font-mono); }
   .display-title { font-family: 'Space Grotesk', var(--app-font-sans); letter-spacing: 0; font-weight: 700; }
 
+  .kf-pattern-01 { background-image: repeating-linear-gradient(45deg, transparent 0 24px, hsl(var(--foreground) / .12) 24px 25px); }
+  .kf-pattern-02 { background-image: linear-gradient(hsl(var(--foreground) / .12) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground) / .12) 1px, transparent 1px); background-size: 32px 32px; }
+  .kf-pattern-03 { background-image: radial-gradient(hsl(var(--foreground) / .16) 1px, transparent 1px); background-size: 20px 20px; }
+  .kf-pattern-04 { background-image: repeating-radial-gradient(circle at 100% 100%, hsl(var(--foreground) / .12) 0 1px, transparent 1px 20px); }
+  .kf-pattern-05 { background-image: repeating-conic-gradient(from 0deg at 50% 50%, hsl(var(--foreground) / .12) 0deg 1deg, transparent 1deg 9deg); }
+  .kf-pattern-06 { background-image: repeating-linear-gradient(60deg, hsl(var(--foreground) / .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(120deg, hsl(var(--foreground) / .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(0deg, hsl(var(--foreground) / .12) 0 1px, transparent 1px 31px); background-size: 32px 55px; }
+  .kf-pattern-07 { background-image: repeating-linear-gradient(45deg, hsl(var(--foreground) / .12) 0 8px, transparent 8px 16px); }
+  [class*="kf-pattern-"] > section { background-color: transparent; }
+
   .bento-card {
     @apply rounded-lg border border-card-border bg-card p-4;
     box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18), inset 0 1px 0 hsl(var(--foreground) / 0.035);

@@ -202,7 +202,7 @@ function Nav({
             open
               ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
               : "hidden"
-          } md:static md:flex md:max-w-[62vw] md:flex-row md:items-center md:gap-6 md:overflow-visible md:border-0 md:bg-transparent md:p-0 md:shadow-none`}
+          } lg:static lg:flex lg:max-w-[62vw] lg:flex-row lg:items-center lg:gap-6 lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
         >
           {groups.map((group) => {
             const isSingle =
@@ -228,7 +228,7 @@ function Nav({
             return (
               <div
                 key={group.label}
-                className="group relative w-full shrink-0 md:w-auto"
+                className="group relative w-full shrink-0 lg:w-auto"
               >
                 <button
                   type="button"
@@ -237,11 +237,11 @@ function Nav({
                       current === group.label ? null : group.label,
                     )
                   }
-                  className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors md:w-auto md:border-0 md:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+                  className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors lg:w-auto lg:border-0 lg:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                   aria-expanded={openGroup === group.label}
                 >
                   {group.label}
-                  <span className="md:hidden" aria-hidden="true">
+                  <span className="lg:hidden" aria-hidden="true">
                     {openGroup === group.label ? (
                       <Minus size={15} />
                     ) : (
@@ -250,14 +250,14 @@ function Nav({
                   </span>
                   <ChevronDown
                     size={13}
-                    className={`hidden transition-transform md:block ${openGroup === group.label ? "rotate-180" : ""}`}
+                    className={`hidden transition-transform lg:block ${openGroup === group.label ? "rotate-180" : ""}`}
                   />
                 </button>
                 <div
-                  className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl md:absolute md:left-1/2 md:top-full md:mt-2 md:hidden md:-translate-x-1/2 md:border md:bg-background md:p-3 md:pl-3 md:shadow-xl md:before:absolute md:before:-top-2 md:before:left-0 md:before:right-0 md:before:h-2 md:before:content-[''] md:group-hover:flex`}
+                  className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:border lg:bg-background lg:p-3 lg:pl-3 lg:shadow-xl lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}
                 >
                   <span
-                    className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground md:flex"
+                    className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground lg:flex"
                     aria-hidden="true"
                   >
                     <ChevronUp size={12} strokeWidth={2.5} />
@@ -300,7 +300,7 @@ function Nav({
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="rounded-full bg-secondary p-2 text-foreground md:hidden hover:text-primary"
+            className="rounded-full bg-secondary p-2 text-foreground lg:hidden hover:text-primary"
             aria-label="Toggle navigation"
             data-testid="button-toggle-nav"
           >
@@ -352,11 +352,10 @@ function TypingRoles({ roles }: { roles: string[] }) {
         data-mf-text-typing-loop="true"
         data-mf-text-typing-cursor="true"
         className="inline-flex min-w-[120px] items-center text-primary"
-      >
-        {safeRoles.map((role) => (
-          <span key={role}>{role}</span>
-        ))}
-      </span>
+        dangerouslySetInnerHTML={{
+          __html: safeRoles.map((role) => `<span>${role}</span>`).join(""),
+        }}
+      />
     </span>
   );
 }
@@ -373,7 +372,7 @@ function Hero({ profile }: { profile: Profile }) {
   const resumeHref = profile.resume || "#contact";
 
   return (
-    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-5 pb-16 pt-32 md:px-10 md:pb-20 grid-dots">
+    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24 grid-dots">
       <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="flex flex-col items-start">
           <div className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm">
@@ -469,11 +468,11 @@ function About({ profile }: { profile: Profile }) {
   return (
     <section
       id="about"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <div className="bento-card p-6 md:p-10">
+      <div className="bento-card p-5 sm:p-5 sm:p-6 lg:p-8 lg:p-10">
         <SectionLabel number="01">ABOUT</SectionLabel>
-        <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="space-y-6">
             {profile.aboutImage || profile.heroImage || profile.image ? (
               <div className="portrait-frame aspect-[4/5] p-3">
@@ -543,7 +542,7 @@ function StatValue({ value }: { value: string }) {
   const match = value.match(/^(\d[\d,]*)(.*)$/);
   if (!match) {
     return (
-      <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">
+      <span className="font-mono text-4xl lg:text-5xl font-bold text-foreground">
         {value}
       </span>
     );
@@ -551,7 +550,7 @@ function StatValue({ value }: { value: string }) {
   const [, digits, suffix] = match;
   const target = Number(digits.replace(/,/g, ""));
   return (
-    <span className="font-mono text-4xl md:text-5xl font-bold text-foreground">
+    <span className="font-mono text-4xl lg:text-5xl font-bold text-foreground">
       <span
         data-mf-count-to={target}
         data-mf-count-duration="1600"
@@ -567,11 +566,11 @@ function StatValue({ value }: { value: string }) {
 
 function Stats({ stats }: { stats: Stat[] }) {
   return (
-    <section id="stats" className="mx-auto max-w-[1400px] px-5 py-10 md:px-10">
+    <section id="stats" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10">
       <div
         data-mf-stagger-animation="fade-up"
         data-mf-stagger-gap="100"
-        className="grid grid-cols-2 gap-6 md:grid-cols-4"
+        className="grid grid-cols-2 gap-6 lg:grid-cols-4"
       >
         {stats.map((stat) => (
           <div
@@ -597,9 +596,9 @@ function Skills({ profile }: { profile: Profile }) {
   return (
     <section
       id="skills"
-      className="mx-auto max-w-[1400px] px-5 py-16 md:px-10 md:py-24"
+      className="mx-auto max-w-[1400px] px-4 py-12 sm:px-5 sm:py-16 md:px-8 md:py-20 lg:px-10 lg:py-24"
     >
-      <div className="bento-card flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
+      <div className="bento-card flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between lg:p-8">
         <div className="max-w-sm">
           <SectionLabel number="02">CAPABILITIES</SectionLabel>
           <h2 className="display-title text-3xl font-bold text-foreground">
@@ -637,17 +636,15 @@ function Marquee({ services }: { services: Service[] }) {
         data-mf-ticker-speed="45"
         data-mf-ticker-pause-on-hover="true"
         className="font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
-      >
-        {words.map((word, index) => (
-          <span
-            key={`${word}-${index}`}
-            className="px-6 flex items-center gap-6"
-          >
-            {word}{" "}
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          </span>
-        ))}
-      </div>
+        dangerouslySetInnerHTML={{
+          __html: words
+            .map(
+              (word, index) =>
+                `<span key="${word}-${index}" class="px-6 flex items-center gap-6">${word} <span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span></span>`
+            )
+            .join(""),
+        }}
+      />
     </div>
   );
 }
@@ -656,9 +653,9 @@ function Timeline({ data }: { data: PortfolioData }) {
   return (
     <section
       id="education"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <div className="grid gap-16 md:grid-cols-[1fr_1.2fr]">
+      <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
           <SectionLabel number="02">EDUCATION</SectionLabel>
           <h2 className="display-title text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
@@ -705,13 +702,13 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
   return (
     <section
       id="experience"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="03">EXPERIENCE</SectionLabel>
       <div
         data-mf-stagger-animation="fade-up"
         data-mf-stagger-gap="90"
-        className="grid gap-6 md:grid-cols-2 mt-12"
+        className="grid gap-6 lg:grid-cols-2 mt-12"
       >
         {data.experience.map((item) => (
           <div
@@ -745,14 +742,14 @@ function Services({ data }: { data: PortfolioData }) {
   return (
     <section
       id="services"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="04">SERVICES</SectionLabel>
 
       <div
         data-mf-stagger-animation="zoom-in"
         data-mf-stagger-gap="110"
-        className="grid gap-6 md:grid-cols-3 mt-12"
+        className="grid gap-6 lg:grid-cols-3 mt-12"
       >
         {data.services.map((service) => (
           <article
@@ -782,16 +779,16 @@ function Work({ data }: { data: PortfolioData }) {
   return (
     <section
       id="work"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end mb-12">
+      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end mb-12">
         <SectionLabel number="05">PROJECTS</SectionLabel>
       </div>
 
       <div
         data-mf-stagger-animation="fade-up"
         data-mf-stagger-gap="90"
-        className="grid gap-8 md:grid-cols-2"
+        className="grid gap-8 lg:grid-cols-2"
       >
         {data.projects.map((project) => (
           <article
@@ -862,7 +859,7 @@ function Work({ data }: { data: PortfolioData }) {
           aria-modal="true"
           aria-label={`${selectedProject.title} details`}
         >
-          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-6 md:p-8">
+          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 sm:p-6 lg:p-8">
             <button
               type="button"
               onClick={() => setSelectedProject(null)}
@@ -921,10 +918,10 @@ function Testimonials({ data }: { data: PortfolioData }) {
   return (
     <section
       id="testimonials"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
-      <div className="bento-card relative overflow-hidden p-6 md:p-10 border-l-4 border-l-primary">
+      <div className="bento-card relative overflow-hidden p-5 sm:p-5 sm:p-6 lg:p-8 lg:p-10 border-l-4 border-l-primary">
         <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none"></div>
         <div className="relative z-10 flex flex-col justify-center min-h-[250px]">
           <div
@@ -1069,7 +1066,7 @@ function ContactForm({ email }: { email: string }) {
         />
       </label>
       <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center mt-2">
-        <div ref={turnstileRef} aria-hidden="true" />
+        <div><div ref={turnstileRef} aria-hidden="true" /></div>
         <button
           type="submit"
           disabled={status === "sending"}
@@ -1089,10 +1086,10 @@ function Contact({ profile }: { profile: Profile }) {
   return (
     <section
       id="contact"
-      className="mx-auto max-w-[1400px] px-5 py-24 md:px-10 md:py-32"
+      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="07">CONTACT</SectionLabel>
-      <div className="grid gap-16 md:grid-cols-[1.5fr_1fr] items-start">
+      <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr] items-start">
         <div data-mf-animation="fade-up">
           <h2 className="display-title text-[clamp(3rem,6vw,5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
             {titleLines.map((line, index) => (
@@ -1112,7 +1109,7 @@ function Contact({ profile }: { profile: Profile }) {
 
         <div
           data-mf-animation="fade-left"
-          className="flex flex-col gap-4 mt-0 md:mt-24"
+          className="flex flex-col gap-4 mt-0 lg:mt-24"
         >
           <a
             href={`https://${profile.github.replace(/^https?:\/\//, "")}`}
@@ -1172,8 +1169,8 @@ function Contact({ profile }: { profile: Profile }) {
 
 function Footer({ profile }: { profile: Profile }) {
   return (
-    <footer className="border-t border-border bg-background px-5 py-12 md:px-10">
-      <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 md:flex-row">
+    <footer className="border-t border-border bg-background px-4 py-8 sm:px-5 sm:py-12 md:px-8 lg:px-10">
+      <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 lg:flex-row">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           © {new Date().getFullYear()} {profile.name}
         </span>

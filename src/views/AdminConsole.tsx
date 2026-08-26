@@ -12,10 +12,12 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   BarChart3,
+  Bell,
   Briefcase,
   Building2,
   Check,
   CheckSquare,
+  ChevronDown,
   ChevronRight,
   Eye,
   EyeOff,
@@ -25,6 +27,10 @@ import {
   Layers,
   Layout,
   LayoutDashboard,
+  Maximize2,
+  Minimize2,
+  PanelLeftClose,
+  PanelLeftOpen,
   Lock,
   LogOut,
   type LucideIcon,
@@ -58,6 +64,7 @@ import type {
   PortfolioData,
   Profile,
   Project,
+  SectionPattern,
   Service,
   Stat,
   Testimonial,
@@ -288,7 +295,7 @@ function LoginPage() {
             }
             className="mt-8 flex flex-col gap-5"
           >
-            <div ref={turnstileRef} aria-hidden="true" />
+            <div><div ref={turnstileRef} aria-hidden="true" /></div>
             {!forgotMode && !otpChallengeId && (
               <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-secondary/30 p-1">
                 <button
@@ -441,6 +448,66 @@ const resourceMeta: Record<
   experience: { label: "Experience", singular: "role", icon: Building2 },
   testimonials: { label: "Testimonials", singular: "testimonial", icon: Quote },
 };
+const sectionPatternOptions: Array<{ value: SectionPattern; label: string }> = [
+  { value: "none", label: "None" },
+  ...Array.from({ length: 7 }, (_, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    return { value: `pattern-${number}` as SectionPattern, label: `Pattern ${number}` };
+  }),
+];
+
+const patternBackgrounds: Partial<Record<SectionPattern, string>> = {
+  "pattern-01": "repeating-linear-gradient(45deg, transparent 0 24px, rgba(0, 0, 0, .12) 24px 25px)",
+  "pattern-02": "linear-gradient(rgba(0, 0, 0, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, .12) 1px, transparent 1px)",
+  "pattern-03": "radial-gradient(rgba(0, 0, 0, .16) 1px, transparent 1px)",
+  "pattern-04": "repeating-radial-gradient(circle at 100% 100%, rgba(0, 0, 0, .12) 0 1px, transparent 1px 20px)",
+  "pattern-05": "repeating-conic-gradient(from 0deg at 50% 50%, rgba(0, 0, 0, .12) 0deg 1deg, transparent 1deg 9deg)",
+  "pattern-06": "repeating-linear-gradient(60deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(120deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 31px)",
+  "pattern-07": "repeating-linear-gradient(45deg, rgba(0, 0, 0, .12) 0 8px, transparent 8px 16px)",
+};
+
+function PatternPicker({
+  value,
+  onChange,
+}: {
+  value: SectionPattern;
+  onChange: (value: SectionPattern) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = sectionPatternOptions.find((option) => option.value === value) || sectionPatternOptions[0];
+  return (
+    <div className="relative min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-2 py-2 text-left hover:border-primary/50"
+      >
+        <span className={`h-8 w-14 shrink-0 rounded border border-border bg-background ${value === "none" ? "" : `kf-${value}`}`} style={{ backgroundImage: patternBackgrounds[value] }} aria-hidden="true" />
+        <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">{selected.label}</span>
+        <ChevronDown size={14} className={`shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <>
+          <button type="button" aria-label="Close pattern picker" onClick={() => setOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-2xl">
+            {sectionPatternOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => { onChange(option.value); setOpen(false); }}
+                className={`flex w-full items-center gap-3 rounded-md p-2 text-left hover:bg-secondary ${option.value === value ? "bg-primary/10" : ""}`}
+              >
+                <span className={`h-10 w-20 shrink-0 rounded border border-border bg-background ${option.value === "none" ? "" : `kf-${option.value}`}`} style={{ backgroundImage: patternBackgrounds[option.value] }} aria-hidden="true" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
   const id = `${resource.slice(0, -1)}-${Date.now()}`;
   if (resource === "stats") return { id, value: "", label: "" } as Stat;
@@ -1394,7 +1461,8 @@ function ProfileMenu({
           />
           <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
             {username && (
-              <div className="border-b border-border px-4 py-3">
+              <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                <User size={15} className="shrink-0 text-primary" />
                 <p className="truncate text-sm font-semibold text-foreground">
                   {username}
                 </p>
@@ -2158,6 +2226,68 @@ function MessagesPanel() {
   );
 }
 
+type AdminNotification = {
+  id: number;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+};
+
+function NotificationsPanel() {
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const reload = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/notifications", { credentials: "include" });
+      const body = await response.json().catch(() => ({}));
+      if (response.ok) setNotifications(body.notifications ?? []);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    reload();
+  }, [reload]);
+
+  const runAction = async (method: "PATCH" | "DELETE", ids: number[]) => {
+    try {
+      const response = await fetch("/api/notifications", {
+        method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!response.ok) throw new Error("Could not update notifications.");
+      await reload();
+    } catch (error) {
+      toast({ variant: "destructive", title: "Notification update failed", description: (error as Error).message });
+    }
+  };
+
+  return (
+    <div className="bento-card overflow-hidden p-0">
+      <div className="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div><h2 className="text-lg font-bold text-foreground">Notifications</h2><p className="text-sm text-muted-foreground">System issues that need your attention.</p></div>
+        <div className="flex gap-2">
+          <button onClick={() => runAction("PATCH", notifications.filter((item) => !item.read).map((item) => item.id))} disabled={!notifications.some((item) => !item.read)} className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground disabled:opacity-40">Mark all read</button>
+          <button onClick={() => runAction("DELETE", notifications.map((item) => item.id))} disabled={!notifications.length} className="inline-flex items-center gap-2 rounded-lg bg-red-600/90 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-white disabled:opacity-40"><Trash2 size={14} /> Clear all</button>
+        </div>
+      </div>
+      {loading ? <div className="px-6 py-16 text-center text-sm text-muted-foreground">Loading notifications...</div> : notifications.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 px-6 py-16 text-center"><Bell size={22} className="text-primary" /><p className="text-sm font-medium text-foreground">No notifications</p><p className="text-xs text-muted-foreground">Cloudflare and delivery issues will appear here.</p></div>
+      ) : <div className="divide-y divide-border">{notifications.map((notification) => <div key={notification.id} className={`flex items-start gap-4 px-5 py-4 sm:px-6 ${notification.read ? "opacity-65" : "bg-primary/5"}`}>
+        <Bell size={16} className={`mt-1 shrink-0 ${notification.read ? "text-muted-foreground" : "text-primary"}`} />
+        <div className="min-w-0 flex-1"><div className="flex flex-wrap items-baseline justify-between gap-2"><p className="font-semibold text-foreground">{notification.title}</p><time className="font-mono text-[10px] text-muted-foreground">{formatMessageDate(notification.createdAt)}</time></div><p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.message}</p></div>
+        <div className="flex shrink-0 gap-1"><button onClick={() => runAction("PATCH", [notification.id])} disabled={notification.read} aria-label="Mark notification as read" className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-primary disabled:opacity-30"><MailOpen size={14} /></button><button onClick={() => runAction("DELETE", [notification.id])} aria-label="Delete notification" className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/20 hover:text-red-500"><Trash2 size={14} /></button></div>
+      </div>)}</div>}
+    </div>
+  );
+}
+
 function AdminArea({
   data,
   username,
@@ -2173,6 +2303,7 @@ function AdminArea({
         "profile",
         "settings",
         "messages",
+        "notifications",
         "sections",
         "theme",
         "stats",
@@ -2205,6 +2336,7 @@ function AdminArea({
     | "profile"
     | "settings"
     | "messages"
+    | "notifications"
     | "sections"
     | "theme"
     | Resource
@@ -2216,6 +2348,13 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [messageCount, setMessageCount] = useState<number | null>(null);
+  const [notificationCount, setNotificationCount] = useState<number | null>(null);
+  const [quickNotifications, setQuickNotifications] = useState<AdminNotification[]>([]);
+  const [quickNotificationsOpen, setQuickNotificationsOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
+  const [fullscreen, setFullscreen] = useState(false);
   const [adminLight, setAdminLight] = useState(getInitialTheme);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -2226,6 +2365,7 @@ function AdminArea({
     section === "dashboard" ||
     section === "settings" ||
     section === "messages" ||
+    section === "notifications" ||
     section === "sections" ||
     section === "theme"
       ? null
@@ -2262,12 +2402,48 @@ function AdminArea({
         if (!response.ok) return;
         const body = await response.json();
         if (!cancelled) setMessageCount(body.messages?.length ?? 0);
+        const notificationResponse = await fetch("/api/notifications", { credentials: "include" });
+        const notificationBody = await notificationResponse.json().catch(() => ({}));
+        if (!cancelled && notificationResponse.ok) {
+          const notifications = notificationBody.notifications ?? [];
+          setQuickNotifications(notifications);
+          setNotificationCount(notifications.filter((item: AdminNotification) => !item.read).length);
+        }
       } catch {}
     })();
     return () => {
       cancelled = true;
     };
   }, [section]);
+
+  useEffect(() => {
+    const pollNotifications = async () => {
+      try {
+        const response = await fetch("/api/notifications", { credentials: "include" });
+        if (!response.ok) return;
+        const body = await response.json();
+        const notifications = body.notifications ?? [];
+        setQuickNotifications(notifications);
+        setNotificationCount(notifications.filter((item: AdminNotification) => !item.read).length);
+      } catch {}
+    };
+    const interval = window.setInterval(pollNotifications, 15000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const syncFullscreen = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await document.documentElement.requestFullscreen();
+    }
+  };
 
   const filteredItems = useMemo(() => {
     if (!search.trim()) return items;
@@ -2285,6 +2461,7 @@ function AdminArea({
       | "profile"
       | "settings"
       | "messages"
+      | "notifications"
       | "sections"
       | "theme"
       | Resource,
@@ -2359,6 +2536,17 @@ function AdminArea({
     await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   };
+  const markQuickNotificationRead = async (id: number) => {
+    const response = await fetch("/api/notifications", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+    if (!response.ok) return;
+    setQuickNotifications((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
+    setNotificationCount((current) => Math.max(0, (current ?? 1) - 1));
+  };
   const currentLabel =
     section === "dashboard"
       ? "Dashboard"
@@ -2368,12 +2556,24 @@ function AdminArea({
           ? "Settings"
           : section === "messages"
             ? "Messages"
+            : section === "notifications"
+              ? "Notifications"
             : section === "sections"
               ? "Sections"
               : section === "theme"
                 ? "Theme"
                 : resourceMeta[section].label;
   const resourceKeys = Object.keys(resourceMeta) as Resource[];
+  const searchSuggestions = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return [];
+    return resourceKeys.flatMap((key) =>
+      (data[key] ?? [])
+        .filter((item) => `${itemTitle(item)} ${itemSubtitle(item)}`.toLowerCase().includes(query))
+        .slice(0, 3)
+        .map((item) => ({ key, title: itemTitle(item) })),
+    ).slice(0, 6);
+  }, [data, resourceKeys, search]);
 
   return (
     <div
@@ -2381,7 +2581,7 @@ function AdminArea({
       style={adminThemeStyle}
     >
       {/* Sidebar - desktop */}
-      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90">
+      <aside className={`${desktopSidebarOpen ? "lg:flex" : "lg:hidden"} hidden lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90`}>
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
             {data.profile?.heroImage ||
@@ -2485,6 +2685,13 @@ function AdminArea({
             )}
           </button>
           <button
+            onClick={() => goToSection("notifications")}
+            className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${section === "notifications" ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"}`}
+          >
+            <span className="flex items-center gap-3"><Bell size={16} /> Notifications</span>
+            {notificationCount !== null && notificationCount > 0 && <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">{notificationCount}</span>}
+          </button>
+          <button
             onClick={() => goToSection("sections")}
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${
               section === "sections"
@@ -2532,7 +2739,7 @@ function AdminArea({
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar */}
         <header className="sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-md">
-          <div className="flex h-16 items-center gap-4 px-4 md:px-8">
+          <div className="flex min-h-[4rem] flex-wrap items-center gap-4 px-4 py-2 md:px-8">
             <button
               onClick={() => setMobileNavOpen(true)}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground lg:hidden"
@@ -2541,7 +2748,79 @@ function AdminArea({
               <Menu size={16} />
             </button>
 
-            <div className="flex min-w-0 flex-1 items-center justify-end gap-2 text-sm">
+            <div className="hidden items-center gap-2 lg:flex">
+              <button
+                type="button"
+                onClick={() => setDesktopSidebarOpen((open) => !open)}
+                aria-label={desktopSidebarOpen ? "Close sidebar" : "Open sidebar"}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                {desktopSidebarOpen ? <PanelLeftClose size={17} /> : <PanelLeftOpen size={17} />}
+              </button>
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+              >
+                {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSearchOpen(true);
+                setSearchFocused(true);
+              }}
+              aria-label="Open search"
+              className={`${mobileSearchOpen ? "hidden" : "flex"} h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground md:hidden`}
+            >
+              <Search size={17} />
+            </button>
+            <div className={`${mobileSearchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"} fixed inset-x-0 top-0 z-50 flex h-20 w-full border-b border-border bg-background px-4 shadow-xl transition-[transform,opacity] duration-300 ease-out sm:px-6 md:static md:inset-auto md:z-auto md:h-auto md:w-auto md:translate-y-0 md:opacity-100 md:pointer-events-auto md:flex md:min-w-0 md:flex-1 md:max-w-xs md:border-0 md:bg-transparent md:px-0 md:shadow-none`}>
+              <Search size={22} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-foreground md:hidden" />
+              <Search size={17} className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-muted-foreground md:block" />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setSearchFocused(false);
+                  if (event.key === "Enter" && searchSuggestions[0]) {
+                    setSearchFocused(false);
+                    goToSection(searchSuggestions[0].key);
+                    setSearch(searchSuggestions[0].title);
+                  }
+                }}
+                placeholder="Type and press enter to search..."
+                aria-label="Search current content"
+                className="h-14 min-w-0 flex-1 rounded-none border-0 bg-transparent pl-11 pr-10 text-base leading-6 text-foreground outline-none placeholder:text-muted-foreground focus:border-transparent focus:ring-0 md:h-9 md:rounded-full md:border md:border-transparent md:bg-secondary md:pl-4 md:pr-9 md:text-sm md:focus:border-transparent md:focus:bg-secondary"
+              />
+              {searchFocused && search.trim() && (
+                <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                  {searchSuggestions.length > 0 ? searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`${suggestion.key}-${suggestion.title}-${index}`}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        setSearchFocused(false);
+                        goToSection(suggestion.key);
+                        setSearch(suggestion.title);
+                      }}
+                      className="flex w-full items-start gap-3 border-b border-border px-4 py-3 text-left last:border-0 hover:bg-secondary"
+                    >
+                      <Search size={14} className="mt-0.5 shrink-0 text-primary" />
+                      <span className="min-w-0 truncate text-xs font-semibold text-foreground">{suggestion.title}<span className="ml-2 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">{resourceMeta[suggestion.key].label}</span></span>
+                    </button>
+                  )) : <p className="px-4 py-4 text-xs text-muted-foreground">No matching content found</p>}
+                </div>
+              )}
+              <button type="button" onClick={() => { setMobileSearchOpen(false); setSearchFocused(false); }} aria-label="Close search" className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-foreground hover:bg-background/60 md:hidden"><X size={23} /></button>
+            </div>
+
+            <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 text-sm md:flex">
               <span className="hidden font-mono text-[11px] uppercase tracking-wider text-muted-foreground sm:inline">
                 Console
               </span>
@@ -2554,7 +2833,23 @@ function AdminArea({
               </span>
             </div>
 
-            <div className="flex shrink-0 items-center gap-3">
+            <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setQuickNotificationsOpen((open) => !open)}
+                  aria-label="Open notifications"
+                  aria-expanded={quickNotificationsOpen}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Bell size={16} />
+                  {notificationCount !== null && notificationCount > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 font-mono text-[9px] font-bold text-background">{notificationCount}</span>}
+                </button>
+                {quickNotificationsOpen && <div className="fixed left-2 right-2 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-hidden rounded-xl border border-border bg-card shadow-2xl md:absolute md:left-auto md:right-0 md:top-12 md:w-[min(22rem,calc(100vw-2rem))]">
+                  <div className="flex items-center justify-between border-b border-border px-4 py-3"><p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">Notifications</p><button type="button" onClick={() => { setQuickNotificationsOpen(false); goToSection("notifications"); }} className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline">View all</button></div>
+                  {quickNotifications.length === 0 ? <p className="px-4 py-8 text-center text-xs text-muted-foreground">No notifications</p> : <div className="max-h-[calc(100dvh-10rem)] overflow-y-auto divide-y divide-border">{quickNotifications.slice(0, 5).map((notification) => <div key={notification.id} className={`px-4 py-3 ${notification.read ? "opacity-60" : "bg-primary/5"}`}><div className="flex min-w-0 items-start gap-3"><Bell size={14} className={`mt-0.5 shrink-0 ${notification.read ? "text-muted-foreground" : "text-primary"}`} /><div className="min-w-0 flex-1"><p className="break-words text-xs font-semibold text-foreground">{notification.title}</p><p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{notification.message}</p><time className="mt-1 block font-mono text-[9px] text-muted-foreground">{formatMessageDate(notification.createdAt)}</time></div>{!notification.read && <button type="button" onClick={() => markQuickNotificationRead(notification.id)} aria-label="Mark notification as read" className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-primary"><MailOpen size={14} /></button>}</div></div>)}</div>}
+                </div>}
+              </div>
               <button
                 type="button"
                 onClick={() => {
@@ -2717,6 +3012,13 @@ function AdminArea({
                   )}
                 </button>
                 <button
+                  onClick={() => goToSection("notifications")}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${section === "notifications" ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"}`}
+                >
+                  <span className="flex items-center gap-3"><Bell size={16} /> Notifications</span>
+                  {notificationCount !== null && notificationCount > 0 && <span className="rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">{notificationCount}</span>}
+                </button>
+                <button
                   onClick={() => goToSection("sections")}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${
                     section === "sections"
@@ -2786,6 +3088,13 @@ function AdminArea({
                   active={false}
                   onClick={() => goToSection("messages")}
                 />
+                <StatTile
+                  icon={Bell}
+                  label="Notifications"
+                  count={notificationCount ?? 0}
+                  active={false}
+                  onClick={() => goToSection("notifications")}
+                />
                 {resourceKeys.map((key) => (
                   <StatTile
                     key={key}
@@ -2843,6 +3152,14 @@ function AdminArea({
               </div>
               <MessagesPanel />
             </section>
+          ) : section === "notifications" ? (
+            <section className="min-w-0 flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Notifications</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Monitor Cloudflare and contact email delivery issues.</p>
+              </div>
+              <NotificationsPanel />
+            </section>
           ) : section === "sections" ? (
             <section className="min-w-0">
               <div className="mb-6">
@@ -2871,13 +3188,14 @@ function AdminArea({
                         key as keyof typeof data.sectionVisibility
                       ] ?? true;
                     return (
-                      <label
+                      <div
                         key={key}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4"
+                        className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/30 p-4"
                       >
-                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
-                          {key}
-                        </span>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
+                            {key}
+                          </span>
                         <span className="flex items-center gap-2">
                           <span
                             className={`font-mono text-[10px] font-bold uppercase ${isVisible ? "text-primary" : "text-muted-foreground"}`}
@@ -2910,7 +3228,22 @@ function AdminArea({
                             />
                           </button>
                         </span>
-                      </label>
+                        </div>
+                        <label className="flex items-center gap-3 border-t border-border pt-3">
+                          <span className={`h-8 w-14 shrink-0 rounded-md border border-border bg-background ${data.sectionPatterns?.[key as keyof typeof data.sectionVisibility] && data.sectionPatterns[key as keyof typeof data.sectionVisibility] !== "none" ? `kf-${data.sectionPatterns[key as keyof typeof data.sectionVisibility]}` : ""}`} style={{ backgroundImage: patternBackgrounds[data.sectionPatterns?.[key as keyof typeof data.sectionVisibility] || "none"] }} aria-hidden="true" />
+                          <span className="sr-only">Background pattern for {key}</span>
+                          <PatternPicker
+                            value={data.sectionPatterns?.[key as keyof typeof data.sectionVisibility] || "none"}
+                            onChange={(value) => persist({
+                              ...data,
+                              sectionPatterns: {
+                                ...data.sectionPatterns,
+                                [key]: value,
+                              },
+                            }, undefined, `${key} background pattern updated.`)}
+                          />
+                        </label>
+                      </div>
                     );
                   })}
                 </div>

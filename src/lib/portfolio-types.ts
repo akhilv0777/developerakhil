@@ -84,6 +84,16 @@ export type SectionVisibility = {
   contact: boolean;
 };
 
+export type SectionPattern =
+  | "none"
+  | "pattern-01"
+  | "pattern-02"
+  | "pattern-03"
+  | "pattern-04"
+  | "pattern-05"
+  | "pattern-06"
+  | "pattern-07";
+
 export type ThemeSettings = {
   accentColor: string;
   mode: "dark" | "light" | "auto";
@@ -98,5 +108,6 @@ export type PortfolioData = {
   experience: Experience[];
   testimonials: Testimonial[];
   sectionVisibility: SectionVisibility;
+  sectionPatterns?: Partial<Record<keyof SectionVisibility, SectionPattern>>;
   themeSettings: ThemeSettings;
 };
