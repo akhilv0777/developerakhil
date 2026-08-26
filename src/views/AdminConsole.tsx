@@ -2821,7 +2821,7 @@ function AdminArea({
             >
               <Search size={17} />
             </button>
-            <div className={`${mobileSearchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"} fixed inset-x-0 top-0 z-50 flex h-20 w-full border-b border-border bg-background px-4 shadow-xl transition-[transform,opacity] duration-300 ease-out sm:px-6 md:static md:inset-auto md:z-auto md:h-auto md:w-auto md:translate-y-0 md:opacity-100 md:pointer-events-auto md:flex md:min-w-0 md:flex-1 md:max-w-xs md:border-0 md:bg-transparent md:px-0 md:shadow-none`}>
+            <div className={`${mobileSearchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"} fixed inset-x-0 top-0 z-50 flex h-20 w-full border-b border-border bg-transparent px-4 shadow-xl transition-[transform,opacity] duration-300 ease-out sm:px-6 md:static md:inset-auto md:z-auto md:h-auto md:w-auto md:translate-y-0 md:opacity-100 md:pointer-events-auto md:flex md:min-w-0 md:flex-1 md:max-w-xs md:border-0 md:bg-transparent md:px-0 md:shadow-none`}>
               <Search size={22} className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-foreground md:hidden" />
               <Search size={17} className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 text-muted-foreground md:block" />
               <input
