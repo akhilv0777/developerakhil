@@ -16,8 +16,9 @@ function getSecret(): string {
   return secret;
 }
 
-export function signSession(username: string): string {
-  return jwt.sign({ sub: username }, getSecret(), {
+/** Signs a new session JWT embedding the current session_version for the user. */
+export function signSession(username: string, sessionVersion = 0): string {
+  return jwt.sign({ sub: username, sv: sessionVersion }, getSecret(), {
     expiresIn: SESSION_DURATION_SECONDS,
   });
 }
@@ -59,12 +60,33 @@ export function parseCookies(
 
 /** Returns the logged-in username, or null if the request has no valid session. */
 export function getSessionUser(req: NextApiRequest): string | null {
+  return getSessionUserFull(req)?.username ?? null;
+}
+
+/**
+ * Returns the username and session_version embedded in the JWT,
+ * or null if the token is missing / invalid.
+ * Callers that care about session invalidation should verify the returned
+ * sessionVersion against the DB via getAdminSessionVersion().
+ */
+export function getSessionUserFull(
+  req: NextApiRequest,
+): { username: string; sessionVersion: number } | null {
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, getSecret()) as { sub: string };
-    return payload.sub;
+    const payload = jwt.verify(token, getSecret()) as {
+      sub: string;
+      sv?: number;
+    };
+    return {
+      username: payload.sub,
+      // Legacy tokens minted before this feature was added won't have 'sv'.
+      // Treat them as version 0 — they'll be invalidated once the user
+      // triggers "logout all devices" (which bumps the DB version above 0).
+      sessionVersion: typeof payload.sv === "number" ? payload.sv : 0,
+    };
   } catch {
     return null;
   }

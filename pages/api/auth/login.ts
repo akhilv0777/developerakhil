@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { randomInt, randomUUID } from 'crypto';
-import { ensureSchema, sql } from '@/lib/api-server/db';
+import { ensureSchema, sql, getAdminSessionVersion } from '@/lib/api-server/db';
 import { getContactSettings } from '@/lib/api-server/db';
 import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
@@ -110,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
         return startOtpChallenge(defaultAdminUsername, adminEmail, true, res);
       }
-      const token = signSession(defaultAdminUsername);
+      const token = signSession(defaultAdminUsername, await getAdminSessionVersion(defaultAdminUsername));
       setSessionCookie(res, token);
       await recordAdminNotification({ title: 'Admin login successful', message: `${defaultAdminUsername} signed in successfully.` });
       return res.status(200).json({ ok: true, username: defaultAdminUsername });
@@ -138,7 +138,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return startOtpChallenge(matchedUser.username, adminEmail, true, res);
     }
 
-    const token = signSession(matchedUser.username);
+    const token = signSession(matchedUser.username, await getAdminSessionVersion(matchedUser.username));
     setSessionCookie(res, token);
     await recordAdminNotification({ title: 'Admin login successful', message: `${matchedUser.username} signed in successfully.` });
     return res.status(200).json({ ok: true, username: matchedUser.username });

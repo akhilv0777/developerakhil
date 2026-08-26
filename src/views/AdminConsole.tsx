@@ -1428,9 +1428,44 @@ function ProfileMenu({
   onEditProfile: () => void;
   onLogout: () => void;
 }) {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [changingUsername, setChangingUsername] = useState(false);
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  const handleLogoutAllDevices = async () => {
+    setOpen(false);
+    setLoggingOutAll(true);
+    try {
+      const response = await fetch("/api/auth/logout-all-devices", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        toast({
+          variant: "destructive",
+          title: "Could not log out all devices",
+          description: body.error || "Please try again.",
+        });
+        return;
+      }
+      toast({
+        title: "Logged out of all devices",
+        description: "All active sessions have been invalidated.",
+      });
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Could not log out all devices",
+        description: "Could not reach the server. Please try again.",
+      });
+    } finally {
+      setLoggingOutAll(false);
+    }
+  };
 
   return (
     <div className="relative">
@@ -1506,6 +1541,14 @@ function ProfileMenu({
                 className="group-hover:text-primary transition-colors"
               />{" "}
               Change password
+            </button>
+            <button
+              onClick={handleLogoutAllDevices}
+              disabled={loggingOutAll}
+              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-amber-500 transition-colors hover:bg-amber-500/10 disabled:opacity-50"
+            >
+              <LogOut size={14} />
+              {loggingOutAll ? "Logging out…" : "Logout all devices"}
             </button>
             <button
               onClick={() => {
