@@ -3,6 +3,25 @@ import { ensureSchema, getContactSettings, sql } from '@/lib/api-server/db';
 import { signPasswordResetToken } from '@/lib/api-server/auth';
 import { sendPasswordResetEmail } from '@/lib/api-server/mailer';
 
+function getPublicOrigin(req: NextApiRequest): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
+  const isLocalUrl = configuredUrl && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(configuredUrl);
+  if (configuredUrl && !isLocalUrl) return configuredUrl;
+
+  const vercelUrl = process.env.VERCEL_URL?.trim();
+  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`;
+
+  const forwardedHost = Array.isArray(req.headers['x-forwarded-host'])
+    ? req.headers['x-forwarded-host'][0]
+    : req.headers['x-forwarded-host'];
+  const host = forwardedHost || req.headers.host || 'localhost:3000';
+  const forwardedProto = Array.isArray(req.headers['x-forwarded-proto'])
+    ? req.headers['x-forwarded-proto'][0]
+    : req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto || (host.startsWith('localhost') ? 'http' : 'https');
+  return `${protocol}://${host}`.replace(/\/$/, '');
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -24,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : undefined;
     const resetUsername = user?.username || firstUser?.username;
     if (resetUsername && recipient) {
-      const origin = process.env.NEXT_PUBLIC_SITE_URL || `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
+      const origin = getPublicOrigin(req);
       await sendPasswordResetEmail({ recipient, resetUrl: `${origin}/reset-password?token=${encodeURIComponent(signPasswordResetToken(resetUsername))}` });
     }
     return res.status(200).json(generic);
