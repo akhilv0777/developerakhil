@@ -46,12 +46,12 @@ function isRateLimited(key: string): boolean {
   return record.count > MAX_ATTEMPTS;
 }
 
-async function startOtpChallenge(username: string, recipient: string, res: NextApiResponse) {
+async function startOtpChallenge(username: string, recipient: string, passwordRequired: boolean, res: NextApiResponse) {
   const otp = String(randomInt(100000, 1000000));
   const challengeId = randomUUID();
   const otpHash = await bcrypt.hash(otp, 10);
   await sql`DELETE FROM admin_login_challenges WHERE expires_at <= now() OR username = ${username};`;
-  await sql`INSERT INTO admin_login_challenges (id, username, otp_hash, expires_at) VALUES (${challengeId}::uuid, ${username}, ${otpHash}, now() + interval '10 minutes');`;
+  await sql`INSERT INTO admin_login_challenges (id, username, otp_hash, password_required, expires_at) VALUES (${challengeId}::uuid, ${username}, ${otpHash}, ${passwordRequired}, now() + interval '10 minutes');`;
   await sendLoginOtpEmail({ recipient, otp });
   return res.status(200).json({ requiresOtp: true, challengeId, username });
 }
@@ -67,11 +67,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
-  const { identifier, username, password } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string };
+  const { identifier, username, password, loginMode = 'password' } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp' };
   const loginIdentifier = (identifier || username || '').trim();
-  if (!loginIdentifier || !password || typeof loginIdentifier !== 'string' || typeof password !== 'string') {
+  if (!loginIdentifier || !['password', 'otp'].includes(loginMode) || (loginMode === 'password' && (!password || typeof password !== 'string')) || typeof loginIdentifier !== 'string') {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
+  const passwordValue = typeof password === 'string' ? password : '';
 
   try {
     await ensureSchema();
@@ -80,10 +81,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const defaultAdminUsername = process.env.ADMIN_USERNAME?.trim() || 'admin';
     const defaultAdminPassword = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
 
-    if (loginIdentifier === defaultAdminUsername && password === defaultAdminPassword) {
+    if (loginMode === 'otp' && settings.twoFactorEnabled) {
+      return res.status(400).json({ error: 'Two-step verification requires your password before the OTP.' });
+    }
+
+    if (loginMode === 'otp') {
+      const isDefaultAdmin = loginIdentifier === defaultAdminUsername;
+      const result = isDefaultAdmin
+        ? { rows: [{ username: defaultAdminUsername }] }
+        : await sql`SELECT username FROM admin_users WHERE username = ${loginIdentifier} LIMIT 1;`;
+      const emailUser = !result.rows[0] && adminEmail && loginIdentifier.toLowerCase() === adminEmail
+        ? (await sql`SELECT username FROM admin_users ORDER BY id ASC LIMIT 1;`).rows[0]
+        : undefined;
+      const otpUser = result.rows[0] || emailUser;
+      if (!otpUser || !adminEmail) return res.status(401).json({ error: 'Invalid username or admin email.' });
+      return startOtpChallenge(otpUser.username, adminEmail, false, res);
+    }
+
+    if (loginIdentifier === defaultAdminUsername && passwordValue === defaultAdminPassword) {
       if (settings.twoFactorEnabled) {
         if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
-        return startOtpChallenge(defaultAdminUsername, adminEmail, res);
+        return startOtpChallenge(defaultAdminUsername, adminEmail, true, res);
       }
       const token = signSession(defaultAdminUsername);
       setSessionCookie(res, token);
@@ -100,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Always run bcrypt.compare (even with a dummy hash) so responses
     // take the same time whether or not the username exists.
     const hashToCheck = matchedUser?.password_hash ?? '$2a$10$invalidsaltinvalidsaltinvalidsaltinvalidsal';
-    const passwordMatches = await bcrypt.compare(password, hashToCheck);
+    const passwordMatches = await bcrypt.compare(passwordValue, hashToCheck);
 
     if (!matchedUser || !passwordMatches) {
       return res.status(401).json({ error: 'Invalid username or password.' });
@@ -108,7 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (settings.twoFactorEnabled) {
       if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
-      return startOtpChallenge(matchedUser.username, adminEmail, res);
+      return startOtpChallenge(matchedUser.username, adminEmail, true, res);
     }
 
     const token = signSession(matchedUser.username);

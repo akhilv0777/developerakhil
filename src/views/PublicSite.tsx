@@ -139,7 +139,7 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
   }, [links]);
 
   return (
-    <header className="fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-full border border-border bg-background/80 px-6 py-4 backdrop-blur-md transition-all">
+    <header className="glass-nav fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-full border px-6 py-4 backdrop-blur-md transition-all">
       <div className="flex items-center justify-between">
         <Link
           href="/"
@@ -313,13 +313,25 @@ function Hero({ profile }: { profile: Profile }) {
 
         {(profile.heroImage || profile.image) && (
           <div className="reveal reveal-delay-2 relative mx-auto w-full max-w-[420px]">
-            <div className="absolute inset-0 -z-10 rounded-[2rem] bg-primary/10 blur-3xl" />
-            <div className="rounded-[2rem] border border-border bg-card/70 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+            <div className="absolute -inset-8 -z-10 rounded-full bg-primary/10 blur-3xl" />
+            <div className="portrait-frame aspect-[4/5] p-3">
               <img
                 src={profile.heroImage || profile.image}
                 alt={profile.name}
-                className="h-[420px] w-full rounded-[1.5rem] object-cover"
+                className="h-full w-full rounded-[1.1rem] object-cover"
               />
+              <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
+              <div className="absolute inset-x-7 bottom-7 z-10 flex items-end justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">Currently building</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Digital products with purpose.</p>
+                </div>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/20 text-primary backdrop-blur-md"><ArrowUpRight size={15} /></span>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 font-mono text-[10px] uppercase tracking-wider">
+              <div className="glass-surface rounded-lg px-3 py-3 text-muted-foreground"><span className="mb-1 block text-primary">Based in</span>{profile.location}</div>
+              <a href={`mailto:${profile.email}`} className="glass-surface rounded-lg px-3 py-3 text-muted-foreground transition-colors hover:text-primary"><span className="mb-1 block text-primary">Open to</span>Collaborations</a>
             </div>
           </div>
         )}
@@ -339,12 +351,17 @@ function About({ profile }: { profile: Profile }) {
         <div className="grid gap-12 md:grid-cols-[0.9fr_1.1fr] items-start">
           <div className="space-y-6">
             {(profile.aboutImage || profile.heroImage || profile.image) ? (
-              <div className="overflow-hidden rounded-[1.75rem] border border-border bg-secondary/50 p-3 shadow-[0_20px_60px_rgba(0,0,0,0.2)]">
+              <div className="portrait-frame aspect-[4/5] p-3">
                 <img
                   src={profile.aboutImage || profile.heroImage || profile.image}
                   alt={profile.name}
-                  className="h-[420px] w-full rounded-[1.25rem] object-cover"
+                  className="h-full w-full rounded-[1.1rem] object-cover"
                 />
+                <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
+                <div className="absolute bottom-7 left-7 z-10">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">Profile / Snapshot</p>
+                  <p className="mt-1 text-sm font-semibold text-white">Developer · Creator · Problem solver</p>
+                </div>
               </div>
             ) : null}
             <p
@@ -949,28 +966,26 @@ function Footer({ profile }: { profile: Profile }) {
 
 export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-6 bg-background px-6 text-center overflow-hidden">
+    <div className="loader-scene flex min-h-[100dvh] flex-col items-center justify-center bg-background px-6 text-center overflow-hidden">
       {error ? (
-        <div className="bento-card p-8 max-w-sm border-red-500/20 bg-red-500/5">
-          <p className="font-mono text-[12px] font-bold uppercase tracking-wider text-red-500 mb-3">
-            Error Loading Portfolio
-          </p>
-          <p className="text-sm text-red-400">
-            The database did not return the content. Refresh the page and try again.
-          </p>
+        <div className="loader-panel glass-surface max-w-sm p-8">
+          <div className="loader-mark loader-mark-error mx-auto mb-6">!</div>
+          <p className="font-mono text-[12px] font-bold uppercase tracking-wider text-red-400 mb-3">Unable to load portfolio</p>
+          <p className="text-sm leading-6 text-muted-foreground">The content is taking a little longer than expected. Refresh the page and try again.</p>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-5">
-          <div className="relative flex h-16 w-16 items-center justify-center">
-            <div className="absolute inset-0 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-            <div className="absolute inset-3 rounded-full border border-primary/15 bg-primary/5" />
+        <div className="loader-panel glass-surface w-full max-w-sm p-8">
+          <div className="loader-mark mx-auto">AV</div>
+          <div className="loader-terminal mt-7 text-left" aria-hidden="true">
+            <p><span className="text-primary">$</span> ./initialize-portfolio<span className="loader-cursor" /></p>
+            <p className="loader-line"><span className="text-accent">[ok]</span> loading projects...</p>
+            <p className="loader-line loader-line-delay"><span className="text-accent">[ok]</span> loading experience...</p>
           </div>
-          <div className="text-center">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">
-              Loading portfolio
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">Preparing your content...</p>
+          <div className="mt-6 text-center">
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">Compiling portfolio</p>
+            <p className="mt-2 text-sm text-muted-foreground">Building a sharper view of the work.</p>
           </div>
+          <div className="loader-track mt-7"><span /></div>
         </div>
       )}
     </div>
@@ -982,6 +997,25 @@ export function PublicPortfolio() {
   useMotionFlow([data]);
   const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/site-settings", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((settings: { siteName?: string; faviconUrl?: string }) => {
+        if (settings.siteName) document.title = settings.siteName;
+        if (settings.faviconUrl) {
+          document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]').forEach((link) => link.remove());
+          const icon = document.createElement("link");
+          icon.id = "site-favicon";
+          icon.rel = "icon";
+          icon.href = settings.faviconUrl.startsWith("data:")
+            ? settings.faviconUrl
+            : `${settings.faviconUrl}${settings.faviconUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
+          document.head.appendChild(icon);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const updateProgress = () => {

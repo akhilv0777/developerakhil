@@ -16,8 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await ensureSchema();
-    const result = await sql`SELECT id, username, otp_hash, attempts FROM admin_login_challenges WHERE id = ${challengeId}::uuid AND expires_at > now() LIMIT 1;`;
-    const challenge = result.rows[0] as { id: string; username: string; otp_hash: string; attempts: number } | undefined;
+    const result = await sql`SELECT id, username, otp_hash, password_required, attempts FROM admin_login_challenges WHERE id = ${challengeId}::uuid AND expires_at > now() LIMIT 1;`;
+    const challenge = result.rows[0] as { id: string; username: string; otp_hash: string; password_required: boolean; attempts: number } | undefined;
     if (!challenge || challenge.attempts >= 5) {
       return res.status(401).json({ error: 'This verification code is invalid or expired.' });
     }

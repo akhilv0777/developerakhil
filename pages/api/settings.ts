@@ -11,6 +11,8 @@ let inMemorySettings: ContactSettings = {
   contactToEmail: "",
   contactFromEmail: "",
   twoFactorEnabled: false,
+  siteName: "Akhilesh Vishwakarma",
+  faviconUrl: "",
 };
 
 function isDatabaseUnavailableError(error: unknown): boolean {
@@ -38,7 +40,9 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.gmailAppPassword === "string" &&
     typeof record.contactToEmail === "string" &&
     typeof record.contactFromEmail === "string" &&
-    typeof record.twoFactorEnabled === "boolean"
+    typeof record.twoFactorEnabled === "boolean" &&
+    typeof record.siteName === "string" &&
+    typeof record.faviconUrl === "string"
   );
 }
 
@@ -71,6 +75,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         contactToEmail: req.body.contactToEmail.trim(),
         contactFromEmail: req.body.contactFromEmail.trim(),
         twoFactorEnabled: req.body.twoFactorEnabled,
+        siteName: req.body.siteName.trim(),
+        faviconUrl: req.body.faviconUrl.trim(),
       };
 
       try {

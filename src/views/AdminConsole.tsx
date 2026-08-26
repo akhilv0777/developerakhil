@@ -102,6 +102,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [forgotMode, setForgotMode] = useState(false);
+  const [loginMode, setLoginMode] = useState<"password" | "otp">("password");
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
@@ -116,7 +117,7 @@ function LoginPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: username, password }),
+        body: JSON.stringify({ identifier: username, password, loginMode }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -245,10 +246,14 @@ function LoginPage() {
             {forgotMode ? "Reset your password" : otpChallengeId ? "Enter verification code" : "Sign in to Console"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {forgotMode ? "Enter your username or admin email to receive a reset link." : otpChallengeId ? "Your password was accepted. We sent a 6-digit code to your admin email." : "Enter your credentials to manage the site."}
+            {forgotMode ? "Enter your username or admin email to receive a reset link." : otpChallengeId ? (loginMode === "password" ? "Your password was accepted. We sent a 6-digit code to your admin email." : "We sent a 6-digit code to your admin email.") : loginMode === "otp" ? "We will send a one-time code to your admin email." : "Enter your credentials to manage the site."}
           </p>
 
           <form onSubmit={forgotMode ? handleForgotPassword : otpChallengeId ? handleOtpSubmit : handleSubmit} className="mt-8 flex flex-col gap-5">
+            {!forgotMode && !otpChallengeId && <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-secondary/30 p-1">
+              <button type="button" onClick={() => { setLoginMode("password"); setError(null); }} className={`rounded-md px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${loginMode === "password" ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>Password</button>
+              <button type="button" onClick={() => { setLoginMode("otp"); setPassword(""); setError(null); }} className={`rounded-md px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${loginMode === "otp" ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>OTP</button>
+            </div>}
             {!otpChallengeId && <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {forgotMode ? "Username or admin email" : "Username or admin email"}
@@ -261,7 +266,7 @@ function LoginPage() {
                 className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10 text-foreground"
               />
             </label>}
-            {!forgotMode && !otpChallengeId && <label className="block">
+            {loginMode === "password" && !forgotMode && !otpChallengeId && <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Password
               </span>
@@ -282,8 +287,8 @@ function LoginPage() {
               disabled={submitting}
               className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background transition-all hover:bg-primary/90 disabled:opacity-50 hover:shadow-[0_0_15px_hsl(var(--primary)/0.35)]"
             >
-              {forgotMode ? <Mail size={14} /> : otpChallengeId ? <KeyRound size={14} /> : <Lock size={14} />}
-              {submitting ? "Please wait..." : forgotMode ? "Send reset link" : otpChallengeId ? "Verify and sign in" : "Sign in"}
+              {forgotMode ? <Mail size={14} /> : otpChallengeId ? <KeyRound size={14} /> : loginMode === "otp" ? <KeyRound size={14} /> : <Lock size={14} />}
+              {submitting ? "Please wait..." : forgotMode ? "Send reset link" : otpChallengeId ? "Verify and sign in" : loginMode === "otp" ? "Send OTP" : "Sign in"}
             </button>
             {otpChallengeId ? <button type="button" onClick={() => { setOtpChallengeId(null); setOtp(""); setError(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">Start over</button> : <button type="button" onClick={() => { setForgotMode((value) => !value); setError(null); setForgotMessage(null); }} className="cursor-pointer text-center font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-primary">{forgotMode ? "Back to sign in" : "Forgot password?"}</button>}
           </form>
@@ -1178,6 +1183,8 @@ type ContactSettings = {
   contactToEmail: string;
   contactFromEmail: string;
   twoFactorEnabled: boolean;
+  siteName: string;
+  faviconUrl: string;
 };
 
 function SettingsEditor() {
@@ -1186,11 +1193,28 @@ function SettingsEditor() {
     contactToEmail: "",
     contactFromEmail: "",
     twoFactorEnabled: false,
+    siteName: "Akhilesh Vishwakarma",
+    faviconUrl: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [faviconError, setFaviconError] = useState<string | null>(null);
+
+  const handleFaviconUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFaviconError(null);
+    try {
+      const dataUrl = await fileToResizedDataUrl(file, 128);
+      setForm((current) => ({ ...current, faviconUrl: dataUrl }));
+    } catch (uploadError) {
+      setFaviconError((uploadError as Error).message);
+    } finally {
+      event.target.value = "";
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1208,6 +1232,8 @@ function SettingsEditor() {
           contactToEmail: "",
           contactFromEmail: "",
           twoFactorEnabled: false,
+          siteName: "Akhilesh Vishwakarma",
+          faviconUrl: "",
         });
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
@@ -1267,19 +1293,45 @@ function SettingsEditor() {
       onSubmit={handleSubmit}
       className="bento-card shadow-sm p-5 md:p-6"
     >
-      <div className="grid gap-6">
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
-          <input
-            type="checkbox"
-            checked={form.twoFactorEnabled}
-            onChange={(event) => setForm({ ...form, twoFactorEnabled: event.target.checked })}
-            className="mt-1 h-4 w-4 accent-primary"
-          />
-          <span>
-            <span className="block text-sm font-semibold text-foreground">Require 2-step verification</span>
-            <span className="mt-1 block text-xs leading-5 text-muted-foreground">After the correct password, send a one-time code to the admin email. Both steps are required.</span>
-          </span>
-        </label>
+      <div className="grid gap-8">
+        <div>
+          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Site settings</p>
+          <div className="grid gap-5">
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Site name</span>
+              <input value={form.siteName} onChange={(event) => setForm({ ...form, siteName: event.target.value })} placeholder="Akhilesh Vishwakarma" className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Favicon URL</span>
+              <input type="url" value={form.faviconUrl} onChange={(event) => setForm({ ...form, faviconUrl: event.target.value })} placeholder="https://example.com/favicon.png" className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20" />
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20">
+                  <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.ico" onChange={handleFaviconUpload} className="hidden" />
+                  {form.faviconUrl?.startsWith("data:") ? "Replace favicon" : "Upload favicon"}
+                </label>
+                {form.faviconUrl && <img src={form.faviconUrl} alt="Favicon preview" className="h-8 w-8 rounded border border-border bg-background object-contain" />}
+                {form.faviconUrl?.startsWith("data:") && <button type="button" onClick={() => setForm({ ...form, faviconUrl: "" })} className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400">Remove</button>}
+              </div>
+              {faviconError && <p className="mt-2 font-mono text-[10px] text-red-400">{faviconError}</p>}
+            </label>
+          </div>
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+            <span>
+              <span className="block text-sm font-semibold text-foreground">Require 2-step verification</span>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">Password ke baad admin email par one-time code aayega.</span>
+            </span>
+            <span className="relative shrink-0">
+              <input type="checkbox" checked={form.twoFactorEnabled} onChange={(event) => setForm({ ...form, twoFactorEnabled: event.target.checked })} className="peer sr-only" />
+              <span className="block h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary" />
+              <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
+            </span>
+          </label>
+        </div>
+
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Gmail app password

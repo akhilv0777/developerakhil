@@ -272,6 +272,8 @@ export type ContactSettings = {
   contactToEmail: string;
   contactFromEmail: string;
   twoFactorEnabled: boolean;
+  siteName: string;
+  faviconUrl: string;
 };
 
 const defaultContactSettings: ContactSettings = {
@@ -279,6 +281,8 @@ const defaultContactSettings: ContactSettings = {
   contactToEmail: "",
   contactFromEmail: "",
   twoFactorEnabled: false,
+  siteName: "Akhilesh Vishwakarma",
+  faviconUrl: "",
 };
 
 export type ContactMessage = {
@@ -315,11 +319,13 @@ export function ensureSchema(): Promise<void> {
             id UUID PRIMARY KEY,
             username TEXT NOT NULL,
             otp_hash TEXT NOT NULL,
+            password_required BOOLEAN NOT NULL DEFAULT true,
             expires_at TIMESTAMPTZ NOT NULL,
             attempts INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;
+        await sql`ALTER TABLE admin_login_challenges ADD COLUMN IF NOT EXISTS password_required BOOLEAN NOT NULL DEFAULT true;`;
         await sql`
           CREATE TABLE IF NOT EXISTS portfolio_content (
             id INTEGER PRIMARY KEY DEFAULT 1,
