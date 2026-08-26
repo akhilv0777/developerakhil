@@ -98,6 +98,81 @@ function getPool(): Pool {
 
 type QueryResult = { rows: QueryResultRow[]; rowCount: number };
 
+type RecordValues = Record<string, unknown>;
+
+function quoteIdentifier(identifier: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
+    throw new Error(`Invalid database identifier: ${identifier}`);
+  }
+  return `"${identifier}"`;
+}
+
+function buildWhereClause(where: RecordValues, startIndex: number) {
+  const entries = Object.entries(where);
+  if (entries.length === 0) {
+    throw new Error("A WHERE clause is required for this database operation.");
+  }
+
+  return {
+    text: entries
+      .map(([column], index) => `${quoteIdentifier(column)} = $${startIndex + index}`)
+      .join(" AND "),
+    values: entries.map(([, value]) => value),
+  };
+}
+
+/** Reusable parameterized CRUD helpers for the app's Postgres tables. */
+export async function insertRecord(
+  table: string,
+  data: RecordValues,
+  returning = "*",
+): Promise<QueryResult> {
+  const entries = Object.entries(data);
+  if (entries.length === 0) throw new Error("Insert data cannot be empty.");
+
+  const columns = entries.map(([column]) => quoteIdentifier(column));
+  const values = entries.map(([, value]) => value);
+  const result = await getPool().query(
+    `INSERT INTO ${quoteIdentifier(table)} (${columns.join(", ")}) VALUES (${values
+      .map((_, index) => `$${index + 1}`)
+      .join(", ")}) RETURNING ${returning === "*" ? "*" : quoteIdentifier(returning)}`,
+    values,
+  );
+  return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+}
+
+export async function updateRecord(
+  table: string,
+  data: RecordValues,
+  where: RecordValues,
+  returning = "*",
+): Promise<QueryResult> {
+  const entries = Object.entries(data);
+  if (entries.length === 0) throw new Error("Update data cannot be empty.");
+
+  const values = entries.map(([, value]) => value);
+  const whereClause = buildWhereClause(where, values.length + 1);
+  const result = await getPool().query(
+    `UPDATE ${quoteIdentifier(table)} SET ${entries
+      .map(([column], index) => `${quoteIdentifier(column)} = $${index + 1}`)
+      .join(", ")} WHERE ${whereClause.text} RETURNING ${returning === "*" ? "*" : quoteIdentifier(returning)}`,
+    [...values, ...whereClause.values],
+  );
+  return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+}
+
+export async function deleteRecord(
+  table: string,
+  where: RecordValues,
+): Promise<QueryResult> {
+  const whereClause = buildWhereClause(where, 1);
+  const result = await getPool().query(
+    `DELETE FROM ${quoteIdentifier(table)} WHERE ${whereClause.text}`,
+    whereClause.values,
+  );
+  return { rows: result.rows, rowCount: result.rowCount ?? 0 };
+}
+
 /** Tagged template helper mirroring the `sql\`...\`` style used throughout this project. */
 export async function sql(
   strings: TemplateStringsArray,
@@ -437,11 +512,11 @@ export async function saveContactSettings(
   settings: ContactSettings,
 ): Promise<void> {
   await ensureSchema();
-  await sql`
-    UPDATE contact_settings
-    SET data = ${JSON.stringify(settings)}::jsonb, updated_at = now()
-    WHERE id = 1;
-  `;
+  await updateRecord(
+    "contact_settings",
+    { data: JSON.stringify(settings), updated_at: new Date() },
+    { id: 1 },
+  );
 }
 
 export async function insertContactMessage(input: {
@@ -450,11 +525,7 @@ export async function insertContactMessage(input: {
   message: string;
 }): Promise<ContactMessage> {
   await ensureSchema();
-  const result = await sql`
-    INSERT INTO contact_messages (name, email, message)
-    VALUES (${input.name}, ${input.email}, ${input.message})
-    RETURNING id, name, email, message, created_at, replied, replied_at;
-  `;
+  const result = await insertRecord("contact_messages", input);
   const row = result.rows[0];
   return {
     id: row.id,
@@ -494,7 +565,5 @@ export async function deleteContactMessages(ids: number[]): Promise<number> {
 
 export async function markMessageReplied(id: number): Promise<void> {
   await ensureSchema();
-  await sql`
-    UPDATE contact_messages SET replied = true, replied_at = now() WHERE id = ${id};
-  `;
+  await updateRecord("contact_messages", { replied: true, replied_at: new Date() }, { id });
 }

@@ -1640,6 +1640,8 @@ function SettingsEditor() {
                 {form.faviconUrl && (
                   <NextImage
                     src={form.faviconUrl}
+                    loader={({ src }) => src}
+                    unoptimized
                     alt="Favicon preview"
                     width={32}
                     height={32}
