@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import NextImage from "next/image";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -183,7 +184,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] bg-background grid-dots">
+    <div className="flex min-h-dvh bg-background grid-dots">
       {/* Brand panel - desktop only */}
       <div className="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-card border-r border-border p-12 text-foreground lg:flex">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-[100px]" />
@@ -407,9 +408,6 @@ function AdminForm({
   const [form, setForm] = useState<Record<string, string>>(
     () => ({ ...value }) as unknown as Record<string, string>,
   );
-  useEffect(() => {
-    setForm({ ...value } as unknown as Record<string, string>);
-  }, [value]);
 
   const fields: Record<Resource, string[]> = {
     stats: ["value", "label"],
@@ -508,9 +506,11 @@ function AdminForm({
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg border border-border bg-secondary/50 p-4">
                 {form[field] ? (
                   <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <img
+                    <NextImage
                       src={form[field]}
                       alt="Preview"
+                      width={64}
+                      height={64}
                       className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
                     />
                     <button
@@ -626,7 +626,10 @@ function ProfileEditor({
   const [imageError, setImageError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
   useEffect(() => {
-    setForm(profile);
+    // Sync form state when profile prop changes
+    // Multiple setState calls are necessary to keep all form fields in sync
+    // eslint-disable-next-line
+    setForm({ ...profile });
     setSkillsRaw((profile.skills || []).join(", "));
     setLanguagesRaw((profile.languages || []).join(", "));
     setRolesRaw((profile.roles || []).join(", "));
@@ -712,9 +715,11 @@ function ProfileEditor({
           <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary transition-colors hover:border-primary">
             <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
               {form.heroImage || form.image ? (
-                <img
+                <NextImage
                   src={form.heroImage || form.image}
                   alt="Profile"
+                  width={80}
+                  height={80}
                   className="h-full w-full object-cover"
                 />
               ) : <User size={22} className="text-muted-foreground" />}
@@ -736,7 +741,7 @@ function ProfileEditor({
         </div>
         <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-3">
           <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
-            {form.aboutImage ? <img src={form.aboutImage} alt="About" className="h-full w-full object-cover" /> : <span className="font-mono text-[9px] uppercase text-muted-foreground">No image</span>}
+            {form.aboutImage ? <NextImage src={form.aboutImage} alt="About" width={96} height={64} className="h-full w-full object-cover" /> : <span className="font-mono text-[9px] uppercase text-muted-foreground">No image</span>}
             <label className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background shadow-md transition-transform hover:scale-110" title="Change about image">
               <input type="file" accept="image/*" onChange={(event) => handleImage(event, "aboutImage")} className="hidden" />
               <Pencil size={11} />
@@ -954,7 +959,7 @@ function ChangePasswordModal({ onClose, isLight }: { onClose: () => void; isLigh
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto p-4">
       <button
         aria-label="Close"
         onClick={onClose}
@@ -1042,7 +1047,7 @@ function ChangeUsernameModal({ onClose, isLight }: { onClose: () => void; isLigh
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
+    <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto p-4">
       <button aria-label="Close" onClick={onClose} className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
         style={isLight ? { "--background": "0 0% 98%", "--foreground": "220 25% 12%", "--border": "220 18% 86%", "--card": "0 0% 100%", "--card-border": "220 18% 88%", "--secondary": "220 17% 96%", "--muted-foreground": "220 9% 40%" } as React.CSSProperties : undefined}
@@ -1095,9 +1100,11 @@ function ProfileMenu({
         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-background ring-2 ring-primary/20 transition-transform hover:scale-105"
       >
         {image ? (
-          <img
+          <NextImage
             src={image}
             alt={username || "Profile"}
+            width={36}
+            height={36}
             className="h-full w-full object-cover"
           />
         ) : (
@@ -1309,7 +1316,7 @@ function SettingsEditor() {
                   <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.ico" onChange={handleFaviconUpload} className="hidden" />
                   {form.faviconUrl?.startsWith("data:") ? "Replace favicon" : "Upload favicon"}
                 </label>
-                {form.faviconUrl && <img src={form.faviconUrl} alt="Favicon preview" className="h-8 w-8 rounded border border-border bg-background object-contain" />}
+                {form.faviconUrl && <NextImage src={form.faviconUrl} alt="Favicon preview" width={32} height={32} className="h-8 w-8 rounded border border-border bg-background object-contain" />}
                 {form.faviconUrl?.startsWith("data:") && <button type="button" onClick={() => setForm({ ...form, faviconUrl: "" })} className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400">Remove</button>}
               </div>
               {faviconError && <p className="mt-2 font-mono text-[10px] text-red-400">{faviconError}</p>}
@@ -1430,7 +1437,7 @@ function MessagesPanel() {
   const [sendingReply, setSendingReply] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = async () => {
+  const reload = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
@@ -1449,11 +1456,13 @@ function MessagesPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    load();
-  }, []);
+    // Load messages on mount - the reload function handles its own state management
+    // eslint-disable-next-line
+    reload();
+  }, [reload]);
 
   const allSelected = messages.length > 0 && selected.size === messages.length;
 
@@ -1491,6 +1500,7 @@ function MessagesPanel() {
         ids.forEach((id) => next.delete(id));
         return next;
       });
+      await reload();
       toast({
         title:
           ids.length === 1
@@ -1529,7 +1539,7 @@ function MessagesPanel() {
       });
       setReplyingTo(null);
       setReplyText("");
-      await load();
+      await reload();
     } catch (err) {
       toast({
         variant: "destructive",
@@ -1562,7 +1572,7 @@ function MessagesPanel() {
             </button>
           )}
           <button
-            onClick={load}
+            onClick={() => reload()}
             className="inline-flex items-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary text-foreground transition-all whitespace-nowrap"
           >
             Refresh
@@ -1582,7 +1592,7 @@ function MessagesPanel() {
           <p className="text-sm font-medium text-foreground">Messages are currently unavailable</p>
           <p className="max-w-md text-xs text-muted-foreground">{loadError}</p>
           <button
-            onClick={load}
+            onClick={() => reload()}
             className="mt-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
           >
             Retry
@@ -1595,7 +1605,7 @@ function MessagesPanel() {
           </span>
           <p className="text-sm font-medium text-foreground">No messages yet</p>
           <p className="max-w-xs text-xs text-muted-foreground">
-            Submissions from your site's contact form will show up here.
+            Submissions from your site&apos;s contact form will show up here.
           </p>
         </div>
       ) : (
@@ -1742,9 +1752,26 @@ function AdminArea({
   data: PortfolioData;
   username?: string;
 }) {
+  const getInitialSection = () => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.slice(1);
+      const validSections = [
+        "dashboard", "profile", "settings", "messages", "sections", "theme",
+        "stats", "services", "projects", "education", "experience", "testimonials",
+      ];
+      if (validSections.includes(hash)) return hash as "dashboard" | "profile" | "settings" | "messages" | "sections" | "theme" | Resource;
+    }
+    return "dashboard";
+  };
+  const getInitialTheme = () => {
+    if (typeof window !== "undefined") {
+      return window.localStorage.getItem("admin-theme") === "light";
+    }
+    return false;
+  };
   const [section, setSection] = useState<
     "dashboard" | "profile" | "settings" | "messages" | "sections" | "theme" | Resource
-  >("dashboard");
+  >(getInitialSection);
   const [editing, setEditing] = useState<
     PortfolioData[Resource][number] | null
   >(null);
@@ -1752,7 +1779,7 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [messageCount, setMessageCount] = useState<number | null>(null);
-  const [adminLight, setAdminLight] = useState(false);
+  const [adminLight, setAdminLight] = useState(getInitialTheme);
   const router = useRouter();
   const queryClient = useQueryClient();
   const saveMutation = useSavePortfolioMutation();
@@ -1766,26 +1793,7 @@ function AdminArea({
     section === "theme"
       ? null
       : section;
-  const items = resource ? (data[resource] ?? []) : [];
-
-  useEffect(() => {
-    setSearch("");
-  }, [section]);
-
-  useEffect(() => {
-    const requested = window.location.hash.slice(1);
-    const validSections = [
-      "dashboard", "profile", "settings", "messages", "sections", "theme",
-      ...Object.keys(resourceMeta),
-    ];
-    if (validSections.includes(requested)) {
-      setSection(requested as typeof section);
-    }
-  }, []);
-
-  useEffect(() => {
-    setAdminLight(window.localStorage.getItem("admin-theme") === "light");
-  }, []);
+  const items = useMemo(() => resource ? (data[resource] ?? []) : [], [resource, data]);
 
   const adminThemeStyle = adminLight
     ? ({
@@ -1914,13 +1922,13 @@ function AdminArea({
   const resourceKeys = Object.keys(resourceMeta) as Resource[];
 
   return (
-    <div className="admin-console flex h-[100dvh] overflow-hidden bg-background text-foreground" style={adminThemeStyle}>
+    <div className="admin-console flex h-dvh overflow-hidden bg-background text-foreground" style={adminThemeStyle}>
       {/* Sidebar - desktop */}
       <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90">
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
             {data.profile?.heroImage || data.profile?.aboutImage || data.profile?.image ? (
-              <img src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" className="h-full w-full object-cover" />
+              <NextImage src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" width={32} height={32} className="h-full w-full object-cover" />
             ) : "AV"}
           </span>
           <div className="min-w-0">
@@ -2124,7 +2132,7 @@ function AdminArea({
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
                     {data.profile?.heroImage || data.profile?.aboutImage || data.profile?.image ? (
-                      <img src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" className="h-full w-full object-cover" />
+                      <NextImage src={data.profile.heroImage || data.profile.aboutImage || data.profile.image} alt="Profile" width={200} height={200} className="h-full w-full object-cover" />
                     ) : "AV"}
                   </span>
                   <div className="min-w-0">
@@ -2299,7 +2307,7 @@ function AdminArea({
                 ))}
               </div>
 
-              <div className="mt-10 flex flex-col gap-5 bento-card border-red-500/25 bg-red-500/[0.04] px-5 py-5 sm:flex-row sm:items-center sm:justify-between md:px-6">
+              <div className="mt-10 flex flex-col gap-5 bento-card border-red-500/25 bg-red-500/4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between md:px-6">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-red-600 dark:text-red-400">
                     Reset all content
@@ -2375,8 +2383,8 @@ function AdminArea({
                                 ...data,
                                 sectionVisibility: {
                                   ...data.sectionVisibility,
-                                  [key]: !isVisible,
-                                } as any,
+                                  [key as keyof typeof data.sectionVisibility]: !isVisible,
+                                },
                               }, undefined, `${key} section is now ${isVisible ? "hidden" : "visible"}.`);
                             }}
                             className={`relative h-8 w-14 shrink-0 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isVisible ? "border-primary bg-primary" : "border-muted-foreground/50 bg-secondary"}`}
@@ -2546,7 +2554,7 @@ function AdminArea({
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[520px] text-sm text-foreground">
+                      <table className="w-full min-w-130 text-sm text-foreground">
                         <thead>
                           <tr className="border-b border-border bg-secondary/50 text-left font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                             <th className="w-12 px-5 py-3 font-semibold sm:px-6">
@@ -2570,7 +2578,7 @@ function AdminArea({
                               <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-muted-foreground sm:px-6">
                                 {String(index + 1).padStart(2, "0")}
                               </td>
-                              <td className="max-w-[220px] truncate px-3 py-3.5 font-semibold text-foreground">
+                              <td className="max-w-55 truncate px-3 py-3.5 font-semibold text-foreground">
                                 {itemTitle(item)}
                               </td>
                               <td className="hidden max-w-xs truncate px-3 py-3.5 text-muted-foreground md:table-cell">

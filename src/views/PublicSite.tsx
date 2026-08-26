@@ -45,7 +45,8 @@ function hexToHsl(hex: string): string {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
@@ -235,7 +236,7 @@ function SectionLabel({
     <div className="mb-12 flex items-center gap-4">
       <span className="font-mono text-primary font-bold">{number}</span>
       <span className="font-mono text-[12px] uppercase tracking-[.2em] text-foreground font-semibold">
-        // {children}
+        {/* // */} {children}
       </span>
       <span className="h-px w-16 bg-border" />
     </div>
@@ -712,7 +713,6 @@ function Testimonials({ data }: { data: PortfolioData }) {
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
       <div className="bento-card relative overflow-hidden p-6 md:p-10 border-l-4 border-l-primary">
         <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none">
-          "
         </div>
         <div className="relative z-10 flex flex-col justify-center min-h-[250px]">
           <div
