@@ -2,11 +2,15 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { ensureSchema, sql } from '@/lib/api-server/db';
 import { verifyPasswordResetToken } from '@/lib/api-server/auth';
+import { verifyTurnstile } from '@/lib/api-server/turnstile';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+  if (!(await verifyTurnstile(req.body?.["cf-turnstile-response"], req, 'reset-password'))) {
+    return res.status(403).json({ error: 'Cloudflare verification failed. Please try again.' });
   }
   const { token, newPassword } = (req.body ?? {}) as { token?: string; newPassword?: string };
   const username = token ? verifyPasswordResetToken(token) : null;

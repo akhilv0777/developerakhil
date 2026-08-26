@@ -9,8 +9,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const settings = await getContactSettings();
-    return res.status(200).json({ siteName: settings.siteName, faviconUrl: settings.faviconUrl });
+    const turnstileSiteKey = settings.turnstileSiteKey || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+    const turnstileSecret = settings.turnstileSecretKey || process.env.TURNSTILE_SECRET_KEY || "";
+    const turnstileHostnames = settings.turnstileHostnames || process.env.TURNSTILE_HOSTNAMES || "";
+    return res.status(200).json({ siteName: settings.siteName, faviconUrl: settings.faviconUrl, turnstileSiteKey: turnstileSiteKey && turnstileSecret && turnstileHostnames ? turnstileSiteKey : "" });
   } catch {
-    return res.status(200).json({ siteName: "Akhilesh Vishwakarma", faviconUrl: "" });
+    const hasEnvTurnstile = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY && process.env.TURNSTILE_HOSTNAMES;
+    return res.status(200).json({ siteName: "Akhilesh Vishwakarma", faviconUrl: "", turnstileSiteKey: hasEnvTurnstile ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY : "" });
   }
 }

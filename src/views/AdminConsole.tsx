@@ -69,6 +69,7 @@ import {
   useSavePortfolioMutation,
 } from "@/lib/portfolio-api";
 import { PortfolioLoading } from "./PublicSite";
+import { useTurnstile } from "@/components/Turnstile";
 
 // ---------------------------------------------------------------------
 // Console / Admin area - content editing, protected by /api/auth.
@@ -119,17 +120,19 @@ function LoginPage() {
   const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { containerRef: turnstileRef, execute: executeTurnstile } = useTurnstile("auth");
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
+      const turnstileToken = await executeTurnstile();
       const response = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: username, password, loginMode }),
+        body: JSON.stringify({ identifier: username, password, loginMode, "cf-turnstile-response": turnstileToken }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -179,10 +182,11 @@ function LoginPage() {
     setForgotMessage(null);
     setSubmitting(true);
     try {
+      const turnstileToken = await executeTurnstile();
       const response = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: username }),
+        body: JSON.stringify({ identifier: username, "cf-turnstile-response": turnstileToken }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok)
@@ -284,6 +288,7 @@ function LoginPage() {
             }
             className="mt-8 flex flex-col gap-5"
           >
+            <div ref={turnstileRef} aria-hidden="true" />
             {!forgotMode && !otpChallengeId && (
               <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-secondary/30 p-1">
                 <button
@@ -1480,6 +1485,9 @@ type ContactSettings = {
   twoFactorEnabled: boolean;
   siteName: string;
   faviconUrl: string;
+  turnstileSiteKey: string;
+  turnstileSecretKey: string;
+  turnstileHostnames: string;
 };
 
 function SettingsEditor() {
@@ -1490,10 +1498,14 @@ function SettingsEditor() {
     twoFactorEnabled: false,
     siteName: "Akhilesh Vishwakarma",
     faviconUrl: "",
+    turnstileSiteKey: "",
+    turnstileSecretKey: "",
+    turnstileHostnames: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [turnstileSecretConfigured, setTurnstileSecretConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faviconError, setFaviconError] = useState<string | null>(null);
 
@@ -1533,8 +1545,12 @@ function SettingsEditor() {
               twoFactorEnabled: false,
               siteName: "Akhilesh Vishwakarma",
               faviconUrl: "",
+              turnstileSiteKey: "",
+              turnstileSecretKey: "",
+              turnstileHostnames: "",
             },
           );
+        if (!cancelled) setTurnstileSecretConfigured(Boolean(body.turnstileSecretConfigured));
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
       } finally {
@@ -1563,6 +1579,8 @@ function SettingsEditor() {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Could not save settings.");
       }
+      const saved = await response.json().catch(() => ({}));
+      setTurnstileSecretConfigured(Boolean(saved.turnstileSecretConfigured));
 
       toast({
         title: "Settings saved",
@@ -1693,6 +1711,31 @@ function SettingsEditor() {
               <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
             </span>
           </label>
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+            Cloudflare Turnstile
+          </p>
+          <p className="mb-4 text-xs leading-5 text-muted-foreground">
+            Invisible CAPTCHA will be enabled for login, password reset, and contact forms when all three fields are completed. CAPTCHA will remain disabled if any field is left blank.
+          </p>
+          <div className="grid gap-5">
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Site key</span>
+              <input value={form.turnstileSiteKey} onChange={(event) => setForm({ ...form, turnstileSiteKey: event.target.value })} placeholder="0x4AAAA..." className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20" />
+            </label>
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Secret key</span>
+              <input type="password" value={form.turnstileSecretKey || (turnstileSecretConfigured ? "********" : "")} onFocus={() => { if (turnstileSecretConfigured && !form.turnstileSecretKey) setForm({ ...form, turnstileSecretKey: "" }); }} onChange={(event) => setForm({ ...form, turnstileSecretKey: event.target.value })} placeholder="Enter Turnstile secret key" autoComplete="new-password" className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20" />
+              {turnstileSecretConfigured && <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-500"><Check size={12} /> Secret key saved successfully</span>}
+            </label>
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Allowed hostnames</span>
+              <input value={form.turnstileHostnames} onChange={(event) => setForm({ ...form, turnstileHostnames: event.target.value })} placeholder="developerakhil.vercel.app,localhost" className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20" />
+              <span className="mt-2 block text-xs text-muted-foreground">Enter hostnames only, without https://, ports, or page paths.</span>
+            </label>
+          </div>
         </div>
 
         <label className="block">

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { insertContactMessage } from "@/lib/api-server/db";
 import { sendContactEmail } from "@/lib/api-server/mailer";
+import { verifyTurnstile } from "@/lib/api-server/turnstile";
 
 // ---------------------------------------------------------------------
 // /api/contact — public endpoint. Saves the message to Postgres and then
@@ -26,6 +27,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ message: "Method not allowed" });
+  }
+
+  if (!(await verifyTurnstile(req.body?.["cf-turnstile-response"], req, "contact"))) {
+    return res.status(403).json({ message: "Cloudflare verification failed. Please try again." });
   }
 
   if (!isValidPayload(req.body)) {

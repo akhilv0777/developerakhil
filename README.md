@@ -34,3 +34,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+### Cloudflare Turnstile
+
+Login, forgot password, reset password, and contact submissions support invisible Cloudflare Turnstile. Create a free Turnstile site in Cloudflare, add your production domain, then configure these Vercel environment variables:
+
+```text
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_site_key
+TURNSTILE_SECRET_KEY=your_secret_key
+```
+
+The server verifies every token with Cloudflare. If the variables are absent, verification is disabled for local development.

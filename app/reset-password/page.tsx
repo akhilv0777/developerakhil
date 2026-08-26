@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
+import { useTurnstile } from "@/components/Turnstile";
 
 function PasswordInput({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
   const [visible, setVisible] = useState(false);
@@ -22,6 +23,7 @@ export default function ResetPasswordPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const { containerRef: turnstileRef, execute: executeTurnstile } = useTurnstile("reset-password");
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -31,10 +33,11 @@ export default function ResetPasswordPage() {
     setSaving(true);
     try {
       const token = new URLSearchParams(window.location.search).get("token");
+      const turnstileToken = await executeTurnstile();
       const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, newPassword: password }),
+        body: JSON.stringify({ token, newPassword: password, "cf-turnstile-response": turnstileToken }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || "Could not reset password.");
@@ -55,6 +58,7 @@ export default function ResetPasswordPage() {
         <h1 className="display-title text-3xl font-bold text-foreground">Set new password</h1>
         <p className="mt-2 text-sm text-muted-foreground">Choose a new password for your admin account.</p>
         <form onSubmit={submit} className="mt-8 flex flex-col gap-4">
+          <div ref={turnstileRef} aria-hidden="true" />
           <PasswordInput placeholder="New password" value={password} onChange={setPassword} />
           <PasswordInput placeholder="Confirm password" value={confirm} onChange={setConfirm} />
           {error && <p className="rounded-lg border border-red-500/50 bg-red-900/30 p-3 text-center text-xs text-red-400">{error}</p>}

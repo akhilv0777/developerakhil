@@ -13,6 +13,9 @@ let inMemorySettings: ContactSettings = {
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
   faviconUrl: "",
+  turnstileSiteKey: "",
+  turnstileSecretKey: "",
+  turnstileHostnames: "",
 };
 
 function isDatabaseUnavailableError(error: unknown): boolean {
@@ -57,10 +60,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const settings = await getContactSettings();
         inMemorySettings = settings;
-        return res.status(200).json({ settings });
+        return res.status(200).json({ settings: { ...settings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(settings.turnstileSecretKey) });
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
-          return res.status(200).json({ settings: inMemorySettings });
+          return res.status(200).json({ settings: { ...inMemorySettings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
@@ -70,6 +73,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!isValidSettings(req.body)) {
         return res.status(400).json({ error: "Invalid settings payload." });
       }
+      let current: ContactSettings;
+      try {
+        current = await getContactSettings();
+      } catch (error) {
+        if (!isDatabaseUnavailableError(error)) throw error;
+        current = inMemorySettings;
+      }
       const next: ContactSettings = {
         gmailAppPassword: req.body.gmailAppPassword.trim(),
         contactToEmail: req.body.contactToEmail.trim(),
@@ -77,6 +87,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         twoFactorEnabled: req.body.twoFactorEnabled,
         siteName: req.body.siteName.trim(),
         faviconUrl: req.body.faviconUrl.trim(),
+        turnstileSiteKey: typeof req.body.turnstileSiteKey === "string" ? req.body.turnstileSiteKey.trim() : current.turnstileSiteKey,
+        turnstileSecretKey: typeof req.body.turnstileSecretKey === "string" && req.body.turnstileSecretKey.trim() ? req.body.turnstileSecretKey.trim() : current.turnstileSecretKey,
+        turnstileHostnames: typeof req.body.turnstileHostnames === "string" ? req.body.turnstileHostnames.trim() : current.turnstileHostnames,
       };
 
       try {
@@ -84,13 +97,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
           inMemorySettings = next;
-          return res.status(200).json({ settings: inMemorySettings });
+          return res.status(200).json({ settings: { ...inMemorySettings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
 
       inMemorySettings = next;
-      return res.status(200).json({ settings: next });
+      return res.status(200).json({ settings: { ...next, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(next.turnstileSecretKey) });
     }
 
     res.setHeader("Allow", "GET, PUT");

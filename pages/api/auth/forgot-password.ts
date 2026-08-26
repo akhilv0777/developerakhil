@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { ensureSchema, getContactSettings, sql } from '@/lib/api-server/db';
 import { signPasswordResetToken } from '@/lib/api-server/auth';
 import { sendPasswordResetEmail } from '@/lib/api-server/mailer';
+import { verifyTurnstile } from '@/lib/api-server/turnstile';
 
 function getPublicOrigin(req: NextApiRequest): string {
   const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '');
@@ -26,6 +27,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!(await verifyTurnstile(req.body?.["cf-turnstile-response"], req, 'auth'))) {
+    return res.status(403).json({ error: 'Cloudflare verification failed. Please try again.' });
   }
 
   const identifier = typeof req.body?.identifier === 'string' ? req.body.identifier.trim() : '';

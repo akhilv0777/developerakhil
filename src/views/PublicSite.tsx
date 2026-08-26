@@ -33,6 +33,7 @@ import type {
   Stat,
 } from "@/lib/portfolio-types";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
+import { useTurnstile } from "@/components/Turnstile";
 import Image from "next/image";
 
 function hexToHsl(hex: string): string {
@@ -993,15 +994,17 @@ function Testimonials({ data }: { data: PortfolioData }) {
 function ContactForm({ email }: { email: string }) {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending">("idle");
+  const { containerRef: turnstileRef, execute: executeTurnstile } = useTurnstile("contact");
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setStatus("sending");
     try {
+      const turnstileToken = await executeTurnstile();
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, "cf-turnstile-response": turnstileToken }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -1010,9 +1013,9 @@ function ContactForm({ email }: { email: string }) {
       setForm({ name: "", email: "", message: "" });
       setStatus("idle");
       toast.success("Message sent successfully!");
-    } catch {
+    } catch (error) {
       setStatus("idle");
-      toast.error("Something went wrong");
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
   };
 
@@ -1066,6 +1069,7 @@ function ContactForm({ email }: { email: string }) {
         />
       </label>
       <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center mt-2">
+        <div ref={turnstileRef} aria-hidden="true" />
         <button
           type="submit"
           disabled={status === "sending"}

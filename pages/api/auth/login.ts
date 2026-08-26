@@ -5,6 +5,7 @@ import { ensureSchema, sql } from '@/lib/api-server/db';
 import { getContactSettings } from '@/lib/api-server/db';
 import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
+import { verifyTurnstile } from '@/lib/api-server/turnstile';
 
 // Very small in-memory rate limiter per serverless instance. Not a
 // substitute for a real WAF, but it slows down naive brute forcing.
@@ -67,7 +68,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
-  const { identifier, username, password, loginMode = 'password' } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp' };
+  const { identifier, username, password, loginMode = 'password', turnstileToken } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; turnstileToken?: string };
+  if (!(await verifyTurnstile(turnstileToken, req, 'auth'))) {
+    return res.status(403).json({ error: 'Cloudflare verification failed. Please try again.' });
+  }
   const loginIdentifier = (identifier || username || '').trim();
   if (!loginIdentifier || !['password', 'otp'].includes(loginMode) || (loginMode === 'password' && (!password || typeof password !== 'string')) || typeof loginIdentifier !== 'string') {
     return res.status(400).json({ error: 'Username and password are required.' });
