@@ -33,6 +33,7 @@ import type {
   Stat,
 } from "@/lib/portfolio-types";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
+import Image from "next/image";
 
 function hexToHsl(hex: string): string {
   let cleanHex = hex.replace(/^#/, '');
@@ -148,10 +149,12 @@ function Nav({ data, isLight, onToggleTheme }: { data: PortfolioData; isLight: b
           data-testid="link-home"
         >
           {(profile.heroImage || profile.image) ? (
-            <img
+            <Image
               src={profile.heroImage || profile.image}
               alt={profile.name}
               className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110"
+              width={36}
+              height={36}
             />
           ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">
@@ -353,10 +356,12 @@ function About({ profile }: { profile: Profile }) {
           <div className="space-y-6">
             {(profile.aboutImage || profile.heroImage || profile.image) ? (
               <div className="portrait-frame aspect-[4/5] p-3">
-                <img
+                <Image
                   src={profile.aboutImage || profile.heroImage || profile.image}
                   alt={profile.name}
                   className="h-full w-full rounded-[1.1rem] object-cover"
+                  width={420}
+                  height={300}
                 />
                 <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
                 <div className="absolute bottom-7 left-7 z-10">
