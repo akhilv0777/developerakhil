@@ -34,6 +34,7 @@ import type {
 } from "@/lib/portfolio-types";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
 import { useTurnstile } from "@/components/Turnstile";
+import { PublicNav } from "@/components/public/PublicNav";
 import Image from "next/image";
 
 function hexToHsl(hex: string): string {
@@ -74,7 +75,7 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-function Nav({
+export function LegacyNav({
   data,
   isLight,
   onToggleTheme,
@@ -1341,7 +1342,7 @@ export function PublicPortfolio() {
           style={{ width: `${scrollProgress}%` }}
         />
       </div>
-      <Nav
+      <PublicNav
         data={data}
         isLight={activeMode === "light"}
         onToggleTheme={() =>

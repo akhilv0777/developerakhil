@@ -23,7 +23,6 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
-  Folder,
   GraduationCap,
   KeyRound,
   Layers,
@@ -81,44 +80,11 @@ import {
 } from "@/lib/portfolio-api";
 import { PortfolioLoading } from "./PublicSite";
 import { useTurnstile } from "@/components/Turnstile";
+import { PasswordInput } from "@/components/admin/PasswordInput";
 
 // ---------------------------------------------------------------------
 // Console / Admin area - content editing, protected by /api/auth.
 // ---------------------------------------------------------------------
-
-function PasswordInput({
-  value,
-  onChange,
-  placeholder,
-  required = true,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div className="relative">
-      <input
-        required={required}
-        type={visible ? "text" : "password"}
-        value={value}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-11 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
-      />
-      <button
-        type="button"
-        onClick={() => setVisible((current) => !current)}
-        aria-label={visible ? "Hide password" : "Show password"}
-        className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center text-muted-foreground hover:text-primary"
-      >
-        {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-      </button>
-    </div>
-  );
-}
 
 function LoginPage() {
   const queryClient = useQueryClient();
@@ -2667,7 +2633,6 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [projectsOpen, setProjectsOpen] = useState(true);
   const [settingsSubtab, setSettingsSubtab] = useState<SettingsSubtab>("site");
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [notificationCount, setNotificationCount] = useState<number | null>(
@@ -2981,23 +2946,6 @@ function AdminArea({
           <div className="flex flex-col gap-1">
             {resourceKeys.map((key) => {
               const Icon = resourceMeta[key].icon;
-              if (key === "projects") {
-                return (
-                  <div key={key} className="flex flex-col gap-1">
-                    <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${section === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
-                      <button onClick={() => goToSection(key)} className="flex min-w-0 flex-1 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-left">
-                        <Folder size={16} /> {resourceMeta[key].label}
-                      </button>
-                      <button type="button" aria-label="Expand Projects" aria-expanded={projectsOpen} onClick={() => setProjectsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
-                        <ChevronDown size={15} className={`transition-transform ${projectsOpen ? "" : "-rotate-90"}`} />
-                      </button>
-                    </div>
-                    {projectsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-                      {(data.projects ?? []).map((project) => <button key={project.id} type="button" onClick={() => { setSearch(project.title); goToSection("projects"); }} className="flex min-h-9 items-center rounded-md px-3 py-2 text-left text-sm normal-case text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><span className="truncate">{project.title || "Untitled project"}</span></button>)}
-                    </div>}
-                  </div>
-                );
-              }
               return (
                 <button
                   key={key}
@@ -3096,8 +3044,8 @@ function AdminArea({
                 {settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}
               </button>
             </div>
-            {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/35 bg-primary/18 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
+            {settingsOpen && <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
+              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
             </div>}
           </div>
           <button
@@ -3440,23 +3388,6 @@ function AdminArea({
                 <div className="flex flex-col gap-1">
                   {resourceKeys.map((key) => {
                     const Icon = resourceMeta[key].icon;
-                    if (key === "projects") {
-                      return (
-                        <div key={key} className="flex flex-col gap-1">
-                          <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${section === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
-                            <button onClick={() => goToSection(key)} className="flex min-w-0 flex-1 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-left">
-                              <Folder size={16} /> {resourceMeta[key].label}
-                            </button>
-                            <button type="button" aria-label="Expand Projects" aria-expanded={projectsOpen} onClick={() => setProjectsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
-                              <ChevronDown size={15} className={`transition-transform ${projectsOpen ? "" : "-rotate-90"}`} />
-                            </button>
-                          </div>
-                          {projectsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-                            {(data.projects ?? []).map((project) => <button key={project.id} type="button" onClick={() => { setSearch(project.title); goToSection("projects"); setMobileNavOpen(false); }} className="flex min-h-9 items-center rounded-md px-3 py-2 text-left text-sm normal-case text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><span className="truncate">{project.title || "Untitled project"}</span></button>)}
-                          </div>}
-                        </div>
-                      );
-                    }
                     return (
                       <button
                         key={key}
@@ -3551,8 +3482,8 @@ function AdminArea({
                       <button onClick={() => goToSection("settings")} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"><Settings size={16} /> Settings</button>
                       <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">{settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}</button>
                     </div>
-                    {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/35 bg-primary/18 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
+                    {settingsOpen && <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
+                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
                     </div>}
                   </div>
                 <button
