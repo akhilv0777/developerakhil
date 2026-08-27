@@ -1328,6 +1328,18 @@ export function PublicPortfolio() {
       : {}),
   } as React.CSSProperties;
 
+  const withSectionPattern = <T extends keyof PortfolioData["sectionVisibility"]>(
+    section: T,
+    content: ReactNode,
+  ) => {
+    const pattern = data.sectionPatterns?.[section];
+    return (
+      <div className={pattern && pattern !== "none" ? `kf-${pattern}` : undefined}>
+        {content}
+      </div>
+    );
+  };
+
   return (
     <div
       id="top"
@@ -1361,23 +1373,31 @@ export function PublicPortfolio() {
         }
       />
       <main>
-        {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
-        {data.sectionVisibility?.about && <About profile={data.profile} />}
-        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
+        {data.sectionVisibility?.hero &&
+          withSectionPattern("hero", <Hero profile={data.profile} />)}
+        {data.sectionVisibility?.about &&
+          withSectionPattern("about", <About profile={data.profile} />)}
+        {data.sectionVisibility?.stats &&
+          withSectionPattern("stats", <Stats stats={data.stats} />)}
         {(data.sectionVisibility?.skills ?? true) && (
-          <Skills profile={data.profile} />
+          withSectionPattern("skills", <Skills profile={data.profile} />)
         )}
         {data.sectionVisibility?.services && (
-          <Marquee services={data.services} />
+          withSectionPattern("marquee", <Marquee services={data.services} />)
         )}
-        {data.sectionVisibility?.education && <Timeline data={data} />}
+        {data.sectionVisibility?.education &&
+          withSectionPattern("education", <Timeline data={data} />)}
         {data.sectionVisibility?.experience && (
-          <ExperienceSection data={data} />
+          withSectionPattern("experience", <ExperienceSection data={data} />)
         )}
-        {data.sectionVisibility?.services && <Services data={data} />}
-        {data.sectionVisibility?.projects && <Work data={data} />}
-        {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
-        {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
+        {data.sectionVisibility?.services &&
+          withSectionPattern("services", <Services data={data} />)}
+        {data.sectionVisibility?.projects &&
+          withSectionPattern("projects", <Work data={data} />)}
+        {data.sectionVisibility?.testimonials &&
+          withSectionPattern("testimonials", <Testimonials data={data} />)}
+        {data.sectionVisibility?.contact &&
+          withSectionPattern("contact", <Contact profile={data.profile} />)}
       </main>
       <Footer profile={data.profile} />
     </div>
