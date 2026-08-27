@@ -3078,7 +3078,7 @@ function AdminArea({
               </button>
             </div>
             {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
+              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/35 bg-primary/18 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
             </div>}
           </div>
           <button
@@ -3145,7 +3145,7 @@ function AdminArea({
               <Search size={17} />
             </button>
             <div
-              className={`${mobileSearchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"} fixed inset-x-0 top-0 z-50 flex h-20 w-full border-b border-border bg-transparent px-4 shadow-xl transition-[transform,opacity] duration-300 ease-out sm:px-6 md:static md:inset-auto md:z-auto md:h-auto md:w-auto md:translate-y-0 md:opacity-100 md:pointer-events-auto md:flex md:min-w-0 md:flex-1 md:max-w-xs md:border-0 md:bg-transparent md:px-0 md:shadow-none`}
+              className={`${mobileSearchOpen ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"} fixed inset-x-0 top-0 z-50 flex h-20 w-full items-center border-b border-border bg-card px-4 shadow-xl transition-[transform,opacity] duration-300 ease-out sm:px-6 md:relative md:inset-auto md:z-auto md:h-auto md:w-auto md:translate-y-0 md:opacity-100 md:pointer-events-auto md:flex md:min-w-0 md:flex-1 md:max-w-xs md:border-0 md:bg-transparent md:px-0 md:shadow-none`}
             >
               <Search
                 size={22}
@@ -3169,10 +3169,10 @@ function AdminArea({
                 }}
                 placeholder="Type and press enter to search..."
                 aria-label="Search current content"
-                className="h-14 min-w-0 flex-1 rounded-none border-0 bg-transparent pl-11 pr-10 text-base leading-6 text-foreground outline-none placeholder:text-muted-foreground focus:border-transparent focus:ring-0 md:h-9 md:rounded-full md:border md:border-transparent md:bg-secondary md:pl-4 md:pr-9 md:text-sm md:focus:border-transparent md:focus:bg-secondary"
+                className="h-14 min-w-0 flex-1 rounded-lg border border-border bg-secondary px-4 pl-11 pr-10 text-base leading-6 text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 md:h-9 md:rounded-full md:border-transparent md:bg-secondary md:pl-4 md:pr-9 md:text-sm md:focus:border-primary md:focus:bg-secondary"
               />
               {searchFocused && search.trim() && (
-                <div className="absolute left-0 right-0 top-11 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                <div className="absolute left-0 right-0 top-16 z-50 overflow-hidden rounded-xl border border-border bg-card shadow-2xl md:top-11">
                   {searchSuggestions.length > 0 ? (
                     searchSuggestions.map((suggestion, index) => (
                       <button
@@ -3516,7 +3516,7 @@ function AdminArea({
                       <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">{settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}</button>
                     </div>
                     {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
+                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/35 bg-primary/18 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
                     </div>}
                   </div>
                 <button
