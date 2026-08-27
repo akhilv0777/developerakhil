@@ -13,7 +13,7 @@ function getIds(value: unknown): number[] {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!getSessionUser(req)) return res.status(401).json({ error: "Not authenticated" });
+  if (!await getSessionUser(req)) return res.status(401).json({ error: "Not authenticated" });
 
   try {
     if (req.method === "GET") {

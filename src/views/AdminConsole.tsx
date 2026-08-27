@@ -19,6 +19,7 @@ import {
   CheckSquare,
   ChevronDown,
   ChevronRight,
+  Clock3,
   Eye,
   EyeOff,
   ExternalLink,
@@ -38,6 +39,7 @@ import {
   MailOpen,
   Menu,
   Palette,
+  Globe2,
   Pencil,
   Plus,
   Quote,
@@ -47,6 +49,7 @@ import {
   Search,
   Settings,
   Square,
+  Smartphone,
   Sun,
   Moon,
   Monitor,
@@ -1646,6 +1649,110 @@ type ContactSettings = {
   turnstileHostnames: string;
 };
 
+type ActiveSession = {
+  id: string;
+  model: string;
+  browser: string;
+  location: string;
+  ipAddress: string;
+  createdAt: string;
+  lastActiveAt: string;
+  current: boolean;
+};
+
+function ActiveSessions() {
+  const queryClient = useQueryClient();
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [revoking, setRevoking] = useState<string | null>(null);
+
+  const loadSessions = async () => {
+    const response = await fetch("/api/auth/sessions", { credentials: "include", cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.error || "Could not load active sessions.");
+    setSessions(body.sessions || []);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/sessions", { credentials: "include", cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || "Could not load active sessions.");
+        if (!cancelled) setSessions(body.sessions || []);
+      })
+      .catch((error) => {
+        if (!cancelled) toast({ variant: "destructive", title: "Could not load sessions", description: error.message });
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const revoke = async (id: string) => {
+    setRevoking(id);
+    try {
+      const response = await fetch("/api/auth/sessions", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: id }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Could not revoke session.");
+      if (body.current) await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      await loadSessions();
+      toast({ title: "Session revoked", description: "That device can no longer access this account." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Could not revoke session", description: (error as Error).message });
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  const revokeAll = async () => {
+    setRevoking("all");
+    try {
+      const response = await fetch("/api/auth/logout-all-devices", { method: "POST", credentials: "include" });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Could not log out all devices.");
+      setSessions([]);
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      toast({ title: "Logged out of all devices", description: "All active sessions have been invalidated." });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Could not log out all devices", description: (error as Error).message });
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  if (loading) return <p className="text-sm text-muted-foreground">Loading active sessions...</p>;
+  if (!sessions.length) return <p className="rounded-lg border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">No active sessions found. Sign in again to register this device.</p>;
+
+  return <div className="grid gap-3">
+    <div className="flex items-center justify-between gap-3">
+      <p className="text-xs text-muted-foreground">Review every browser currently signed in to your account.</p>
+      <div className="flex shrink-0 flex-wrap justify-end gap-2">
+        <button type="button" onClick={() => revoke(sessions.find((session) => session.current)?.id || "")} disabled={!sessions.some((session) => session.current) || !!revoking} className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"><LogOut size={13} /> Log out this device</button>
+        <button type="button" onClick={revokeAll} disabled={!!revoking} className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"><LogOut size={13} /> Log out all</button>
+      </div>
+    </div>
+    {sessions.map((session) => <div key={session.id} className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/20 p-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Smartphone size={17} /></span>
+        <div className="min-w-0">
+          <p className="font-semibold text-foreground">{session.model} · {session.browser} {session.current && <span className="ml-2 rounded bg-primary/15 px-2 py-1 font-mono text-[9px] uppercase text-primary">Current</span>}</p>
+          <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-x-5"><span><Globe2 className="mr-1 inline" size={12} />{session.location}</span><span><Clock3 className="mr-1 inline" size={12} />Active {new Date(session.lastActiveAt).toLocaleString()}</span><span>IP {session.ipAddress}</span><span>Signed in {new Date(session.createdAt).toLocaleString()}</span></div>
+        </div>
+      </div>
+      <button type="button" onClick={() => revoke(session.id)} disabled={revoking === session.id} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"><LogOut size={13} /> {revoking === session.id ? "Revoking..." : "Revoke"}</button>
+    </div>)}
+  </div>;
+}
+
 function SettingsEditor() {
   const [form, setForm] = useState<ContactSettings>({
     gmailAppPassword: "",
@@ -1665,6 +1772,7 @@ function SettingsEditor() {
     useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faviconError, setFaviconError] = useState<string | null>(null);
+  const [securityTab, setSecurityTab] = useState<"security" | "sessions">("security");
 
   const handleFaviconUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -1844,10 +1952,17 @@ function SettingsEditor() {
         </div>
 
         <div className="border-t border-border pt-6">
-          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
-            Security
-          </p>
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
+            <div className="flex rounded-lg border border-border bg-secondary/30 p-1">
+              {([['security', 'Security'], ['sessions', 'Active Sessions']] as const).map(([value, label]) => (
+                <button key={value} type="button" onClick={() => setSecurityTab(value)} className={`rounded-md px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${securityTab === value ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {securityTab === "security" ? <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
             <span>
               <span className="block text-sm font-semibold text-foreground">
                 Require 2-step verification
@@ -1868,10 +1983,10 @@ function SettingsEditor() {
               <span className="block h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary" />
               <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
             </span>
-          </label>
+          </label> : <ActiveSessions />}
         </div>
 
-        <div className="border-t border-border pt-6">
+        {securityTab === "security" && <div className="border-t border-border pt-6">
           <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
             Cloudflare Turnstile
           </p>
@@ -1938,7 +2053,7 @@ function SettingsEditor() {
               </span>
             </label>
           </div>
-        </div>
+        </div>}
 
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

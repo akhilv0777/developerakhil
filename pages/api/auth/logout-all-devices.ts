@@ -3,6 +3,7 @@ import { getSessionUser, clearSessionCookie } from '@/lib/api-server/auth';
 import {
   ensureSchema,
   bumpAdminSessionVersion,
+  revokeAllAdminSessions,
   recordAdminNotification,
 } from '@/lib/api-server/db';
 
@@ -15,7 +16,7 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const username = getSessionUser(req);
+  const username = await getSessionUser(req);
   if (!username) {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
@@ -25,6 +26,7 @@ export default async function handler(
     // Incrementing session_version in the DB invalidates every JWT that was
     // minted with the previous version — on any device, in any browser.
     await bumpAdminSessionVersion(username);
+    await revokeAllAdminSessions(username);
     // Also clear the cookie on the current device.
     clearSessionCookie(res);
     await recordAdminNotification({

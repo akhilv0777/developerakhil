@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
-import { ensureSchema, sql } from "@/lib/api-server/db";
-import { getSessionUser, setSessionCookie, signSession } from "@/lib/api-server/auth";
+import { ensureSchema, getAdminSessionVersion, sql } from "@/lib/api-server/db";
+import { createSessionForRequest, getSessionUser, setSessionCookie } from "@/lib/api-server/auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const currentUsername = getSessionUser(req);
+  const currentUsername = await getSessionUser(req);
   if (!currentUsername) return res.status(401).json({ error: "Not authenticated." });
 
   const { currentPassword, newUsername } = (req.body ?? {}) as {
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     await sql`UPDATE admin_users SET username = ${username} WHERE username = ${currentUsername};`;
-    setSessionCookie(res, signSession(username));
+    setSessionCookie(res, await createSessionForRequest(req, username, await getAdminSessionVersion(username)));
     return res.status(200).json({ ok: true, username });
   } catch (error) {
     console.error("Change username error:", error);

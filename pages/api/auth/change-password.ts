@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .json({ error: "Too many attempts. Try again later." });
   }
 
-  const username = getSessionUser(req);
+  const username = await getSessionUser(req);
   if (!username) {
     return res.status(401).json({ error: "Not authenticated." });
   }

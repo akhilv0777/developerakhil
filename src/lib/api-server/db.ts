@@ -429,6 +429,18 @@ export function ensureSchema(): Promise<void> {
         `;
         await sql`ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;`;
         await sql`
+          CREATE TABLE IF NOT EXISTS admin_sessions (
+            id UUID PRIMARY KEY,
+            username TEXT NOT NULL,
+            user_agent TEXT NOT NULL DEFAULT '',
+            ip_address TEXT NOT NULL DEFAULT '',
+            location TEXT NOT NULL DEFAULT '',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            last_active_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `;
+        await sql`CREATE INDEX IF NOT EXISTS admin_sessions_username_idx ON admin_sessions (username);`;
+        await sql`
           CREATE TABLE IF NOT EXISTS admin_login_challenges (
             id UUID PRIMARY KEY,
             username TEXT NOT NULL,
@@ -538,6 +550,48 @@ export async function getAdminSessionVersion(username: string): Promise<number> 
 export async function bumpAdminSessionVersion(username: string): Promise<void> {
   await ensureSchema();
   await sql`UPDATE admin_users SET session_version = session_version + 1 WHERE username = ${username};`;
+}
+
+export async function createAdminSession(input: {
+  id: string;
+  username: string;
+  userAgent: string;
+  ipAddress: string;
+  location: string;
+}): Promise<void> {
+  await ensureSchema();
+  await sql`
+    INSERT INTO admin_sessions (id, username, user_agent, ip_address, location)
+    VALUES (${input.id}::uuid, ${input.username}, ${input.userAgent}, ${input.ipAddress}, ${input.location});
+  `;
+}
+
+export async function listAdminSessions(username: string) {
+  await ensureSchema();
+  return sql`
+    SELECT id, username, user_agent, ip_address, location, created_at, last_active_at
+    FROM admin_sessions WHERE username = ${username} ORDER BY last_active_at DESC;
+  `;
+}
+
+export async function touchAdminSession(id: string, username: string): Promise<boolean> {
+  await ensureSchema();
+  const result = await sql`
+    UPDATE admin_sessions SET last_active_at = now()
+    WHERE id = ${id}::uuid AND username = ${username} RETURNING id;
+  `;
+  return result.rowCount > 0;
+}
+
+export async function revokeAdminSession(id: string, username: string): Promise<boolean> {
+  await ensureSchema();
+  const result = await sql`DELETE FROM admin_sessions WHERE id = ${id}::uuid AND username = ${username} RETURNING id;`;
+  return result.rowCount > 0;
+}
+
+export async function revokeAllAdminSessions(username: string): Promise<void> {
+  await ensureSchema();
+  await sql`DELETE FROM admin_sessions WHERE username = ${username};`;
 }
 
 export async function getContactSettings(): Promise<ContactSettings> {

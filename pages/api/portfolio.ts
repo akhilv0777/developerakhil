@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'PUT') {
-      const username = getSessionUser(req);
+      const username = await getSessionUser(req);
       if (!username) {
         return res.status(401).json({ error: 'Authentication required.' });
       }
@@ -170,7 +170,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (req.method === 'POST') {
-      const username = getSessionUser(req);
+      const username = await getSessionUser(req);
       if (!username) {
         return res.status(401).json({ error: 'Authentication required.' });
       }

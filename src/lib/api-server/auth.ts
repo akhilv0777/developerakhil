@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { randomUUID } from "crypto";
+import { createAdminSession, getAdminSessionVersion, touchAdminSession } from "@/lib/api-server/db";
 
 const COOKIE_NAME = "session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7;
@@ -17,8 +19,8 @@ function getSecret(): string {
 }
 
 /** Signs a new session JWT embedding the current session_version for the user. */
-export function signSession(username: string, sessionVersion = 0): string {
-  return jwt.sign({ sub: username, sv: sessionVersion }, getSecret(), {
+export function signSession(username: string, sessionVersion = 0, sessionId = randomUUID()): string {
+  return jwt.sign({ sub: username, sv: sessionVersion, sid: sessionId }, getSecret(), {
     expiresIn: SESSION_DURATION_SECONDS,
   });
 }
@@ -59,8 +61,8 @@ export function parseCookies(
 }
 
 /** Returns the logged-in username, or null if the request has no valid session. */
-export function getSessionUser(req: NextApiRequest): string | null {
-  return getSessionUserFull(req)?.username ?? null;
+export async function getSessionUser(req: NextApiRequest): Promise<string | null> {
+  return (await getSessionUserFull(req))?.username ?? null;
 }
 
 /**
@@ -69,9 +71,9 @@ export function getSessionUser(req: NextApiRequest): string | null {
  * Callers that care about session invalidation should verify the returned
  * sessionVersion against the DB via getAdminSessionVersion().
  */
-export function getSessionUserFull(
+export async function getSessionUserFull(
   req: NextApiRequest,
-): { username: string; sessionVersion: number } | null {
+): Promise<{ username: string; sessionVersion: number; sessionId: string } | null> {
   const cookies = parseCookies(req.headers.cookie);
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
@@ -79,17 +81,38 @@ export function getSessionUserFull(
     const payload = jwt.verify(token, getSecret()) as {
       sub: string;
       sv?: number;
+      sid?: string;
     };
+    if (!payload.sid) return null;
+    const sessionVersion = typeof payload.sv === "number" ? payload.sv : 0;
+    if (sessionVersion !== await getAdminSessionVersion(payload.sub)) return null;
+    if (!await touchAdminSession(payload.sid, payload.sub)) return null;
     return {
       username: payload.sub,
-      // Legacy tokens minted before this feature was added won't have 'sv'.
-      // Treat them as version 0 — they'll be invalidated once the user
-      // triggers "logout all devices" (which bumps the DB version above 0).
-      sessionVersion: typeof payload.sv === "number" ? payload.sv : 0,
+      sessionVersion,
+      sessionId: payload.sid,
     };
   } catch {
     return null;
   }
+}
+
+export async function createSessionForRequest(
+  req: NextApiRequest,
+  username: string,
+  sessionVersion: number,
+): Promise<string> {
+  const sessionId = randomUUID();
+  const forwardedFor = req.headers["x-forwarded-for"];
+  const ipAddress = Array.isArray(forwardedFor)
+    ? forwardedFor[0]
+    : forwardedFor?.split(",")[0]?.trim() || req.socket.remoteAddress || "";
+  const userAgent = req.headers["user-agent"] || "";
+  const country = req.headers["x-vercel-ip-country"] || "";
+  const city = req.headers["x-vercel-ip-city"] || "";
+  const location = [city, country].filter(Boolean).join(", ");
+  await createAdminSession({ id: sessionId, username, userAgent, ipAddress, location });
+  return signSession(username, sessionVersion, sessionId);
 }
 
 export function setSessionCookie(res: NextApiResponse, token: string): void {

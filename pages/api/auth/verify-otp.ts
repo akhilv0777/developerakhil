@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
-import { ensureSchema, sql } from '@/lib/api-server/db';
-import { setSessionCookie, signSession } from '@/lib/api-server/auth';
+import { ensureSchema, getAdminSessionVersion, sql } from '@/lib/api-server/db';
+import { createSessionForRequest, setSessionCookie } from '@/lib/api-server/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     await sql`DELETE FROM admin_login_challenges WHERE id = ${challengeId}::uuid;`;
-    setSessionCookie(res, signSession(challenge.username));
+    setSessionCookie(res, await createSessionForRequest(req, challenge.username, await getAdminSessionVersion(challenge.username)));
     return res.status(200).json({ ok: true, username: challenge.username });
   } catch (error) {
     console.error('OTP verification error:', error);
