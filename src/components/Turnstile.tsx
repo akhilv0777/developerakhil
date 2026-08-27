@@ -45,11 +45,22 @@ export function useTurnstile(action: string) {
   }, []);
 
   useEffect(() => {
-    if (!siteKey || !containerRef.current) return;
-    let cancelled = false;
-    readyRef.current = new Promise<void>((resolve, reject) => {
+    return () => {
+      pendingRef.current = null;
+      readyRef.current = null;
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = null;
+      }
+    };
+  }, []);
+
+  const ensureWidget = async () => {
+    if (!siteKey || widgetIdRef.current) return;
+    if (!readyRef.current) {
+      readyRef.current = new Promise<void>((resolve, reject) => {
       loadTurnstile().then(() => {
-        if (cancelled || !containerRef.current || !window.turnstile) return reject(new Error("Cloudflare verification is unavailable."));
+        if (!containerRef.current || !window.turnstile) return reject(new Error("Cloudflare verification is unavailable."));
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey, size: "invisible", execution: "execute", action,
           callback: (token) => pendingRef.current?.resolve(token),
@@ -58,21 +69,14 @@ export function useTurnstile(action: string) {
         });
         resolve();
       }).catch(reject);
-    });
-    return () => {
-      cancelled = true;
-      pendingRef.current = null;
-      readyRef.current = null;
-      if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current);
-        widgetIdRef.current = null;
-      }
-    };
-  }, [action, siteKey]);
+      });
+    }
+    await readyRef.current;
+  };
 
   const execute = async () => {
     if (!siteKey) return Promise.resolve("");
-    if (!widgetIdRef.current && readyRef.current) await readyRef.current;
+    await ensureWidget();
     if (!widgetIdRef.current || !window.turnstile) return Promise.reject(new Error("Cloudflare verification is still loading."));
     return new Promise<string>((resolve, reject) => {
       const widgetId = widgetIdRef.current as string;

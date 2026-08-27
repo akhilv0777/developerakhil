@@ -799,11 +799,14 @@ function Work({ data }: { data: PortfolioData }) {
             <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
               {project.image ? (
                 <>
-                  <img
+                  <Image
                     src={project.image}
                     alt={project.title}
                     loading="lazy"
                     decoding="async"
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    quality={70}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
@@ -991,7 +994,7 @@ function Testimonials({ data }: { data: PortfolioData }) {
   );
 }
 
-function ContactForm({ email }: { email: string }) {
+function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending">("idle");
   const { containerRef: turnstileRef, execute: executeTurnstile } = useTurnstile("contact");
@@ -1107,7 +1110,7 @@ function Contact({ profile }: { profile: Profile }) {
               {profile.contactNote}
             </p>
           )}
-          <ContactForm email={profile.email} />
+          <ContactForm />
         </div>
 
         <div
