@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { getSessionUser } from '@/lib/api-server/auth';
 import { getSessionUserFull } from '@/lib/api-server/auth';
 import { getAdminSessionVersion } from '@/lib/api-server/db';
 
@@ -13,11 +14,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  const username = getSessionUser(req);
+  if (!username) {
 
   const session = getSessionUserFull(req);
   if (!session) {
     return res.status(401).json({ authenticated: false });
   }
+  return res.status(200).json({ authenticated: true, username });
 
   // Validate that the token's session_version still matches the DB.
   // If the admin triggered "logout all devices", the DB version will have
