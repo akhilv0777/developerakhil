@@ -6,8 +6,6 @@ import "@slicemypage/motionflow/dist/motionflow.min.css";
 export function useMotionFlow(deps: readonly unknown[]) {
   useEffect(() => {
     let frame: number;
-    let idle: number | undefined;
-    let idleKind: "callback" | "timeout" = "timeout";
     const setBrowserTimeout = window.setTimeout.bind(window);
     const start = () => {
       import("@slicemypage/motionflow").then((mod) => {
@@ -17,18 +15,10 @@ export function useMotionFlow(deps: readonly unknown[]) {
         });
       });
     };
-    if ("requestIdleCallback" in window) {
-      idleKind = "callback";
-      idle = window.requestIdleCallback(start, { timeout: 1500 });
-    } else {
-      idle = setBrowserTimeout(start, 300);
-    }
+    const idle = setBrowserTimeout(start, 8000);
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      if (idle) {
-        if (idleKind === "callback") window.cancelIdleCallback(idle);
-        else clearTimeout(idle);
-      }
+      if (idle) window.clearTimeout(idle);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
