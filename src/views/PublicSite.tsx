@@ -802,6 +802,8 @@ function Work({ data }: { data: PortfolioData }) {
                   <img
                     src={project.image}
                     alt={project.title}
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
@@ -1267,17 +1269,23 @@ export function PublicPortfolio() {
   }, []);
 
   useEffect(() => {
+    let frame = 0;
     const updateProgress = () => {
+      frame = 0;
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
     };
+    const scheduleProgress = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateProgress);
+    };
     updateProgress();
-    window.addEventListener("scroll", updateProgress, { passive: true });
-    window.addEventListener("resize", updateProgress);
+    window.addEventListener("scroll", scheduleProgress, { passive: true });
+    window.addEventListener("resize", scheduleProgress);
     return () => {
-      window.removeEventListener("scroll", updateProgress);
-      window.removeEventListener("resize", updateProgress);
+      window.removeEventListener("scroll", scheduleProgress);
+      window.removeEventListener("resize", scheduleProgress);
+      if (frame) window.cancelAnimationFrame(frame);
     };
   }, []);
 
