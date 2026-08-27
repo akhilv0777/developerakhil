@@ -448,10 +448,12 @@ export function ensureSchema(): Promise<void> {
             password_required BOOLEAN NOT NULL DEFAULT true,
             expires_at TIMESTAMPTZ NOT NULL,
             attempts INTEGER NOT NULL DEFAULT 0,
+            remember_me BOOLEAN NOT NULL DEFAULT false,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;
         await sql`ALTER TABLE admin_login_challenges ADD COLUMN IF NOT EXISTS password_required BOOLEAN NOT NULL DEFAULT true;`;
+        await sql`ALTER TABLE admin_login_challenges ADD COLUMN IF NOT EXISTS remember_me BOOLEAN NOT NULL DEFAULT false;`;
         await sql`
           CREATE TABLE IF NOT EXISTS portfolio_content (
             id INTEGER PRIMARY KEY DEFAULT 1,

@@ -129,6 +129,8 @@ function LoginPage() {
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [trustDevice, setTrustDevice] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { containerRef: turnstileRef, execute: executeTurnstile } =
     useTurnstile("auth");
@@ -147,6 +149,7 @@ function LoginPage() {
           identifier: username,
           password,
           loginMode,
+          rememberMe,
           "cf-turnstile-response": turnstileToken,
         }),
       });
@@ -177,7 +180,7 @@ function LoginPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeId: otpChallengeId, otp }),
+        body: JSON.stringify({ challengeId: otpChallengeId, otp, trustDevice }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -359,7 +362,14 @@ function LoginPage() {
                 <PasswordInput value={password} onChange={setPassword} />
               </label>
             )}
+            {loginMode === "password" && !forgotMode && !otpChallengeId && (
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-primary" />
+                Remember me for 30 days
+              </label>
+            )}
             {otpChallengeId && (
+              <>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   6-digit OTP
@@ -377,6 +387,11 @@ function LoginPage() {
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-center text-lg tracking-[.45em] text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
                 />
               </label>
+              {loginMode === "password" && <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                <input type="checkbox" checked={trustDevice} onChange={(event) => setTrustDevice(event.target.checked)} className="h-4 w-4 accent-primary" />
+                Trust this device for 30 days
+              </label>}
+              </>
             )}
             {error && (
               <p className="rounded-lg bg-red-900/30 border border-red-500/50 p-3 font-mono text-[10px] font-bold text-red-400 text-center">
@@ -1467,53 +1482,26 @@ function ProfileMenu({
   image,
   username,
   isLight,
+  section,
   onEditProfile,
   onLogout,
 }: {
   image?: string;
   username?: string;
   isLight: boolean;
+  section: string;
   onEditProfile: () => void;
   onLogout: () => void;
 }) {
-  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [changingUsername, setChangingUsername] = useState(false);
-  const [loggingOutAll, setLoggingOutAll] = useState(false);
 
-  const handleLogoutAllDevices = async () => {
+  useEffect(() => {
+    // Close the menu whenever navigation changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false);
-    setLoggingOutAll(true);
-    try {
-      const response = await fetch("/api/auth/logout-all-devices", {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        const body = await response.json().catch(() => ({}));
-        toast({
-          variant: "destructive",
-          title: "Could not log out all devices",
-          description: body.error || "Please try again.",
-        });
-        return;
-      }
-      toast({
-        title: "Logged out of all devices",
-        description: "All active sessions have been invalidated.",
-      });
-      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "Could not log out all devices",
-        description: "Could not reach the server. Please try again.",
-      });
-    } finally {
-      setLoggingOutAll(false);
-    }
-  };
+  }, [section]);
 
   return (
     <div className="relative">
@@ -1589,14 +1577,6 @@ function ProfileMenu({
                 className="group-hover:text-primary transition-colors"
               />{" "}
               Change password
-            </button>
-            <button
-              onClick={handleLogoutAllDevices}
-              disabled={loggingOutAll}
-              className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-amber-500 transition-colors hover:bg-amber-500/10 disabled:opacity-50"
-            >
-              <LogOut size={14} />
-              {loggingOutAll ? "Logging out…" : "Logout all devices"}
             </button>
             <button
               onClick={() => {
@@ -1753,7 +1733,9 @@ function ActiveSessions() {
   </div>;
 }
 
-function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
+type SettingsSubtab = "site" | "security" | "sessions" | "email";
+
+function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [form, setForm] = useState<ContactSettings>({
     gmailAppPassword: "",
     contactToEmail: "",
@@ -1877,7 +1859,7 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
   return (
     <form onSubmit={handleSubmit} className="bento-card shadow-sm p-5 md:p-6">
       <div className="grid gap-8">
-        <div>
+        {activeTab === "site" && <div>
           <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
             Site settings
           </p>
@@ -1948,11 +1930,12 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
               )}
             </label>
           </div>
-        </div>
+        </div>}
 
-        <div className="border-t border-border pt-6">
+        {(activeTab === "security" || activeTab === "sessions") && <div className="border-t border-border pt-6">
+          {activeTab === "security" ? <>
           <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
-          {activeTab === "security" ? <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
             <span>
               <span className="block text-sm font-semibold text-foreground">
                 Require 2-step verification
@@ -1973,8 +1956,12 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
               <span className="block h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary" />
               <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
             </span>
-          </label> : <ActiveSessions />}
-        </div>
+          </label>
+          </> : activeTab === "sessions" ? <>
+            <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Active sessions</p>
+            <ActiveSessions />
+          </> : null}
+        </div>}
 
         {activeTab === "security" && <div className="border-t border-border pt-6">
           <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
@@ -2045,6 +2032,10 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
           </div>
         </div>}
 
+        {activeTab === "email" && <>
+        <div className="border-t border-border pt-6">
+          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Email notifications</p>
+        </div>
         <label className="block">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Gmail app password
@@ -2098,6 +2089,7 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
             className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
           />
         </label>
+        </>}
       </div>
 
       {error && (
@@ -2106,7 +2098,7 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
         </p>
       )}
 
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+      {activeTab !== "sessions" && <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
           type="submit"
           disabled={saving}
@@ -2114,7 +2106,7 @@ function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
         >
           <Save size={16} /> {saving ? "Saving..." : "Save settings"}
         </button>
-      </div>
+      </div>}
     </form>
   );
 }
@@ -2674,7 +2666,7 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsSubtab, setSettingsSubtab] = useState<"security" | "sessions">("security");
+  const [settingsSubtab, setSettingsSubtab] = useState<SettingsSubtab>("site");
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [notificationCount, setNotificationCount] = useState<number | null>(
     null,
@@ -3086,7 +3078,7 @@ function AdminArea({
               </button>
             </div>
             {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-              {([["security", "Security"], ["sessions", "Active Sessions"]] as const).map(([value, label]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>{label}</button>)}
+              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
             </div>}
           </div>
           <button
@@ -3353,6 +3345,7 @@ function AdminArea({
                 }
                 username={username}
                 isLight={adminLight}
+                section={section}
                 onEditProfile={() => goToSection("profile")}
                 onLogout={logout}
               />
@@ -3523,7 +3516,7 @@ function AdminArea({
                       <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">{settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}</button>
                     </div>
                     {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
-                      {([["security", "Security"], ["sessions", "Active Sessions"]] as const).map(([value, label]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>{label}</button>)}
+                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
                     </div>}
                   </div>
                 <button

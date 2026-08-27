@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { randomInt, randomUUID } from 'crypto';
 import { ensureSchema, getAdminSessionVersion, getContactSettings, recordAdminNotification, sql } from '@/lib/api-server/db';
 import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
-import { createSessionForRequest, setSessionCookie } from '@/lib/api-server/auth';
+import { createSessionForRequest, getTrustedDeviceUser, setSessionCookie } from '@/lib/api-server/auth';
 import { verifyTurnstile } from '@/lib/api-server/turnstile';
 
 // Very small in-memory rate limiter per serverless instance. Not a
@@ -46,12 +46,12 @@ function isRateLimited(key: string): boolean {
   return record.count > MAX_ATTEMPTS;
 }
 
-async function startOtpChallenge(username: string, recipient: string, passwordRequired: boolean, res: NextApiResponse) {
+async function startOtpChallenge(username: string, recipient: string, passwordRequired: boolean, rememberMe: boolean, res: NextApiResponse) {
   const otp = String(randomInt(100000, 1000000));
   const challengeId = randomUUID();
   const otpHash = await bcrypt.hash(otp, 10);
   await sql`DELETE FROM admin_login_challenges WHERE expires_at <= now() OR username = ${username};`;
-  await sql`INSERT INTO admin_login_challenges (id, username, otp_hash, password_required, expires_at) VALUES (${challengeId}::uuid, ${username}, ${otpHash}, ${passwordRequired}, now() + interval '10 minutes');`;
+  await sql`INSERT INTO admin_login_challenges (id, username, otp_hash, password_required, remember_me, expires_at) VALUES (${challengeId}::uuid, ${username}, ${otpHash}, ${passwordRequired}, ${rememberMe}, now() + interval '10 minutes');`;
   await sendLoginOtpEmail({ recipient, otp });
   return res.status(200).json({ requiresOtp: true, challengeId, username });
 }
@@ -68,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
-  const { identifier, username, password, loginMode = 'password', turnstileToken, ['cf-turnstile-response']: turnstileResponse } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; turnstileToken?: string; 'cf-turnstile-response'?: string };
+  const { identifier, username, password, loginMode = 'password', rememberMe = false, turnstileToken, ['cf-turnstile-response']: turnstileResponse } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; rememberMe?: boolean; turnstileToken?: string; 'cf-turnstile-response'?: string };
   const verificationToken = turnstileResponse || turnstileToken;
   if (!(await verifyTurnstile(verificationToken, req, 'auth'))) {
     await recordAdminNotification({ title: 'Cloudflare login verification failed', message: `A login attempt from ${ip} was blocked by Turnstile.` });
@@ -101,16 +101,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         : undefined;
       const otpUser = result.rows[0] || emailUser;
       if (!otpUser || !adminEmail) return res.status(401).json({ error: 'Invalid username or admin email.' });
-      return startOtpChallenge(otpUser.username, adminEmail, false, res);
+      return startOtpChallenge(otpUser.username, adminEmail, false, Boolean(rememberMe), res);
     }
 
     if (loginIdentifier === defaultAdminUsername && passwordValue === defaultAdminPassword) {
       if (settings.twoFactorEnabled) {
         if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
-        return startOtpChallenge(defaultAdminUsername, adminEmail, true, res);
+        if (getTrustedDeviceUser(req) !== defaultAdminUsername) return startOtpChallenge(defaultAdminUsername, adminEmail, true, Boolean(rememberMe), res);
       }
       const token = await createSessionForRequest(req, defaultAdminUsername, await getAdminSessionVersion(defaultAdminUsername));
-      setSessionCookie(res, token);
+      setSessionCookie(res, token, Boolean(rememberMe));
       await recordAdminNotification({ title: 'Admin login successful', message: `${defaultAdminUsername} signed in successfully.` });
       return res.status(200).json({ ok: true, username: defaultAdminUsername });
     }
@@ -132,13 +132,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
-    if (settings.twoFactorEnabled) {
+    if (settings.twoFactorEnabled && getTrustedDeviceUser(req) !== matchedUser.username) {
       if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
-      return startOtpChallenge(matchedUser.username, adminEmail, true, res);
+      return startOtpChallenge(matchedUser.username, adminEmail, true, Boolean(rememberMe), res);
     }
 
     const token = await createSessionForRequest(req, matchedUser.username, await getAdminSessionVersion(matchedUser.username));
-    setSessionCookie(res, token);
+    setSessionCookie(res, token, Boolean(rememberMe));
     await recordAdminNotification({ title: 'Admin login successful', message: `${matchedUser.username} signed in successfully.` });
     return res.status(200).json({ ok: true, username: matchedUser.username });
   } catch (error) {

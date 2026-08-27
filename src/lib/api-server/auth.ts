@@ -4,7 +4,10 @@ import { randomUUID } from "crypto";
 import { createAdminSession, getAdminSessionVersion, touchAdminSession } from "@/lib/api-server/db";
 
 const COOKIE_NAME = "session";
+const TRUSTED_DEVICE_COOKIE = "trusted_device";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7;
+const REMEMBERED_SESSION_DURATION_SECONDS = 60 * 60 * 24 * 30;
+const TRUSTED_DEVICE_DURATION_SECONDS = 60 * 60 * 24 * 30;
 
 function getSecret(): string {
   const secret =
@@ -43,6 +46,26 @@ export function verifyPasswordResetToken(token: string): string | null {
   } catch {
     return null;
   }
+}
+
+export function setTrustedDeviceCookie(res: NextApiResponse, username: string): void {
+  const token = jwt.sign({ sub: username, purpose: "trusted-device" }, getSecret(), { expiresIn: TRUSTED_DEVICE_DURATION_SECONDS });
+  setCookie(res, TRUSTED_DEVICE_COOKIE, token, TRUSTED_DEVICE_DURATION_SECONDS);
+}
+
+export function getTrustedDeviceUser(req: NextApiRequest): string | null {
+  const token = parseCookies(req.headers.cookie)[TRUSTED_DEVICE_COOKIE];
+  if (!token) return null;
+  try {
+    const payload = jwt.verify(token, getSecret()) as { sub?: string; purpose?: string };
+    return payload.purpose === "trusted-device" ? payload.sub || null : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearTrustedDeviceCookie(res: NextApiResponse): void {
+  setCookie(res, TRUSTED_DEVICE_COOKIE, "", 0);
 }
 
 export function parseCookies(
@@ -115,28 +138,30 @@ export async function createSessionForRequest(
   return signSession(username, sessionVersion, sessionId);
 }
 
-export function setSessionCookie(res: NextApiResponse, token: string): void {
+function setCookie(res: NextApiResponse, name: string, value: string, maxAge: number): void {
   const isProd = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
   const parts = [
-    `${COOKIE_NAME}=${encodeURIComponent(token)}`,
+    `${name}=${encodeURIComponent(value)}`,
     "Path=/",
     "HttpOnly",
     "SameSite=Lax",
-    `Max-Age=${SESSION_DURATION_SECONDS}`,
+    `Max-Age=${maxAge}`,
   ];
   if (isProd) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
+  const cookie = parts.join("; ");
+  const existing = res.getHeader("Set-Cookie");
+  const cookies = Array.isArray(existing)
+    ? existing.map(String)
+    : existing
+      ? [String(existing)]
+      : [];
+  res.setHeader("Set-Cookie", [...cookies, cookie]);
+}
+
+export function setSessionCookie(res: NextApiResponse, token: string, rememberMe = false): void {
+  setCookie(res, COOKIE_NAME, token, rememberMe ? REMEMBERED_SESSION_DURATION_SECONDS : SESSION_DURATION_SECONDS);
 }
 
 export function clearSessionCookie(res: NextApiResponse): void {
-  const isProd = process.env.NODE_ENV === "production" || !!process.env.VERCEL;
-  const parts = [
-    `${COOKIE_NAME}=`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    "Max-Age=0",
-  ];
-  if (isProd) parts.push("Secure");
-  res.setHeader("Set-Cookie", parts.join("; "));
+  setCookie(res, COOKIE_NAME, "", 0);
 }

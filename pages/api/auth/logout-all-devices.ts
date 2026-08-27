@@ -1,5 +1,5 @@
 ﻿import type { NextApiRequest, NextApiResponse } from 'next';
-import { getSessionUser, clearSessionCookie } from '@/lib/api-server/auth';
+import { getSessionUser, clearSessionCookie, clearTrustedDeviceCookie } from '@/lib/api-server/auth';
 import {
   ensureSchema,
   bumpAdminSessionVersion,
@@ -29,6 +29,7 @@ export default async function handler(
     await revokeAllAdminSessions(username);
     // Also clear the cookie on the current device.
     clearSessionCookie(res);
+    clearTrustedDeviceCookie(res);
     await recordAdminNotification({
       title: 'Logged out of all devices',
       message: `${username} triggered a logout from all active sessions.`,
