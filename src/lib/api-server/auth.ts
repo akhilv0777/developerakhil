@@ -16,8 +16,6 @@ function getSecret(): string {
   return secret;
 }
 
-export function signSession(username: string): string {
-  return jwt.sign({ sub: username }, getSecret(), {
 /** Signs a new session JWT embedding the current session_version for the user. */
 export function signSession(username: string, sessionVersion = 0): string {
   return jwt.sign({ sub: username, sv: sessionVersion }, getSecret(), {
@@ -78,8 +76,6 @@ export function getSessionUserFull(
   const token = cookies[COOKIE_NAME];
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, getSecret()) as { sub: string };
-    return payload.sub;
     const payload = jwt.verify(token, getSecret()) as {
       sub: string;
       sv?: number;

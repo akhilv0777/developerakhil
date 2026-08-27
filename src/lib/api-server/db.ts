@@ -423,10 +423,10 @@ export function ensureSchema(): Promise<void> {
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
+            session_version INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;
-        // Ensure the session_version column exists (added for "logout all devices").
         await sql`ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;`;
         await sql`
           CREATE TABLE IF NOT EXISTS admin_login_challenges (
@@ -529,27 +529,14 @@ export function ensureSchema(): Promise<void> {
   return schemaReady;
 }
 
-/**
- * Returns the current session_version for the given admin username.
- * Returns 0 if the user is not found in the DB (e.g. env-var–only default
- * admin before first ensureSchema run — though ensureSchema inserts them).
- */
-export async function getAdminSessionVersion(
-  username: string,
-): Promise<number> {
-  const result =
-    await sql`SELECT session_version FROM admin_users WHERE username = ${username} LIMIT 1;`;
-  const row = result.rows[0] as { session_version: number } | undefined;
-  return row?.session_version ?? 0;
+export async function getAdminSessionVersion(username: string): Promise<number> {
+  await ensureSchema();
+  const result = await sql`SELECT session_version FROM admin_users WHERE username = ${username} LIMIT 1;`;
+  return Number(result.rows[0]?.session_version ?? 0);
 }
 
-/**
- * Increments the session_version for the given admin username, which
- * instantly invalidates every JWT that was minted with the previous version.
- */
-export async function bumpAdminSessionVersion(
-  username: string,
-): Promise<void> {
+export async function bumpAdminSessionVersion(username: string): Promise<void> {
+  await ensureSchema();
   await sql`UPDATE admin_users SET session_version = session_version + 1 WHERE username = ${username};`;
 }
 

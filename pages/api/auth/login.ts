@@ -1,13 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import bcrypt from 'bcryptjs';
 import { randomInt, randomUUID } from 'crypto';
-import { ensureSchema, sql } from '@/lib/api-server/db';
-import { ensureSchema, sql, getAdminSessionVersion } from '@/lib/api-server/db';
-import { getContactSettings } from '@/lib/api-server/db';
+import { ensureSchema, getAdminSessionVersion, getContactSettings, recordAdminNotification, sql } from '@/lib/api-server/db';
 import { sendLoginOtpEmail } from '@/lib/api-server/mailer';
 import { signSession, setSessionCookie } from '@/lib/api-server/auth';
 import { verifyTurnstile } from '@/lib/api-server/turnstile';
-import { recordAdminNotification } from '@/lib/api-server/db';
 
 // Very small in-memory rate limiter per serverless instance. Not a
 // substitute for a real WAF, but it slows down naive brute forcing.
@@ -71,8 +68,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(429).json({ error: 'Too many attempts. Try again later.' });
   }
 
-  const { identifier, username, password, loginMode = 'password', turnstileToken } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; turnstileToken?: string };
-  if (!(await verifyTurnstile(turnstileToken, req, 'auth'))) {
+  const { identifier, username, password, loginMode = 'password', turnstileToken, ['cf-turnstile-response']: turnstileResponse } = (req.body ?? {}) as { identifier?: string; username?: string; password?: string; loginMode?: 'password' | 'otp'; turnstileToken?: string; 'cf-turnstile-response'?: string };
+  const verificationToken = turnstileResponse || turnstileToken;
+  if (!(await verifyTurnstile(verificationToken, req, 'auth'))) {
     await recordAdminNotification({ title: 'Cloudflare login verification failed', message: `A login attempt from ${ip} was blocked by Turnstile.` });
     return res.status(403).json({ error: 'Cloudflare verification failed. Please try again.' });
   }
@@ -111,7 +109,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!adminEmail) return res.status(503).json({ error: 'Two-step verification is enabled but no admin email is configured.' });
         return startOtpChallenge(defaultAdminUsername, adminEmail, true, res);
       }
-      const token = signSession(defaultAdminUsername);
       const token = signSession(defaultAdminUsername, await getAdminSessionVersion(defaultAdminUsername));
       setSessionCookie(res, token);
       await recordAdminNotification({ title: 'Admin login successful', message: `${defaultAdminUsername} signed in successfully.` });
@@ -140,7 +137,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return startOtpChallenge(matchedUser.username, adminEmail, true, res);
     }
 
-    const token = signSession(matchedUser.username);
     const token = signSession(matchedUser.username, await getAdminSessionVersion(matchedUser.username));
     setSessionCookie(res, token);
     await recordAdminNotification({ title: 'Admin login successful', message: `${matchedUser.username} signed in successfully.` });
