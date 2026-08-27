@@ -1753,7 +1753,7 @@ function ActiveSessions() {
   </div>;
 }
 
-function SettingsEditor() {
+function SettingsEditor({ activeTab }: { activeTab: "security" | "sessions" }) {
   const [form, setForm] = useState<ContactSettings>({
     gmailAppPassword: "",
     contactToEmail: "",
@@ -1772,7 +1772,6 @@ function SettingsEditor() {
     useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faviconError, setFaviconError] = useState<string | null>(null);
-  const [securityTab, setSecurityTab] = useState<"security" | "sessions">("security");
 
   const handleFaviconUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -1952,17 +1951,8 @@ function SettingsEditor() {
         </div>
 
         <div className="border-t border-border pt-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
-            <div className="flex rounded-lg border border-border bg-secondary/30 p-1">
-              {([['security', 'Security'], ['sessions', 'Active Sessions']] as const).map(([value, label]) => (
-                <button key={value} type="button" onClick={() => setSecurityTab(value)} className={`rounded-md px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${securityTab === value ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {securityTab === "security" ? <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
+          {activeTab === "security" ? <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
             <span>
               <span className="block text-sm font-semibold text-foreground">
                 Require 2-step verification
@@ -1986,7 +1976,7 @@ function SettingsEditor() {
           </label> : <ActiveSessions />}
         </div>
 
-        {securityTab === "security" && <div className="border-t border-border pt-6">
+        {activeTab === "security" && <div className="border-t border-border pt-6">
           <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
             Cloudflare Turnstile
           </p>
@@ -2683,6 +2673,8 @@ function AdminArea({
   const [search, setSearch] = useState("");
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSubtab, setSettingsSubtab] = useState<"security" | "sessions">("security");
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [notificationCount, setNotificationCount] = useState<number | null>(
     null,
@@ -3080,16 +3072,23 @@ function AdminArea({
           >
             <Palette size={16} /> Theme
           </button>
-          <button
-            onClick={() => goToSection("settings")}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${
+          <div className="flex flex-col gap-1">
+            <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${
               section === "settings"
                 ? "bg-primary/10 text-primary border-l-2 border-primary"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
-            }`}
-          >
-            <Settings size={16} /> Settings
-          </button>
+            }`}>
+              <button onClick={() => goToSection("settings")} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left">
+                <Settings size={16} /> Settings
+              </button>
+              <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
+                {settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}
+              </button>
+            </div>
+            {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
+              {([["security", "Security"], ["sessions", "Active Sessions"]] as const).map(([value, label]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>{label}</button>)}
+            </div>}
+          </div>
           <button
             onClick={() => router.push("/")}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-3 font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
@@ -3514,16 +3513,19 @@ function AdminArea({
                 >
                   <Palette size={16} /> Theme
                 </button>
-                <button
-                  onClick={() => goToSection("settings")}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${
+                  <div className="flex flex-col gap-1">
+                    <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${
                     section === "settings"
                       ? "bg-primary/10 text-primary border-l-2 border-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
-                  }`}
-                >
-                  <Settings size={16} /> Settings
-                </button>
+                    }`}>
+                      <button onClick={() => goToSection("settings")} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"><Settings size={16} /> Settings</button>
+                      <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">{settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}</button>
+                    </div>
+                    {settingsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
+                      {([["security", "Security"], ["sessions", "Active Sessions"]] as const).map(([value, label]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`rounded-md px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider ${section === "settings" && settingsSubtab === value ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>{label}</button>)}
+                    </div>}
+                  </div>
                 <button
                   onClick={() => {
                     setMobileNavOpen(false);
@@ -3837,7 +3839,7 @@ function AdminArea({
                   Configure how contact-form messages reach you.
                 </p>
               </div>
-              <SettingsEditor />
+              <SettingsEditor activeTab={settingsSubtab} />
             </section>
           ) : (
             resource && (
