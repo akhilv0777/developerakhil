@@ -23,6 +23,7 @@ import {
   Eye,
   EyeOff,
   ExternalLink,
+  Folder,
   GraduationCap,
   KeyRound,
   Layers,
@@ -2666,6 +2667,7 @@ function AdminArea({
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [projectsOpen, setProjectsOpen] = useState(true);
   const [settingsSubtab, setSettingsSubtab] = useState<SettingsSubtab>("site");
   const [messageCount, setMessageCount] = useState<number | null>(null);
   const [notificationCount, setNotificationCount] = useState<number | null>(
@@ -2979,6 +2981,23 @@ function AdminArea({
           <div className="flex flex-col gap-1">
             {resourceKeys.map((key) => {
               const Icon = resourceMeta[key].icon;
+              if (key === "projects") {
+                return (
+                  <div key={key} className="flex flex-col gap-1">
+                    <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${section === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+                      <button onClick={() => goToSection(key)} className="flex min-w-0 flex-1 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-left">
+                        <Folder size={16} /> {resourceMeta[key].label}
+                      </button>
+                      <button type="button" aria-label="Expand Projects" aria-expanded={projectsOpen} onClick={() => setProjectsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
+                        <ChevronDown size={15} className={`transition-transform ${projectsOpen ? "" : "-rotate-90"}`} />
+                      </button>
+                    </div>
+                    {projectsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
+                      {(data.projects ?? []).map((project) => <button key={project.id} type="button" onClick={() => { setSearch(project.title); goToSection("projects"); }} className="flex min-h-9 items-center rounded-md px-3 py-2 text-left text-sm normal-case text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><span className="truncate">{project.title || "Untitled project"}</span></button>)}
+                    </div>}
+                  </div>
+                );
+              }
               return (
                 <button
                   key={key}
@@ -3421,6 +3440,23 @@ function AdminArea({
                 <div className="flex flex-col gap-1">
                   {resourceKeys.map((key) => {
                     const Icon = resourceMeta[key].icon;
+                    if (key === "projects") {
+                      return (
+                        <div key={key} className="flex flex-col gap-1">
+                          <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${section === key ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+                            <button onClick={() => goToSection(key)} className="flex min-w-0 flex-1 items-center gap-3 border-l-2 border-transparent px-3 py-3 text-left">
+                              <Folder size={16} /> {resourceMeta[key].label}
+                            </button>
+                            <button type="button" aria-label="Expand Projects" aria-expanded={projectsOpen} onClick={() => setProjectsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
+                              <ChevronDown size={15} className={`transition-transform ${projectsOpen ? "" : "-rotate-90"}`} />
+                            </button>
+                          </div>
+                          {projectsOpen && <div className="ml-8 flex flex-col gap-1 border-l border-border pl-2">
+                            {(data.projects ?? []).map((project) => <button key={project.id} type="button" onClick={() => { setSearch(project.title); goToSection("projects"); setMobileNavOpen(false); }} className="flex min-h-9 items-center rounded-md px-3 py-2 text-left text-sm normal-case text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"><span className="truncate">{project.title || "Untitled project"}</span></button>)}
+                          </div>}
+                        </div>
+                      );
+                    }
                     return (
                       <button
                         key={key}
