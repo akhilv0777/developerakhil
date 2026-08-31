@@ -13,9 +13,36 @@ function normalizeHostname(value: string): string {
   }
 }
 
+function isLocalDevelopmentHostname(hostname: string): boolean {
+  const normalized = hostname.toLowerCase().replace(/\[::1\]/, "::1").replace(/:\d+$/, "").trim();
+  if (!normalized || normalized === "localhost" || normalized === "0.0.0.0" || normalized === "::1" || normalized === "[::1]") return true;
+  if (normalized.startsWith("127.")) return true;
+  if (normalized.startsWith("10.")) return true;
+  if (normalized.startsWith("192.168.")) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(normalized)) return true;
+  return false;
+}
+
 export async function verifyTurnstile(token: unknown, req: NextApiRequest, expectedAction: string): Promise<boolean> {
   const settings = await getContactSettings();
   const secret = (settings.turnstileSecretKey || process.env.TURNSTILE_SECRET_KEY || "").trim();
+  const host = ((req.headers["host"] || "") as string).toString();
+  const forwardedHost = ((req.headers["x-forwarded-host"] || "") as string).toString();
+  const originHost = ((req.headers["origin"] || "") as string).toString();
+  const refererHost = ((req.headers["referer"] || "") as string).toString();
+  const isLocalhostRequest = [host, forwardedHost, originHost, refererHost].some((value) => {
+    if (!value) return false;
+    try {
+      return isLocalDevelopmentHostname(new URL(value).hostname);
+    } catch {
+      return isLocalDevelopmentHostname(value.replace(/^https?:\/\//, "").split(/[/?#]/, 1)[0]);
+    }
+  });
+
+  if (process.env.NODE_ENV !== "production" && (isLocalhostRequest || !secret)) {
+    return true;
+  }
+
   if (!secret) return true;
   const expectedHostnames = new Set(
     (settings.turnstileHostnames || process.env.TURNSTILE_HOSTNAMES || "").split(",").map(normalizeHostname).filter(Boolean),

@@ -373,7 +373,7 @@ function Hero({ profile }: { profile: Profile }) {
   const resumeHref = profile.resume || "#contact";
 
   return (
-    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24 grid-dots">
+    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24">
       <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="flex flex-col items-start">
           <div className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm">
@@ -1328,22 +1328,10 @@ export function PublicPortfolio() {
       : {}),
   } as React.CSSProperties;
 
-  const withSectionPattern = <T extends keyof PortfolioData["sectionVisibility"]>(
-    section: T,
-    content: ReactNode,
-  ) => {
-    const pattern = data.sectionPatterns?.[section];
-    return (
-      <div className={pattern && pattern !== "none" ? `kf-${pattern}` : undefined}>
-        {content}
-      </div>
-    );
-  };
-
   return (
     <div
       id="top"
-      className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary"
+      className={`${activeMode === "light" ? "light" : "dark"} min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
       style={customStyle}
     >
       <ToastContainer
@@ -1373,31 +1361,21 @@ export function PublicPortfolio() {
         }
       />
       <main>
-        {data.sectionVisibility?.hero &&
-          withSectionPattern("hero", <Hero profile={data.profile} />)}
-        {data.sectionVisibility?.about &&
-          withSectionPattern("about", <About profile={data.profile} />)}
-        {data.sectionVisibility?.stats &&
-          withSectionPattern("stats", <Stats stats={data.stats} />)}
+        {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
+        {data.sectionVisibility?.about && <About profile={data.profile} />}
+        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
         {(data.sectionVisibility?.skills ?? true) && (
-          withSectionPattern("skills", <Skills profile={data.profile} />)
+          <Skills profile={data.profile} />
         )}
-        {data.sectionVisibility?.services && (
-          withSectionPattern("marquee", <Marquee services={data.services} />)
-        )}
-        {data.sectionVisibility?.education &&
-          withSectionPattern("education", <Timeline data={data} />)}
+        {data.sectionVisibility?.services && <Marquee services={data.services} />}
+        {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && (
-          withSectionPattern("experience", <ExperienceSection data={data} />)
+          <ExperienceSection data={data} />
         )}
-        {data.sectionVisibility?.services &&
-          withSectionPattern("services", <Services data={data} />)}
-        {data.sectionVisibility?.projects &&
-          withSectionPattern("projects", <Work data={data} />)}
-        {data.sectionVisibility?.testimonials &&
-          withSectionPattern("testimonials", <Testimonials data={data} />)}
-        {data.sectionVisibility?.contact &&
-          withSectionPattern("contact", <Contact profile={data.profile} />)}
+        {data.sectionVisibility?.services && <Services data={data} />}
+        {data.sectionVisibility?.projects && <Work data={data} />}
+        {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
+        {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
       </main>
       <Footer profile={data.profile} />
     </div>

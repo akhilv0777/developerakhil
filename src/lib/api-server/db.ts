@@ -358,7 +358,6 @@ export const seedPortfolioData = {
     testimonials: true,
     contact: true,
   },
-  sectionPatterns: {},
   themeSettings: {
     accentColor: "#00FF88",
     mode: "dark",

@@ -52,7 +52,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-5 py-12 grid-dots">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-5 py-12">
       <section className="bento-card w-full max-w-sm p-8">
         <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-background"><KeyRound size={18} /></div>
         <h1 className="display-title text-3xl font-bold text-foreground">Set new password</h1>

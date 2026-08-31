@@ -3,7 +3,7 @@ import { ArrowLeft, Compass } from 'lucide-react';
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-6 py-12 text-foreground grid-dots">
+    <main className="flex min-h-dvh items-center justify-center bg-background px-6 py-12 text-foreground">
       <section className="bento-card w-full max-w-xl p-8 text-center md:p-12">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Compass size={30} />

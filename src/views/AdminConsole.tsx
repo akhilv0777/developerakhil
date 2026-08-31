@@ -61,13 +61,13 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMotionFlow } from "@/lib/motionflow";
+import { resizeAndUploadImage, uploadFileToCDN } from "@/lib/image-upload";
 import type {
   Education,
   Experience,
   PortfolioData,
   Profile,
   Project,
-  SectionPattern,
   Service,
   Stat,
   Testimonial,
@@ -98,9 +98,23 @@ function LoginPage() {
   const [otp, setOtp] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [trustDevice, setTrustDevice] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { containerRef: turnstileRef, execute: executeTurnstile } =
     useTurnstile("auth");
+
+  useEffect(() => {
+    fetch("/api/site-settings")
+      .then((response) => response.json())
+      .then((settings) => {
+        const enabled = Boolean(settings.twoFactorEnabled);
+        setTwoFactorEnabled(enabled);
+        if (enabled) {
+          setLoginMode("password");
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -189,7 +203,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-dvh bg-background grid-dots">
+    <div className="flex min-h-dvh bg-background">
       {/* Brand panel - desktop only */}
       <div className="relative hidden w-[44%] flex-col justify-between overflow-hidden bg-card border-r border-border p-12 text-foreground lg:flex">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/20 blur-[100px]" />
@@ -262,9 +276,11 @@ function LoginPage() {
                 ? loginMode === "password"
                   ? "Your password was accepted. We sent a 6-digit code to your admin email."
                   : "We sent a 6-digit code to your admin email."
-                : loginMode === "otp"
-                  ? "We will send a one-time code to your admin email."
-                  : "Enter your credentials to manage the site."}
+                : twoFactorEnabled
+                  ? "Two-step verification is enabled. Enter your password to continue to the security code."
+                  : loginMode === "otp"
+                    ? "We will send a one-time code to your admin email."
+                    : "Enter your credentials to manage the site."}
           </p>
 
           <form
@@ -280,7 +296,7 @@ function LoginPage() {
             <div>
               <div ref={turnstileRef} aria-hidden="true" />
             </div>
-            {!forgotMode && !otpChallengeId && (
+            {!forgotMode && !otpChallengeId && !twoFactorEnabled && (
               <div className="grid grid-cols-2 gap-2 rounded-lg border border-border bg-secondary/30 p-1">
                 <button
                   type="button"
@@ -444,100 +460,6 @@ const resourceMeta: Record<
   experience: { label: "Experience", singular: "role", icon: Building2 },
   testimonials: { label: "Testimonials", singular: "testimonial", icon: Quote },
 };
-const sectionPatternOptions: Array<{ value: SectionPattern; label: string }> = [
-  { value: "none", label: "None" },
-  ...Array.from({ length: 7 }, (_, index) => {
-    const number = String(index + 1).padStart(2, "0");
-    return {
-      value: `pattern-${number}` as SectionPattern,
-      label: `Pattern ${number}`,
-    };
-  }),
-];
-
-const patternBackgrounds: Partial<Record<SectionPattern, string>> = {
-  "pattern-01":
-    "repeating-linear-gradient(45deg, transparent 0 24px, rgba(0, 0, 0, .12) 24px 25px)",
-  "pattern-02":
-    "linear-gradient(rgba(0, 0, 0, .12) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, .12) 1px, transparent 1px)",
-  "pattern-03": "radial-gradient(rgba(0, 0, 0, .16) 1px, transparent 1px)",
-  "pattern-04":
-    "repeating-radial-gradient(circle at 100% 100%, rgba(0, 0, 0, .12) 0 1px, transparent 1px 20px)",
-  "pattern-05":
-    "repeating-conic-gradient(from 0deg at 50% 50%, rgba(0, 0, 0, .12) 0deg 1deg, transparent 1deg 9deg)",
-  "pattern-06":
-    "repeating-linear-gradient(60deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(120deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 18px), repeating-linear-gradient(0deg, rgba(0, 0, 0, .12) 0 1px, transparent 1px 31px)",
-  "pattern-07":
-    "repeating-linear-gradient(45deg, rgba(0, 0, 0, .12) 0 8px, transparent 8px 16px)",
-};
-
-function PatternPicker({
-  value,
-  onChange,
-}: {
-  value: SectionPattern;
-  onChange: (value: SectionPattern) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected =
-    sectionPatternOptions.find((option) => option.value === value) ||
-    sectionPatternOptions[0];
-  return (
-    <div className="relative min-w-0 flex-1">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        className="flex w-full items-center gap-3 rounded-lg border border-border bg-background px-2 py-2 text-left hover:border-primary/50"
-      >
-        <span
-          className={`h-8 w-14 shrink-0 rounded border border-border bg-background ${value === "none" ? "" : `kf-${value}`}`}
-          style={{ backgroundImage: patternBackgrounds[value] }}
-          aria-hidden="true"
-        />
-        <span className="min-w-0 flex-1 truncate font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-          {selected.label}
-        </span>
-        <ChevronDown
-          size={14}
-          className={`shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <>
-          <button
-            type="button"
-            aria-label="Close pattern picker"
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-2xl">
-            {sectionPatternOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  onChange(option.value);
-                  setOpen(false);
-                }}
-                className={`flex w-full items-center gap-3 rounded-md p-2 text-left hover:bg-secondary ${option.value === value ? "bg-primary/10" : ""}`}
-              >
-                <span
-                  className={`h-10 w-20 shrink-0 rounded border border-border bg-background ${option.value === "none" ? "" : `kf-${option.value}`}`}
-                  style={{ backgroundImage: patternBackgrounds[option.value] }}
-                  aria-hidden="true"
-                />
-                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-                  {option.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
   const id = `${resource.slice(0, -1)}-${Date.now()}`;
   if (resource === "stats") return { id, value: "", label: "" } as Stat;
@@ -682,10 +604,16 @@ function AdminForm({
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const dataUrl = await fileToResizedDataUrl(file);
-      setForm((prev) => ({ ...prev, [field]: dataUrl }));
+      const cdnUrl = await resizeAndUploadImage(file, 1200, 1200);
+      setForm((prev) => ({ ...prev, [field]: cdnUrl }));
+      toast({ title: "Image uploaded successfully", description: field });
     } catch (error) {
       console.error(error);
+      toast({ 
+        title: "Upload failed", 
+        description: error instanceof Error ? error.message : "Could not upload image",
+        variant: "destructive"
+      });
     } finally {
       event.target.value = "";
     }
@@ -904,10 +832,11 @@ function ProfileEditor({
     if (!file) return;
     setImageError(null);
     try {
-      const dataUrl = await fileToResizedDataUrl(file);
-      setForm((current) => ({ ...current, [field]: dataUrl }));
+      const cdnUrl = await resizeAndUploadImage(file, 1200, 1200);
+      setForm((current) => ({ ...current, [field]: cdnUrl }));
     } catch (error) {
-      setImageError((error as Error).message);
+      const message = error instanceof Error ? error.message : "Could not upload image";
+      setImageError(message);
     } finally {
       event.target.value = "";
     }
@@ -917,25 +846,21 @@ function ProfileEditor({
     const file = event.target.files?.[0];
     if (!file) return;
     setResumeError(null);
-    if (file.size > 2 * 1024 * 1024) {
-      setResumeError("That file is too large - please keep it under 2MB.");
+    if (file.size > 10 * 1024 * 1024) {
+      setResumeError("That file is too large - please keep it under 10MB.");
       event.target.value = "";
       return;
     }
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error("Could not read that file."));
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+      const cdnUrl = await uploadFileToCDN(file);
       setForm((current) => ({
         ...current,
-        resume: dataUrl,
+        resume: cdnUrl,
         resumeName: file.name,
       }));
     } catch (error) {
-      setResumeError((error as Error).message);
+      const message = error instanceof Error ? error.message : "Could not upload file";
+      setResumeError(message);
     } finally {
       event.target.value = "";
     }
@@ -1729,10 +1654,11 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     if (!file) return;
     setFaviconError(null);
     try {
-      const dataUrl = await fileToResizedDataUrl(file, 128);
-      setForm((current) => ({ ...current, faviconUrl: dataUrl }));
+      const cdnUrl = await resizeAndUploadImage(file, 256, 256);
+      setForm((current) => ({ ...current, faviconUrl: cdnUrl }));
     } catch (uploadError) {
-      setFaviconError((uploadError as Error).message);
+      const message = uploadError instanceof Error ? uploadError.message : "Could not upload favicon";
+      setFaviconError(message);
     } finally {
       event.target.value = "";
     }
@@ -1865,9 +1791,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                     onChange={handleFaviconUpload}
                     className="hidden"
                   />
-                  {form.faviconUrl?.startsWith("data:")
-                    ? "Replace favicon"
-                    : "Upload favicon"}
+                  {form.faviconUrl ? "Replace favicon" : "Upload favicon"}
                 </label>
                 {form.faviconUrl && (
                   <NextImage
@@ -2666,22 +2590,25 @@ function AdminArea({
     [resource, data],
   );
 
-  const adminThemeStyle = adminLight
-    ? ({
-        "--background": "0 0% 98%",
-        "--foreground": "220 25% 12%",
-        "--border": "220 18% 86%",
-        "--input": "220 18% 92%",
-        "--card": "0 0% 100%",
-        "--card-foreground": "220 25% 12%",
-        "--card-border": "220 18% 88%",
-        "--primary-foreground": "220 25% 12%",
-        "--secondary": "220 17% 96%",
-        "--secondary-foreground": "220 25% 12%",
-        "--muted": "220 18% 95%",
-        "--muted-foreground": "220 9% 40%",
-      } as React.CSSProperties)
-    : undefined;
+  const adminThemeStyle = {
+    "--pattern-color": adminLight ? "hsl(220 15% 25% / 0.12)" : "hsl(220 5% 80% / 0.18)",
+    ...(adminLight
+      ? ({
+          "--background": "0 0% 98%",
+          "--foreground": "220 25% 12%",
+          "--border": "220 18% 86%",
+          "--input": "220 18% 92%",
+          "--card": "0 0% 100%",
+          "--card-foreground": "220 25% 12%",
+          "--card-border": "220 18% 88%",
+          "--primary-foreground": "220 25% 12%",
+          "--secondary": "220 17% 96%",
+          "--secondary-foreground": "220 25% 12%",
+          "--muted": "220 18% 95%",
+          "--muted-foreground": "220 9% 40%",
+        } as React.CSSProperties)
+      : undefined),
+  } as React.CSSProperties;
 
   useEffect(() => {
     let cancelled = false;
@@ -2889,7 +2816,7 @@ function AdminArea({
 
   return (
     <div
-      className="admin-console flex h-dvh overflow-hidden bg-background text-foreground"
+      className={`${adminLight ? "light" : "dark"} admin-console flex h-dvh overflow-hidden bg-background text-foreground`}
       style={adminThemeStyle}
     >
       {/* Sidebar - desktop */}
@@ -3509,7 +3436,7 @@ function AdminArea({
           </div>
         )}
 
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8 grid-dots">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
           {section === "dashboard" ? (
             <section className="min-w-0">
               <div className="mb-6">
@@ -3671,43 +3598,6 @@ function AdminArea({
                             </button>
                           </span>
                         </div>
-                        <label className="flex items-center gap-3 border-t border-border pt-3">
-                          <span
-                            className={`h-8 w-14 shrink-0 rounded-md border border-border bg-background ${data.sectionPatterns?.[key as keyof typeof data.sectionVisibility] && data.sectionPatterns[key as keyof typeof data.sectionVisibility] !== "none" ? `kf-${data.sectionPatterns[key as keyof typeof data.sectionVisibility]}` : ""}`}
-                            style={{
-                              backgroundImage:
-                                patternBackgrounds[
-                                  data.sectionPatterns?.[
-                                    key as keyof typeof data.sectionVisibility
-                                  ] || "none"
-                                ],
-                            }}
-                            aria-hidden="true"
-                          />
-                          <span className="sr-only">
-                            Background pattern for {key}
-                          </span>
-                          <PatternPicker
-                            value={
-                              data.sectionPatterns?.[
-                                key as keyof typeof data.sectionVisibility
-                              ] || "none"
-                            }
-                            onChange={(value) =>
-                              persist(
-                                {
-                                  ...data,
-                                  sectionPatterns: {
-                                    ...data.sectionPatterns,
-                                    [key]: value,
-                                  },
-                                },
-                                undefined,
-                                `${key} background pattern updated.`,
-                              )
-                            }
-                          />
-                        </label>
                       </div>
                     );
                   })}
