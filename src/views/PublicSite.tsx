@@ -1243,59 +1243,67 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
 }
 
 function CursorEffect() {
-  const [position, setPosition] = useState({ x: -100, y: -100 });
-  const [visible, setVisible] = useState(false);
-  const [active, setActive] = useState(false);
-
   useEffect(() => {
-    const updatePosition = (event: PointerEvent) => {
-      setPosition({ x: event.clientX, y: event.clientY });
-      setVisible(true);
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+
+    const dot = document.createElement("div");
+    const ring = document.createElement("div");
+    dot.className = "cursor-dot";
+    ring.className = "cursor-ring";
+
+    document.body.appendChild(dot);
+    document.body.appendChild(ring);
+    document.body.classList.add("has-custom-cursor");
+
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let frameId: number | null = null;
+
+    const updateDotPosition = (event: MouseEvent) => {
+      mouseX = event.clientX;
+      mouseY = event.clientY;
+      dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
     };
 
-    const onPointerOver = (event: Event) => {
+    const updateActiveState = (event: Event) => {
       const target = event.target as HTMLElement | null;
-      if (target && target.closest("a, button, input, textarea, select, summary")) {
-        setActive(true);
+      if (!target) return;
+
+      const isInteractive = target.closest("a, button, input, textarea, select, summary");
+      if (isInteractive) {
+        ring.classList.add("is-active");
+      } else {
+        ring.classList.remove("is-active");
       }
     };
 
-    const onPointerOut = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      if (target && target.closest("a, button, input, textarea, select, summary")) {
-        setActive(false);
-      }
+    const tick = () => {
+      ringX += (mouseX - ringX) * 0.15;
+      ringY += (mouseY - ringY) * 0.15;
+      ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+      frameId = window.requestAnimationFrame(tick);
     };
 
-    const onPointerLeave = () => setVisible(false);
-
-    window.addEventListener("pointermove", updatePosition);
-    window.addEventListener("pointerover", onPointerOver);
-    window.addEventListener("pointerout", onPointerOut);
-    window.addEventListener("pointerleave", onPointerLeave);
+    window.addEventListener("mousemove", updateDotPosition);
+    window.addEventListener("mouseover", updateActiveState);
+    window.addEventListener("mouseout", updateActiveState);
+    frameId = window.requestAnimationFrame(tick);
 
     return () => {
-      window.removeEventListener("pointermove", updatePosition);
-      window.removeEventListener("pointerover", onPointerOver);
-      window.removeEventListener("pointerout", onPointerOut);
-      window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("mousemove", updateDotPosition);
+      window.removeEventListener("mouseover", updateActiveState);
+      window.removeEventListener("mouseout", updateActiveState);
+      if (frameId) window.cancelAnimationFrame(frameId);
+      dot.remove();
+      ring.remove();
+      document.body.classList.remove("has-custom-cursor");
     };
   }, []);
 
-  return (
-    <>
-      <div
-        aria-hidden="true"
-        className={`cursor-follower ${visible ? "is-visible" : ""} ${active ? "is-active" : ""}`}
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-      />
-      <div
-        aria-hidden="true"
-        className={`cursor-dot ${visible ? "is-visible" : ""} ${active ? "is-active" : ""}`}
-        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-      />
-    </>
-  );
+  return null;
 }
 
 export function PublicPortfolio() {
