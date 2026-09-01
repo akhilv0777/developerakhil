@@ -1242,6 +1242,62 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
   );
 }
 
+function CursorEffect() {
+  const [position, setPosition] = useState({ x: -100, y: -100 });
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const updatePosition = (event: PointerEvent) => {
+      setPosition({ x: event.clientX, y: event.clientY });
+      setVisible(true);
+    };
+
+    const onPointerOver = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target && target.closest("a, button, input, textarea, select, summary")) {
+        setActive(true);
+      }
+    };
+
+    const onPointerOut = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target && target.closest("a, button, input, textarea, select, summary")) {
+        setActive(false);
+      }
+    };
+
+    const onPointerLeave = () => setVisible(false);
+
+    window.addEventListener("pointermove", updatePosition);
+    window.addEventListener("pointerover", onPointerOver);
+    window.addEventListener("pointerout", onPointerOut);
+    window.addEventListener("pointerleave", onPointerLeave);
+
+    return () => {
+      window.removeEventListener("pointermove", updatePosition);
+      window.removeEventListener("pointerover", onPointerOver);
+      window.removeEventListener("pointerout", onPointerOut);
+      window.removeEventListener("pointerleave", onPointerLeave);
+    };
+  }, []);
+
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        className={`cursor-follower ${visible ? "is-visible" : ""} ${active ? "is-active" : ""}`}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+      />
+      <div
+        aria-hidden="true"
+        className={`cursor-dot ${visible ? "is-visible" : ""} ${active ? "is-active" : ""}`}
+        style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+      />
+    </>
+  );
+}
+
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
@@ -1334,6 +1390,7 @@ export function PublicPortfolio() {
       className={`${activeMode === "light" ? "light" : "dark"} min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
       style={customStyle}
     >
+      <CursorEffect />
       <ToastContainer
         position="top-left"
         autoClose={5000}
