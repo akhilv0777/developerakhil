@@ -1263,9 +1263,29 @@ function CursorEffect() {
     dot.className = "cursor-dot";
     ring.className = "cursor-ring";
 
+    const syncCursorTheme = () => {
+      const themeRoot = document.querySelector("#top") as HTMLElement | null;
+      const computed = themeRoot
+        ? getComputedStyle(themeRoot)
+        : getComputedStyle(document.body);
+      const primary = computed.getPropertyValue("--primary").trim() || "24 95% 53%";
+      const accent = computed.getPropertyValue("--accent").trim() || "184 72% 44%";
+      const background = computed.getPropertyValue("--background").trim() || "240 15% 4%";
+
+      dot.style.background = `hsl(${primary})`;
+      dot.style.boxShadow = `0 0 0 2px hsl(${background}), 0 0 18px hsl(${primary} / 0.9), 0 0 28px hsl(${primary} / 0.5)`;
+      ring.style.borderColor = `hsl(${primary} / 0.8)`;
+      ring.style.background = `radial-gradient(circle, hsl(${primary} / 0.24) 0%, transparent 68%)`;
+      if (ring.classList.contains("is-active")) {
+        ring.style.borderColor = `hsl(${accent} / 1)`;
+        ring.style.background = `radial-gradient(circle, hsl(${accent} / 0.26) 0%, transparent 68%)`;
+      }
+    };
+
     document.body.appendChild(dot);
     document.body.appendChild(ring);
     document.body.classList.add("has-custom-cursor");
+    syncCursorTheme();
 
     let mouseX = -100;
     let mouseY = -100;
@@ -1291,6 +1311,7 @@ function CursorEffect() {
       } else {
         ring.classList.remove("is-active");
       }
+      syncCursorTheme();
     };
 
     const tick = () => {
@@ -1374,7 +1395,7 @@ export function PublicPortfolio() {
       try {
         const payload = {
           ipAddress: "",
-          country: "",
+          country: "",  
           region: "",
           city: "",
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",

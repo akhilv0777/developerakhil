@@ -449,6 +449,95 @@ type Resource =
   | "education"
   | "experience"
   | "testimonials";
+
+function VisitorsPanel() {
+  const [visitors, setVisitors] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/visitors", { credentials: "include" });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof body?.error === "string" ? body.error : "Could not load visitors.");
+      }
+      setVisitors(Array.isArray(body.visitors) ? body.visitors : []);
+    } catch (loadError) {
+      setError((loadError as Error).message || "Could not load visitors.");
+      setVisitors([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  return (
+    <div className="bento-card overflow-hidden p-0">
+      <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <h3 className="text-lg font-bold text-foreground">Recent visitors</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Latest visits captured from your public site.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void reload()}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
+        >
+          <Eye size={13} /> Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">Loading visitors...</div>
+      ) : error ? (
+        <div className="px-5 py-10 text-sm text-red-500 sm:px-6">{error}</div>
+      ) : visitors.length === 0 ? (
+        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">No visitors recorded yet.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px] text-left text-sm text-foreground">
+            <thead className="border-b border-border bg-secondary/40">
+              <tr className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3">Time</th>
+                <th className="px-4 py-3">IP</th>
+                <th className="px-4 py-3">Location</th>
+                <th className="px-4 py-3">Browser</th>
+                <th className="px-4 py-3">OS</th>
+                <th className="px-4 py-3">Device</th>
+                <th className="px-4 py-3">Page</th>
+                <th className="px-4 py-3">Referrer</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visitors.map((visitor) => (
+                <tr key={visitor.id} className="border-b border-border last:border-b-0">
+                  <td className="px-4 py-3 align-top text-muted-foreground">{formatMessageDate(visitor.createdAt)}</td>
+                  <td className="px-4 py-3 align-top font-mono text-[11px]">{visitor.ipAddress || "Unknown"}</td>
+                  <td className="px-4 py-3 align-top text-muted-foreground">
+                    {visitor.city || visitor.region || visitor.country ? [visitor.city, visitor.region, visitor.country].filter(Boolean).join(", ") : "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 align-top">{visitor.browser || "Unknown"}</td>
+                  <td className="px-4 py-3 align-top">{visitor.os || "Unknown"}</td>
+                  <td className="px-4 py-3 align-top">{visitor.device || "Unknown"}</td>
+                  <td className="px-4 py-3 align-top max-w-[200px] break-words text-muted-foreground">{visitor.pathname || visitor.hostname || "-"}</td>
+                  <td className="px-4 py-3 align-top max-w-[220px] break-words text-muted-foreground">{visitor.referrer || "Direct"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 const resourceMeta: Record<
   Resource,
   { label: string; singular: string; icon: LucideIcon }
@@ -2015,6 +2104,94 @@ function formatMessageDate(iso: string) {
   }
 }
 
+function AdminCursorEffect() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+
+    const dot = document.createElement("div");
+    const ring = document.createElement("div");
+    dot.className = "cursor-dot";
+    ring.className = "cursor-ring";
+
+    const syncCursorTheme = () => {
+      const themeRoot =
+        document.querySelector(".admin-console") as HTMLElement | null;
+      const computed = themeRoot
+        ? getComputedStyle(themeRoot)
+        : getComputedStyle(document.body);
+      const primary = computed.getPropertyValue("--primary").trim() || "24 95% 53%";
+      const accent = computed.getPropertyValue("--accent").trim() || "184 72% 44%";
+      const background = computed.getPropertyValue("--background").trim() || "240 15% 4%";
+
+      dot.style.background = `hsl(${primary})`;
+      dot.style.boxShadow = `0 0 0 2px hsl(${background}), 0 0 18px hsl(${primary} / 0.9), 0 0 28px hsl(${primary} / 0.5)`;
+      ring.style.borderColor = `hsl(${primary} / 0.8)`;
+      ring.style.background = `radial-gradient(circle, hsl(${primary} / 0.24) 0%, transparent 68%)`;
+      if (ring.classList.contains("is-active")) {
+        ring.style.borderColor = `hsl(${accent} / 1)`;
+        ring.style.background = `radial-gradient(circle, hsl(${accent} / 0.26) 0%, transparent 68%)`;
+      }
+    };
+
+    document.body.appendChild(dot);
+    document.body.appendChild(ring);
+    document.body.classList.add("has-custom-cursor");
+    syncCursorTheme();
+
+    let mouseX = -100;
+    let mouseY = -100;
+    let ringX = -100;
+    let ringY = -100;
+    let frameId: number | null = null;
+
+    const updateDotPosition = (event: MouseEvent) => {
+      mouseX = event.clientX;
+      mouseY = event.clientY;
+      dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+    };
+
+    const updateActiveState = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const isInteractive = target.closest(
+        "a, button, input, textarea, select, summary",
+      );
+      if (isInteractive) {
+        ring.classList.add("is-active");
+      } else {
+        ring.classList.remove("is-active");
+      }
+      syncCursorTheme();
+    };
+
+    const tick = () => {
+      ringX += (mouseX - ringX) * 0.15;
+      ringY += (mouseY - ringY) * 0.15;
+      ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("mousemove", updateDotPosition);
+    window.addEventListener("mouseover", updateActiveState);
+    window.addEventListener("mouseout", updateActiveState);
+    frameId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("mousemove", updateDotPosition);
+      window.removeEventListener("mouseover", updateActiveState);
+      window.removeEventListener("mouseout", updateActiveState);
+      if (frameId) window.cancelAnimationFrame(frameId);
+      dot.remove();
+      ring.remove();
+      document.body.classList.remove("has-custom-cursor");
+    };
+  }, []);
+
+  return null;
+}
+
 function MessagesPanel() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2513,6 +2690,7 @@ function AdminArea({
         "settings",
         "messages",
         "notifications",
+        "visitors",
         "sections",
         "theme",
         "stats",
@@ -2528,6 +2706,8 @@ function AdminArea({
           | "profile"
           | "settings"
           | "messages"
+          | "notifications"
+          | "visitors"
           | "sections"
           | "theme"
           | Resource;
@@ -2546,6 +2726,7 @@ function AdminArea({
     | "settings"
     | "messages"
     | "notifications"
+    | "visitors"
     | "sections"
     | "theme"
     | Resource
@@ -2559,6 +2740,7 @@ function AdminArea({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSubtab, setSettingsSubtab] = useState<SettingsSubtab>("site");
   const [messageCount, setMessageCount] = useState<number | null>(null);
+  const [visitorCount, setVisitorCount] = useState<number | null>(null);
   const [notificationCount, setNotificationCount] = useState<number | null>(
     null,
   );
@@ -2581,6 +2763,7 @@ function AdminArea({
     section === "settings" ||
     section === "messages" ||
     section === "notifications" ||
+    section === "visitors" ||
     section === "sections" ||
     section === "theme"
       ? null
@@ -2620,6 +2803,15 @@ function AdminArea({
         if (!response.ok) return;
         const body = await response.json();
         if (!cancelled) setMessageCount(body.messages?.length ?? 0);
+
+        const visitorsResponse = await fetch("/api/visitors", {
+          credentials: "include",
+        });
+        const visitorsBody = await visitorsResponse.json().catch(() => ({}));
+        if (!cancelled && visitorsResponse.ok) {
+          setVisitorCount(Array.isArray(visitorsBody.visitors) ? visitorsBody.visitors.length : 0);
+        }
+
         const notificationResponse = await fetch("/api/notifications", {
           credentials: "include",
         });
@@ -2693,6 +2885,7 @@ function AdminArea({
       | "settings"
       | "messages"
       | "notifications"
+      | "visitors"
       | "sections"
       | "theme"
       | Resource,
@@ -2791,11 +2984,13 @@ function AdminArea({
             ? "Messages"
             : section === "notifications"
               ? "Notifications"
-              : section === "sections"
-                ? "Sections"
-                : section === "theme"
-                  ? "Theme"
-                  : resourceMeta[section].label;
+              : section === "visitors"
+                ? "Visitors"
+                : section === "sections"
+                  ? "Sections"
+                  : section === "theme"
+                    ? "Theme"
+                    : resourceMeta[section].label;
   const resourceKeys = Object.keys(resourceMeta) as Resource[];
   const searchSuggestions = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -2819,6 +3014,7 @@ function AdminArea({
       className={`${adminLight ? "light" : "dark"} admin-console flex h-dvh overflow-hidden bg-background text-foreground`}
       style={adminThemeStyle}
     >
+      <AdminCursorEffect />
       {/* Sidebar - desktop */}
       <aside
         className={`${desktopSidebarOpen ? "lg:flex" : "lg:hidden"} hidden lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90`}
@@ -2924,6 +3120,18 @@ function AdminArea({
                 {messageCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => goToSection("visitors")}
+            className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${
+              section === "visitors"
+                ? "bg-primary/10 text-primary border-l-2 border-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Eye size={16} /> Visitors
+            </span>
           </button>
           <button
             onClick={() => goToSection("notifications")}
@@ -3368,6 +3576,14 @@ function AdminArea({
                   )}
                 </button>
                 <button
+                  onClick={() => goToSection("visitors")}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${section === "visitors" ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Eye size={16} /> Visitors
+                  </span>
+                </button>
+                <button
                   onClick={() => goToSection("notifications")}
                   className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 font-medium transition-colors ${section === "notifications" ? "bg-primary/10 text-primary border-l-2 border-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"}`}
                 >
@@ -3460,6 +3676,13 @@ function AdminArea({
                   active={false}
                   onClick={() => goToSection("notifications")}
                 />
+                <StatTile
+                  icon={Eye}
+                  label="Visitors"
+                  count={visitorCount ?? 0}
+                  active={false}
+                  onClick={() => goToSection("visitors")}
+                />
                 {resourceKeys.map((key) => (
                   <StatTile
                     key={key}
@@ -3516,6 +3739,16 @@ function AdminArea({
                 </p>
               </div>
               <MessagesPanel />
+            </section>
+          ) : section === "visitors" ? (
+            <section className="min-w-0 flex flex-col gap-6">
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Visitors</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Recent visitor activity and approximate location information.
+                </p>
+              </div>
+              <VisitorsPanel />
             </section>
           ) : section === "notifications" ? (
             <section className="min-w-0 flex flex-col gap-6">

@@ -86,8 +86,7 @@ body.has-custom-cursor summary {
   cursor: none;
 }
 
-.cursor-dot,
-.cursor-ring {
+.cursor-dot, .cursor-ring {
   position: fixed;
   top: 0;
   left: 0;
@@ -97,30 +96,30 @@ body.has-custom-cursor summary {
 }
 
 .cursor-dot {
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
   background: hsl(var(--primary));
-  box-shadow: 0 0 18px hsl(var(--primary) / 0.75);
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 18px hsl(var(--primary) / 0.9), 0 0 28px hsl(var(--primary) / 0.5);
 }
 
 .cursor-ring {
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
-  border: 1.5px solid hsl(var(--primary) / 0.6);
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border: 1.8px solid hsl(var(--primary) / 0.8);
   transition: width 0.2s ease, height 0.2s ease, margin 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-  background: radial-gradient(circle, hsl(var(--primary) / 0.18) 0%, transparent 68%);
+  background: radial-gradient(circle, hsl(var(--primary) / 0.24) 0%, transparent 68%);
+  box-shadow: inset 0 0 0 1px hsl(var(--background) / 0.4);
 }
 
 .cursor-ring.is-active {
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
-  border-color: hsl(var(--accent) / 0.9);
-  background: radial-gradient(circle, hsl(var(--accent) / 0.18) 0%, transparent 68%);
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-color: hsl(var(--accent) / 1);
+  background: radial-gradient(circle, hsl(var(--accent) / 0.26) 0%, transparent 68%);
 }
-
 @layer utilities {
   .font-mono { font-family: var(--app-font-mono); }
   .display-title { font-family: 'Space Grotesk', var(--app-font-sans); letter-spacing: 0; font-weight: 700; }
@@ -207,26 +206,10 @@ body.has-custom-cursor summary {
   .loader-track { height: 2px; overflow: hidden; border-radius: 999px; background: hsl(var(--foreground) / 0.1); }
   .loader-track span { display: block; width: 38%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent))); animation: loader-progress 1.8s ease-in-out infinite; }
 
-  .bg-background {
-    background-image: radial-gradient(circle at 82% 8%, hsl(var(--primary) / 0.12), transparent 25rem), radial-gradient(circle at 12% 42%, hsl(var(--accent) / 0.06), transparent 22rem), linear-gradient(180deg, hsl(var(--background)), hsl(var(--background) / 0.94));
-  }
-
-  .admin-console {
-    background-image: radial-gradient(circle at 92% 0%, hsl(var(--primary) / 0.08), transparent 24rem), linear-gradient(180deg, hsl(var(--background)), hsl(var(--background) / 0.96));
-  }
-
-  .admin-console .bento-card {
-    background-image: linear-gradient(145deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.48));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
-
-  .admin-console > aside {
-    background: hsl(var(--card) / 0.68);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-  }
-
+  .bg-background { background-image: radial-gradient(circle at 82% 8%, hsl(var(--primary) / 0.12), transparent 25rem), radial-gradient(circle at 12% 42%, hsl(var(--accent) / 0.06), transparent 22rem), linear-gradient(180deg, hsl(var(--background)), hsl(var(--background) / 0.94)); }
+  .admin-console { background-image: radial-gradient(circle at 92% 0%, hsl(var(--primary) / 0.08), transparent 24rem), linear-gradient(180deg, hsl(var(--background)), hsl(var(--background) / 0.96)); }
+  .admin-console .bento-card { background-image: linear-gradient(145deg, hsl(var(--card) / 0.78), hsl(var(--card) / 0.48)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .admin-console > aside { background: hsl(var(--card) / 0.68); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
   .reveal { animation: reveal 0.6s both cubic-bezier(0.22, 1, 0.36, 1); }
   .reveal-delay-1 { animation-delay: 0.08s; }
   .reveal-delay-2 { animation-delay: 0.16s; }
