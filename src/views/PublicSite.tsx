@@ -567,7 +567,10 @@ function StatValue({ value }: { value: string }) {
 
 function Stats({ stats }: { stats: Stat[] }) {
   return (
-    <section id="stats" className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10">
+    <section
+      id="stats"
+      className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
+    >
       <div
         data-mf-stagger-animation="fade-up"
         data-mf-stagger-gap="100"
@@ -641,7 +644,7 @@ function Marquee({ services }: { services: Service[] }) {
           __html: words
             .map(
               (word, index) =>
-                `<span key="${word}-${index}" class="px-6 flex items-center gap-6">${word} <span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span></span>`
+                `<span key="${word}-${index}" class="px-6 flex items-center gap-6">${word} <span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span></span>`,
             )
             .join(""),
         }}
@@ -997,7 +1000,8 @@ function Testimonials({ data }: { data: PortfolioData }) {
 function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending">("idle");
-  const { containerRef: turnstileRef, execute: executeTurnstile } = useTurnstile("contact");
+  const { containerRef: turnstileRef, execute: executeTurnstile } =
+    useTurnstile("contact");
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -1007,7 +1011,10 @@ function ContactForm() {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, "cf-turnstile-response": turnstileToken }),
+        body: JSON.stringify({
+          ...form,
+          "cf-turnstile-response": turnstileToken,
+        }),
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -1018,7 +1025,9 @@ function ContactForm() {
       toast.success("Message sent successfully!");
     } catch (error) {
       setStatus("idle");
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
     }
   };
 
@@ -1072,7 +1081,9 @@ function ContactForm() {
         />
       </label>
       <div className="flex flex-col items-start gap-4 sm:col-span-2 sm:flex-row sm:items-center mt-2">
-        <div><div ref={turnstileRef} aria-hidden="true" /></div>
+        <div>
+          <div ref={turnstileRef} aria-hidden="true" />
+        </div>
         <button
           type="submit"
           disabled={status === "sending"}
@@ -1272,7 +1283,9 @@ function CursorEffect() {
       const target = event.target as HTMLElement | null;
       if (!target) return;
 
-      const isInteractive = target.closest("a, button, input, textarea, select, summary");
+      const isInteractive = target.closest(
+        "a, button, input, textarea, select, summary",
+      );
       if (isInteractive) {
         ring.classList.add("is-active");
       } else {
@@ -1356,6 +1369,39 @@ export function PublicPortfolio() {
     };
   }, []);
 
+  useEffect(() => {
+    const recordVisit = async () => {
+      try {
+        const payload = {
+          ipAddress: "",
+          country: "",
+          region: "",
+          city: "",
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+          language: navigator.language || "",
+          referrer: document.referrer || "",
+          pathname: window.location.pathname,
+          hostname: window.location.hostname,
+          screenResolution: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+          pageTitle: document.title,
+          userAgent: navigator.userAgent,
+          isBot: /bot|crawl|spider|slurp|preview/i.test(navigator.userAgent),
+        };
+
+        await fetch("/api/visitors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          cache: "no-store",
+        });
+      } catch (error) {
+        console.warn("Visitor tracking failed:", error);
+      }
+    };
+
+    void recordVisit();
+  }, []);
+
   if (isLoading) return <PortfolioLoading />;
   if (isError || !data) return <PortfolioLoading error />;
 
@@ -1432,7 +1478,9 @@ export function PublicPortfolio() {
         {(data.sectionVisibility?.skills ?? true) && (
           <Skills profile={data.profile} />
         )}
-        {data.sectionVisibility?.services && <Marquee services={data.services} />}
+        {data.sectionVisibility?.services && (
+          <Marquee services={data.services} />
+        )}
         {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && (
           <ExperienceSection data={data} />

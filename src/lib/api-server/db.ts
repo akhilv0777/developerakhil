@@ -533,6 +533,32 @@ export function ensureSchema(): Promise<void> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS visitor_events (
+            id SERIAL PRIMARY KEY,
+            ip_address TEXT NOT NULL DEFAULT '',
+            country TEXT NOT NULL DEFAULT '',
+            region TEXT NOT NULL DEFAULT '',
+            city TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT '',
+            user_agent TEXT NOT NULL DEFAULT '',
+            browser TEXT NOT NULL DEFAULT '',
+            os TEXT NOT NULL DEFAULT '',
+            device TEXT NOT NULL DEFAULT '',
+            language TEXT NOT NULL DEFAULT '',
+            referrer TEXT NOT NULL DEFAULT '',
+            pathname TEXT NOT NULL DEFAULT '',
+            hostname TEXT NOT NULL DEFAULT '',
+            screen_resolution TEXT NOT NULL DEFAULT '',
+            page_title TEXT NOT NULL DEFAULT '',
+            is_bot BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          );
+        `;
+
+        await sql`CREATE INDEX IF NOT EXISTS visitor_events_created_at_idx ON visitor_events (created_at DESC);`;
+        await sql`CREATE INDEX IF NOT EXISTS visitor_events_ip_address_idx ON visitor_events (ip_address);`;
       } catch (error) {
         schemaReady = null;
         throw error;
@@ -705,4 +731,117 @@ export async function deleteAdminNotifications(ids: number[]): Promise<number> {
   if (ids.length === 0) return 0;
   const result = await sql`DELETE FROM admin_notifications WHERE id = ANY(${ids});`;
   return result.rowCount;
+}
+
+export type VisitorEvent = {
+  id: number;
+  ipAddress: string;
+  country: string;
+  region: string;
+  city: string;
+  timezone: string;
+  userAgent: string;
+  browser: string;
+  os: string;
+  device: string;
+  language: string;
+  referrer: string;
+  pathname: string;
+  hostname: string;
+  screenResolution: string;
+  pageTitle: string;
+  isBot: boolean;
+  createdAt: string;
+};
+
+export async function recordVisitorEvent(input: {
+  ipAddress: string;
+  country: string;
+  region: string;
+  city: string;
+  timezone: string;
+  userAgent: string;
+  browser: string;
+  os: string;
+  device: string;
+  language: string;
+  referrer: string;
+  pathname: string;
+  hostname: string;
+  screenResolution: string;
+  pageTitle: string;
+  isBot: boolean;
+}): Promise<VisitorEvent> {
+  await ensureSchema();
+  const result = await insertRecord("visitor_events", {
+    ip_address: input.ipAddress,
+    country: input.country,
+    region: input.region,
+    city: input.city,
+    timezone: input.timezone,
+    user_agent: input.userAgent,
+    browser: input.browser,
+    os: input.os,
+    device: input.device,
+    language: input.language,
+    referrer: input.referrer,
+    pathname: input.pathname,
+    hostname: input.hostname,
+    screen_resolution: input.screenResolution,
+    page_title: input.pageTitle,
+    is_bot: input.isBot,
+  });
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    ipAddress: row.ip_address,
+    country: row.country,
+    region: row.region,
+    city: row.city,
+    timezone: row.timezone,
+    userAgent: row.user_agent,
+    browser: row.browser,
+    os: row.os,
+    device: row.device,
+    language: row.language,
+    referrer: row.referrer,
+    pathname: row.pathname,
+    hostname: row.hostname,
+    screenResolution: row.screen_resolution,
+    pageTitle: row.page_title,
+    isBot: row.is_bot,
+    createdAt: row.created_at,
+  };
+}
+
+export async function listVisitorEvents(limit = 100): Promise<VisitorEvent[]> {
+  await ensureSchema();
+  const result = await sql`
+    SELECT *
+    FROM visitor_events
+    ORDER BY created_at DESC
+    LIMIT ${limit};
+  `;
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    ipAddress: row.ip_address,
+    country: row.country,
+    region: row.region,
+    city: row.city,
+    timezone: row.timezone,
+    userAgent: row.user_agent,
+    browser: row.browser,
+    os: row.os,
+    device: row.device,
+    language: row.language,
+    referrer: row.referrer,
+    pathname: row.pathname,
+    hostname: row.hostname,
+    screenResolution: row.screen_resolution,
+    pageTitle: row.page_title,
+    isBot: row.is_bot,
+    createdAt: row.created_at,
+  }));
 }
