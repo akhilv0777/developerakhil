@@ -546,7 +546,7 @@ const resourceMeta: Record<
   services: { label: "Services", singular: "service", icon: Layers },
   projects: { label: "Projects", singular: "project", icon: Briefcase },
   education: { label: "Education", singular: "education", icon: GraduationCap },
-  experience: { label: "Experience", singular: "role", icon: Building2 },
+  experience: { label: "Experience", singular: "experience", icon: Building2 },
   testimonials: { label: "Testimonials", singular: "testimonial", icon: Quote },
 };
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
@@ -880,6 +880,9 @@ function ProfileEditor({
   saving: boolean;
 }) {
   const [form, setForm] = useState<Profile>(profile);
+  const [aboutEditor, setAboutEditor] = useState(
+    [profile.bio1, profile.bio2, profile.bio3].filter(Boolean).join("\n\n"),
+  );
   const [skillsRaw, setSkillsRaw] = useState((profile.skills || []).join(", "));
   const [languagesRaw, setLanguagesRaw] = useState(
     (profile.languages || []).join(", "),
@@ -892,6 +895,9 @@ function ProfileEditor({
     // Multiple setState calls are necessary to keep all form fields in sync
     // eslint-disable-next-line
     setForm({ ...profile });
+    setAboutEditor(
+      [profile.bio1, profile.bio2, profile.bio3].filter(Boolean).join("\n\n"),
+    );
     setSkillsRaw((profile.skills || []).join(", "));
     setLanguagesRaw((profile.languages || []).join(", "));
     setRolesRaw((profile.roles || []).join(", "));
@@ -906,9 +912,6 @@ function ProfileEditor({
     { key: "location", label: "Location" },
     { key: "github", label: "GitHub (e.g. github.com/you)" },
     { key: "linkedin", label: "LinkedIn" },
-    { key: "bio1", label: "Headline bio", long: true },
-    { key: "bio2", label: "About paragraph 1", long: true },
-    { key: "bio3", label: "About paragraph 2", long: true },
     { key: "contactTitle", label: "Contact heading", long: true },
     { key: "contactNote", label: "Contact note" },
   ];
@@ -961,6 +964,9 @@ function ProfileEditor({
         event.preventDefault();
         onSave({
           ...form,
+          bio1: aboutEditor.split(/\n\s*\n/)[0]?.trim() || "",
+          bio2: aboutEditor.split(/\n\s*\n/)[1]?.trim() || "",
+          bio3: aboutEditor.split(/\n\s*\n/)[2]?.trim() || "",
           whatsapp: (form.whatsapp ?? "").trim(),
           roles: rolesRaw
             .split(",")
@@ -1103,6 +1109,22 @@ function ProfileEditor({
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        <label className="md:col-span-2">
+          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            About editor
+          </span>
+          <textarea
+            required
+            value={aboutEditor}
+            rows={10}
+            onChange={(event) => setAboutEditor(event.target.value)}
+            placeholder="Headline bio\n\nAbout paragraph 1\n\nAbout paragraph 2"
+            className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm leading-7 outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+          />
+          <span className="mt-2 block text-xs text-muted-foreground">
+            Separate the headline and two paragraphs with a blank line.
+          </span>
+        </label>
         {fields.map(({ key, label, long }) => (
           <label key={key} className={long ? "md:col-span-2" : ""}>
             <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -2104,94 +2126,6 @@ function formatMessageDate(iso: string) {
   }
 }
 
-function AdminCursorEffect() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
-
-    const dot = document.createElement("div");
-    const ring = document.createElement("div");
-    dot.className = "cursor-dot";
-    ring.className = "cursor-ring";
-
-    const syncCursorTheme = () => {
-      const themeRoot =
-        document.querySelector(".admin-console") as HTMLElement | null;
-      const computed = themeRoot
-        ? getComputedStyle(themeRoot)
-        : getComputedStyle(document.body);
-      const primary = computed.getPropertyValue("--primary").trim() || "24 95% 53%";
-      const accent = computed.getPropertyValue("--accent").trim() || "184 72% 44%";
-      const background = computed.getPropertyValue("--background").trim() || "240 15% 4%";
-
-      dot.style.background = `hsl(${primary})`;
-      dot.style.boxShadow = `0 0 0 2px hsl(${background}), 0 0 18px hsl(${primary} / 0.9), 0 0 28px hsl(${primary} / 0.5)`;
-      ring.style.borderColor = `hsl(${primary} / 0.8)`;
-      ring.style.background = `radial-gradient(circle, hsl(${primary} / 0.24) 0%, transparent 68%)`;
-      if (ring.classList.contains("is-active")) {
-        ring.style.borderColor = `hsl(${accent} / 1)`;
-        ring.style.background = `radial-gradient(circle, hsl(${accent} / 0.26) 0%, transparent 68%)`;
-      }
-    };
-
-    document.body.appendChild(dot);
-    document.body.appendChild(ring);
-    document.body.classList.add("has-custom-cursor");
-    syncCursorTheme();
-
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
-    let frameId: number | null = null;
-
-    const updateDotPosition = (event: MouseEvent) => {
-      mouseX = event.clientX;
-      mouseY = event.clientY;
-      dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
-    };
-
-    const updateActiveState = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-
-      const isInteractive = target.closest(
-        "a, button, input, textarea, select, summary",
-      );
-      if (isInteractive) {
-        ring.classList.add("is-active");
-      } else {
-        ring.classList.remove("is-active");
-      }
-      syncCursorTheme();
-    };
-
-    const tick = () => {
-      ringX += (mouseX - ringX) * 0.15;
-      ringY += (mouseY - ringY) * 0.15;
-      ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
-      frameId = window.requestAnimationFrame(tick);
-    };
-
-    window.addEventListener("mousemove", updateDotPosition);
-    window.addEventListener("mouseover", updateActiveState);
-    window.addEventListener("mouseout", updateActiveState);
-    frameId = window.requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("mousemove", updateDotPosition);
-      window.removeEventListener("mouseover", updateActiveState);
-      window.removeEventListener("mouseout", updateActiveState);
-      if (frameId) window.cancelAnimationFrame(frameId);
-      dot.remove();
-      ring.remove();
-      document.body.classList.remove("has-custom-cursor");
-    };
-  }, []);
-
-  return null;
-}
-
 function MessagesPanel() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -3014,7 +2948,6 @@ function AdminArea({
       className={`${adminLight ? "light" : "dark"} admin-console flex h-dvh overflow-hidden bg-background text-foreground`}
       style={adminThemeStyle}
     >
-      <AdminCursorEffect />
       {/* Sidebar - desktop */}
       <aside
         className={`${desktopSidebarOpen ? "lg:flex" : "lg:hidden"} hidden lg:w-64 lg:shrink-0 lg:flex-col border-r border-border bg-card/90`}

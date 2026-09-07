@@ -5,20 +5,20 @@ import "@slicemypage/motionflow/dist/motionflow.min.css";
 
 export function useMotionFlow(deps: readonly unknown[]) {
   useEffect(() => {
-    let frame: number;
-    const setBrowserTimeout = window.setTimeout.bind(window);
-    const start = () => {
-      import("@slicemypage/motionflow").then((mod) => {
-        const MotionFlow = mod.default;
-        frame = window.requestAnimationFrame(() => {
-          MotionFlow.init();
-        });
+    let frame: number | undefined;
+    let cancelled = false;
+
+    import("@slicemypage/motionflow").then((mod) => {
+      if (cancelled) return;
+      const MotionFlow = mod.default;
+      frame = window.requestAnimationFrame(() => {
+        if (!cancelled) MotionFlow.init();
       });
-    };
-    const idle = setBrowserTimeout(start, 8000);
+    });
+
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
-      if (idle) window.clearTimeout(idle);
+      cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

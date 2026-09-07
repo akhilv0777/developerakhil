@@ -18,6 +18,7 @@ import {
   Moon,
   Plus,
   Sun,
+  Star,
   Phone,
   X,
 } from "lucide-react";
@@ -374,7 +375,7 @@ function Hero({ profile }: { profile: Profile }) {
 
   return (
     <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24">
-      <div className="relative mx-auto grid w-full max-w-[1400px] items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="relative mx-auto grid w-full max-w-7xl min-w-0 items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="flex flex-col items-start">
           <div className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
@@ -383,7 +384,7 @@ function Hero({ profile }: { profile: Profile }) {
             </p>
           </div>
 
-          <h1 className="display-title reveal reveal-delay-1 max-w-5xl text-[clamp(3rem,7vw,6rem)] font-bold leading-[1.05] text-foreground tracking-tight">
+          <h1 className="display-title reveal reveal-delay-1 max-w-5xl text-5xl font-bold leading-[1.05] text-foreground tracking-tight sm:text-6xl lg:text-7xl">
             {profile.name}
           </h1>
 
@@ -445,19 +446,6 @@ function Hero({ profile }: { profile: Profile }) {
                 </span>
               </div>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 font-mono text-[10px] uppercase tracking-wider">
-              <div className="glass-surface rounded-lg px-3 py-3 text-muted-foreground">
-                <span className="mb-1 block text-primary">Based in</span>
-                {profile.location}
-              </div>
-              <a
-                href={`mailto:${profile.email}`}
-                className="glass-surface rounded-lg px-3 py-3 text-muted-foreground transition-colors hover:text-primary"
-              >
-                <span className="mb-1 block text-primary">Open to</span>
-                Collaborations
-              </a>
-            </div>
           </div>
         )}
       </div>
@@ -469,16 +457,15 @@ function About({ profile }: { profile: Profile }) {
   return (
     <section
       id="about"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <div className="bento-card p-5 sm:p-5 sm:p-6 lg:p-8 lg:p-10">
-        <SectionLabel number="01">ABOUT</SectionLabel>
-        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] items-start">
-          <div className="space-y-6">
-            {profile.aboutImage || profile.heroImage || profile.image ? (
-              <div className="portrait-frame aspect-[4/5] p-3">
+      <SectionLabel number="01">ABOUT</SectionLabel>
+      <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            {profile.aboutImage ? (
+              <div className="portrait-frame mx-auto aspect-[4/5] w-full max-w-[460px] p-3 lg:mx-0">
                 <Image
-                  src={profile.aboutImage || profile.heroImage || profile.image}
+                  src={profile.aboutImage}
                   alt={profile.name}
                   className="h-full w-full rounded-[1.1rem] object-cover"
                   width={420}
@@ -495,16 +482,26 @@ function About({ profile }: { profile: Profile }) {
                 </div>
               </div>
             ) : null}
-            <p
-              data-mf-animation="fade-up"
-              className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold leading-[1.3] text-foreground"
+          </div>
+          <div className="space-y-8">
+            <div
+              data-mf-stagger-animation="fade-up"
+              data-mf-stagger-gap="120"
+              className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
             >
-              {profile.bio1}
-            </p>
+              <p
+                className="text-2xl font-bold leading-[1.35] text-foreground sm:text-3xl lg:text-4xl"
+              >
+                {profile.bio1}
+              </p>
+              <p>{profile.bio2}</p>
+              <p>{profile.bio3}</p>
+            </div>
             {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
               <div
+                id="skills"
                 data-mf-animation="fade-up"
-                className="mt-8 flex flex-wrap gap-2"
+                className="flex flex-wrap gap-2"
               >
                 {profile.skills?.map((skill) => (
                   <span
@@ -525,15 +522,6 @@ function About({ profile }: { profile: Profile }) {
               </div>
             )}
           </div>
-          <div
-            data-mf-stagger-animation="fade-up"
-            data-mf-stagger-gap="120"
-            className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
-          >
-            <p>{profile.bio2}</p>
-            <p>{profile.bio3}</p>
-          </div>
-        </div>
       </div>
     </section>
   );
@@ -569,7 +557,7 @@ function Stats({ stats }: { stats: Stat[] }) {
   return (
     <section
       id="stats"
-      className="mx-auto max-w-[1400px] px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
+      className="mx-auto max-w-7xl px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
     >
       <div
         data-mf-stagger-animation="fade-up"
@@ -594,36 +582,6 @@ function Stats({ stats }: { stats: Stat[] }) {
   );
 }
 
-function Skills({ profile }: { profile: Profile }) {
-  const skills = profile.skills || [];
-  if (!skills.length) return null;
-  return (
-    <section
-      id="skills"
-      className="mx-auto max-w-[1400px] px-4 py-12 sm:px-5 sm:py-16 md:px-8 md:py-20 lg:px-10 lg:py-24"
-    >
-      <div className="bento-card flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:justify-between lg:p-8">
-        <div className="max-w-sm">
-          <SectionLabel number="02">CAPABILITIES</SectionLabel>
-          <h2 className="display-title text-3xl font-bold text-foreground">
-            Tools I use to ship.
-          </h2>
-        </div>
-        <div className="flex max-w-2xl flex-wrap gap-3">
-          {skills.map((skill) => (
-            <span
-              key={skill}
-              className="cursor-default rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:bg-primary/10 hover:text-primary"
-            >
-              {skill}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function Marquee({ services }: { services: Service[] }) {
   const words =
     services.length > 0
@@ -633,7 +591,7 @@ function Marquee({ services }: { services: Service[] }) {
   return (
     <div
       id="services-strip"
-      className="my-10 overflow-hidden bg-secondary py-6 border-y border-border"
+      className="mx-auto my-10 max-w-7xl overflow-hidden rounded-xl border border-border/60 bg-secondary/55 py-6 backdrop-blur-sm [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
     >
       <div
         data-mf-ticker
@@ -657,12 +615,12 @@ function Timeline({ data }: { data: PortfolioData }) {
   return (
     <section
       id="education"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
           <SectionLabel number="02">EDUCATION</SectionLabel>
-          <h2 className="display-title text-[clamp(2.5rem,5vw,4.5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
+          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
             Academic <br />
             <span>Timeline.</span>
           </h2>
@@ -706,37 +664,46 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
   return (
     <section
       id="experience"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="03">EXPERIENCE</SectionLabel>
-      <div
-        data-mf-stagger-animation="fade-up"
-        data-mf-stagger-gap="90"
-        className="grid gap-6 lg:grid-cols-2 mt-12"
-      >
-        {data.experience.map((item) => (
-          <div
-            className="bento-card group p-6 transition-all hover:-translate-y-1"
-            key={item.id}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+      <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
+        <div data-mf-animation="fade-up">
+          <SectionLabel number="03">EXPERIENCE</SectionLabel>
+          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
+            Professional <br />
+            <span>Timeline.</span>
+          </h2>
+        </div>
+
+        <div
+          data-mf-stagger-animation="fade-left"
+          data-mf-stagger-gap="100"
+          className="grid gap-6"
+        >
+          {data.experience.map((item) => (
+            <div
+              className="bento-card group flex flex-col sm:flex-row gap-5 p-6 transition-all hover:-translate-y-1"
+              key={item.id}
+            >
+              <div className="sm:w-32 shrink-0">
+                <span className="font-mono text-[12px] font-bold text-primary tracking-wider">
+                  {item.period}
+                </span>
+              </div>
               <div>
-                <h3 className="text-2xl font-bold text-foreground">
+                <h3 className="text-xl font-bold text-foreground">
                   {item.role}
                 </h3>
-                <p className="mt-2 font-mono text-[12px] font-bold text-primary">
+                <p className="mt-2 font-mono text-[12px] text-muted-foreground">
                   {item.company}
                 </p>
+                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                  {item.detail}
+                </p>
               </div>
-              <span className="inline-flex h-8 items-center rounded-full border border-border px-4 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {item.period}
-              </span>
             </div>
-            <p className="text-base leading-[1.7] text-muted-foreground">
-              {item.detail}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -746,7 +713,7 @@ function Services({ data }: { data: PortfolioData }) {
   return (
     <section
       id="services"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="04">SERVICES</SectionLabel>
 
@@ -927,36 +894,35 @@ function Testimonials({ data }: { data: PortfolioData }) {
   return (
     <section
       id="testimonials"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="06">TESTIMONIALS</SectionLabel>
-      <div className="bento-card relative overflow-hidden p-5 sm:p-5 sm:p-6 lg:p-8 lg:p-10 border-l-4 border-l-primary">
-        <div className="absolute top-0 right-0 p-8 text-primary/10 font-sans text-9xl leading-none"></div>
-        <div className="relative z-10 flex flex-col justify-center min-h-[250px]">
+      <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
+        <div className="relative z-10 flex min-h-[250px] flex-col items-center justify-center text-center">
           <div
             key={currentIndex}
-            className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out"
+            className="flex w-full max-w-5xl flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out"
           >
-            <p className="text-[clamp(1.5rem,3vw,2.5rem)] font-bold leading-[1.4] tracking-tight text-foreground max-w-4xl">
+            <div className="mb-6 flex items-center gap-1 text-primary" aria-label="5 out of 5 stars">
+              {Array.from({ length: 5 }, (_, index) => (
+                <Star key={index} size={18} fill="currentColor" strokeWidth={1.5} />
+              ))}
+            </div>
+            <p className="max-w-5xl text-center text-2xl font-bold leading-[1.4] tracking-tight text-foreground sm:text-3xl lg:text-4xl">
               {item?.quote ||
                 "The best work makes the difficult feel possible."}
             </p>
-            <div className="mt-12 flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full border border-border bg-secondary flex items-center justify-center font-mono font-bold text-primary">
-                {item?.name.charAt(0)}
-              </div>
-              <div>
-                <p className="font-mono text-[12px] font-bold uppercase tracking-[.1em] text-foreground">
-                  {item?.name}
-                </p>
-                <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground mt-1">
-                  {item?.role}
-                </p>
-              </div>
+            <div className="mt-8 text-center">
+              <p className="font-mono text-[12px] font-bold uppercase tracking-[.1em] text-foreground">
+                {item?.name}
+              </p>
+              <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                {item?.role}
+              </p>
             </div>
           </div>
 
-          <div className="mt-12 flex items-center gap-3">
+          <div className="mt-12 flex items-center justify-center gap-3">
             {data.testimonials.length > 1 && (
               <button
                 type="button"
@@ -1103,12 +1069,12 @@ function Contact({ profile }: { profile: Profile }) {
   return (
     <section
       id="contact"
-      className="mx-auto max-w-[1400px] px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="07">CONTACT</SectionLabel>
-      <div className="grid gap-16 lg:grid-cols-[1.5fr_1fr] items-start">
+      <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
         <div data-mf-animation="fade-up">
-          <h2 className="display-title text-[clamp(3rem,6vw,5rem)] font-bold leading-[1.05] tracking-tight text-foreground">
+          <h2 className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             {titleLines.map((line, index) => (
               <span key={index}>
                 {line}
@@ -1121,73 +1087,88 @@ function Contact({ profile }: { profile: Profile }) {
               {profile.contactNote}
             </p>
           )}
-          <ContactForm />
+          <ContactLinks profile={profile} variant="contact" />
         </div>
-
-        <div
-          data-mf-animation="fade-left"
-          className="flex flex-col gap-4 mt-0 lg:mt-24"
-        >
-          <a
-            href={`https://${profile.github.replace(/^https?:\/\//, "")}`}
-            className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
-              <FaGithub size={18} />
-            </div>
-            {profile.github}
-          </a>
-
-          {profile.linkedin && (
-            <a
-              href={`https://${profile.linkedin.replace(/^https?:\/\//, "")}`}
-              className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
-                <FaLinkedin size={18} />
-              </div>
-              {profile.linkedin}
-            </a>
-          )}
-
-          <a
-            href={`mailto:${profile.email}`}
-            className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
-              <Mail size={18} />
-            </div>
-            say hello
-          </a>
-
-          {profile.phone && (
-            <a
-              href={`tel:${profile.phone}`}
-              className="bento-card group flex items-center gap-4 p-4 transition-all hover:-translate-y-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-colors group-hover:bg-primary group-hover:text-background">
-                <Phone size={18} />
-              </div>
-              {profile.phone}
-            </a>
-          )}
-
-          <div className="bento-card flex items-center gap-4 p-4 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary">
-              <MapPin size={18} />
-            </div>
-            {profile.location}
-          </div>
+        <div data-mf-animation="fade-left">
+          <ContactForm />
         </div>
       </div>
     </section>
   );
 }
 
+function ContactLinks({
+  profile,
+  variant,
+}: {
+  profile: Profile;
+  variant: "contact" | "footer";
+}) {
+  const isContact = variant === "contact";
+  const linkClass = isContact
+    ? "group flex min-h-14 items-center gap-3 border-b border-border py-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition-colors hover:text-primary"
+    : "group inline-flex items-center gap-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary";
+  const iconClass = isContact
+    ? "h-4 w-4 shrink-0 text-primary"
+    : "h-4 w-4 shrink-0 text-primary";
+  return (
+    <div
+      className={
+        isContact
+          ? "mt-10 grid max-w-xl gap-x-6 gap-y-2 sm:grid-cols-2"
+          : "mb-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 border-b border-border pb-8"
+      }
+    >
+      <a
+        href={`https://${profile.github.replace(/^https?:\/\//, "")}`}
+        className={linkClass}
+      >
+        <FaGithub className={iconClass} />
+        {profile.github}
+      </a>
+
+      {profile.linkedin && (
+        <a
+          href={`https://${profile.linkedin.replace(/^https?:\/\//, "")}`}
+          className={linkClass}
+        >
+          <FaLinkedin className={iconClass} />
+          {profile.linkedin}
+        </a>
+      )}
+
+      <a
+        href={`mailto:${profile.email}`}
+        className={linkClass}
+      >
+        <Mail className={iconClass} size={16} />
+        say hello
+      </a>
+
+      {profile.phone && (
+        <a
+          href={`tel:${profile.phone}`}
+          className={linkClass}
+        >
+          <Phone className={iconClass} size={16} />
+          {profile.phone}
+        </a>
+      )}
+
+      <div className={linkClass}>
+        <MapPin className={iconClass} size={16} />
+        {profile.location}
+      </div>
+    </div>
+  );
+}
+
 function Footer({ profile }: { profile: Profile }) {
   return (
     <footer className="border-t border-border bg-background px-4 py-8 sm:px-5 sm:py-12 md:px-8 lg:px-10">
-      <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 lg:flex-row">
+      <div className="mx-auto max-w-7xl">
+        <ContactLinks profile={profile} variant="footer" />
+        <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
           © {new Date().getFullYear()} {profile.name}
         </span>
@@ -1195,13 +1176,7 @@ function Footer({ profile }: { profile: Profile }) {
           <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
           Built with code & coffee
         </span>
-        <a
-          href="#top"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-secondary text-primary transition-transform hover:-translate-y-1 hover:bg-primary hover:text-background"
-          aria-label="Back to top"
-        >
-          ↑
-        </a>
+        </div>
       </div>
     </footer>
   );
@@ -1253,93 +1228,6 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
   );
 }
 
-function CursorEffect() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
-
-    const dot = document.createElement("div");
-    const ring = document.createElement("div");
-    dot.className = "cursor-dot";
-    ring.className = "cursor-ring";
-
-    const syncCursorTheme = () => {
-      const themeRoot = document.querySelector("#top") as HTMLElement | null;
-      const computed = themeRoot
-        ? getComputedStyle(themeRoot)
-        : getComputedStyle(document.body);
-      const primary = computed.getPropertyValue("--primary").trim() || "24 95% 53%";
-      const accent = computed.getPropertyValue("--accent").trim() || "184 72% 44%";
-      const background = computed.getPropertyValue("--background").trim() || "240 15% 4%";
-
-      dot.style.background = `hsl(${primary})`;
-      dot.style.boxShadow = `0 0 0 2px hsl(${background}), 0 0 18px hsl(${primary} / 0.9), 0 0 28px hsl(${primary} / 0.5)`;
-      ring.style.borderColor = `hsl(${primary} / 0.8)`;
-      ring.style.background = `radial-gradient(circle, hsl(${primary} / 0.24) 0%, transparent 68%)`;
-      if (ring.classList.contains("is-active")) {
-        ring.style.borderColor = `hsl(${accent} / 1)`;
-        ring.style.background = `radial-gradient(circle, hsl(${accent} / 0.26) 0%, transparent 68%)`;
-      }
-    };
-
-    document.body.appendChild(dot);
-    document.body.appendChild(ring);
-    document.body.classList.add("has-custom-cursor");
-    syncCursorTheme();
-
-    let mouseX = -100;
-    let mouseY = -100;
-    let ringX = -100;
-    let ringY = -100;
-    let frameId: number | null = null;
-
-    const updateDotPosition = (event: MouseEvent) => {
-      mouseX = event.clientX;
-      mouseY = event.clientY;
-      dot.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
-    };
-
-    const updateActiveState = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) return;
-
-      const isInteractive = target.closest(
-        "a, button, input, textarea, select, summary",
-      );
-      if (isInteractive) {
-        ring.classList.add("is-active");
-      } else {
-        ring.classList.remove("is-active");
-      }
-      syncCursorTheme();
-    };
-
-    const tick = () => {
-      ringX += (mouseX - ringX) * 0.15;
-      ringY += (mouseY - ringY) * 0.15;
-      ring.style.transform = `translate(${ringX}px, ${ringY}px)`;
-      frameId = window.requestAnimationFrame(tick);
-    };
-
-    window.addEventListener("mousemove", updateDotPosition);
-    window.addEventListener("mouseover", updateActiveState);
-    window.addEventListener("mouseout", updateActiveState);
-    frameId = window.requestAnimationFrame(tick);
-
-    return () => {
-      window.removeEventListener("mousemove", updateDotPosition);
-      window.removeEventListener("mouseover", updateActiveState);
-      window.removeEventListener("mouseout", updateActiveState);
-      if (frameId) window.cancelAnimationFrame(frameId);
-      dot.remove();
-      ring.remove();
-      document.body.classList.remove("has-custom-cursor");
-    };
-  }, []);
-
-  return null;
-}
-
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
@@ -1347,6 +1235,7 @@ export function PublicPortfolio() {
     null,
   );
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     fetch("/api/site-settings", { cache: "no-store" })
@@ -1376,6 +1265,7 @@ export function PublicPortfolio() {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
+      setShowBackToTop(window.scrollY > window.innerHeight * 0.75);
     };
     const scheduleProgress = () => {
       if (!frame) frame = window.requestAnimationFrame(updateProgress);
@@ -1465,7 +1355,6 @@ export function PublicPortfolio() {
       className={`${activeMode === "light" ? "light" : "dark"} min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
       style={customStyle}
     >
-      <CursorEffect />
       <ToastContainer
         position="top-left"
         autoClose={5000}
@@ -1496,9 +1385,6 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
         {data.sectionVisibility?.about && <About profile={data.profile} />}
         {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
-        {(data.sectionVisibility?.skills ?? true) && (
-          <Skills profile={data.profile} />
-        )}
         {data.sectionVisibility?.services && (
           <Marquee services={data.services} />
         )}
@@ -1511,6 +1397,20 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
         {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
       </main>
+      {showBackToTop && (
+        <a
+          href="#top"
+          className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg transition-all hover:-translate-y-1 sm:bottom-6 sm:right-6"
+          style={{
+            background: `conic-gradient(hsl(var(--primary)) ${scrollProgress}%, hsl(var(--border)) ${scrollProgress}% 100%)`,
+          }}
+          aria-label="Back to top"
+        >
+          <span className="flex h-full w-full items-center justify-center rounded-full bg-secondary hover:bg-primary hover:text-background">
+            ↑
+          </span>
+        </a>
+      )}
       <Footer profile={data.profile} />
     </div>
   );

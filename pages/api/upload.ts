@@ -64,10 +64,13 @@ export default async function handler(
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    const hasBlobConfig = !!process.env.BLOB_READ_WRITE_TOKEN || !!process.env.BLOB_STORE_ID || !!process.env.VERCEL_OIDC_TOKEN;
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN?.trim();
+    const oidcToken = process.env.VERCEL_OIDC_TOKEN?.trim();
+    const blobStoreId = process.env.BLOB_STORE_ID?.trim();
+    const hasBlobConfig = Boolean(blobToken || (oidcToken && blobStoreId));
     if (!hasBlobConfig) {
       return res.status(500).json({
-        error: 'Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN or set BLOB_STORE_ID with Vercel OIDC.',
+        error: 'Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN, or add both BLOB_STORE_ID and VERCEL_OIDC_TOKEN.',
       });
     }
 
@@ -80,6 +83,7 @@ export default async function handler(
       access: 'public',
       contentType: mimetype,
       addRandomSuffix: false,
+      ...(blobToken ? { token: blobToken } : { oidcToken, storeId: blobStoreId }),
     });
 
     return res.status(200).json({

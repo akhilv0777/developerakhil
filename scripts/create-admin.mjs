@@ -16,8 +16,8 @@ async function run() {
   
   const pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false } });
   
-  const username = 'admin';
-  const password = 'password123';
+  const username = process.env.ADMIN_USERNAME?.trim() || 'admin';
+  const password = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
   const hash = await bcrypt.hash(password, 10);
   
   await pool.query(`
