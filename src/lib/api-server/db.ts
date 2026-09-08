@@ -205,6 +205,7 @@ export const seedPortfolioData = {
     linkedin: "linkedin.com/in/akhilv0777",
     image: "",
     heroImage: "",
+    heroMobileImage: "",
     aboutImage: "",
     resume: "",
     resumeName: "",
@@ -360,7 +361,7 @@ export const seedPortfolioData = {
   },
   themeSettings: {
     accentColor: "#00FF88",
-    mode: "dark",
+    mode: "light",
   },
 };
 
@@ -537,6 +538,7 @@ export function ensureSchema(): Promise<void> {
         await sql`
           CREATE TABLE IF NOT EXISTS visitor_events (
             id SERIAL PRIMARY KEY,
+            session_id TEXT NOT NULL DEFAULT '',
             ip_address TEXT NOT NULL DEFAULT '',
             country TEXT NOT NULL DEFAULT '',
             region TEXT NOT NULL DEFAULT '',
@@ -557,8 +559,11 @@ export function ensureSchema(): Promise<void> {
           );
         `;
 
+        await sql`ALTER TABLE visitor_events ADD COLUMN IF NOT EXISTS session_id TEXT NOT NULL DEFAULT '';`;
+
         await sql`CREATE INDEX IF NOT EXISTS visitor_events_created_at_idx ON visitor_events (created_at DESC);`;
         await sql`CREATE INDEX IF NOT EXISTS visitor_events_ip_address_idx ON visitor_events (ip_address);`;
+        await sql`CREATE UNIQUE INDEX IF NOT EXISTS visitor_events_session_id_unique_idx ON visitor_events (session_id) WHERE session_id <> '';`;
       } catch (error) {
         schemaReady = null;
         throw error;
@@ -755,6 +760,7 @@ export type VisitorEvent = {
 };
 
 export async function recordVisitorEvent(input: {
+  sessionId: string;
   ipAddress: string;
   country: string;
   region: string;
@@ -773,7 +779,8 @@ export async function recordVisitorEvent(input: {
   isBot: boolean;
 }): Promise<VisitorEvent> {
   await ensureSchema();
-  const result = await insertRecord("visitor_events", {
+  const values = {
+    session_id: input.sessionId,
     ip_address: input.ipAddress,
     country: input.country,
     region: input.region,
@@ -790,7 +797,39 @@ export async function recordVisitorEvent(input: {
     screen_resolution: input.screenResolution,
     page_title: input.pageTitle,
     is_bot: input.isBot,
-  });
+  };
+  const result = await sql`
+    INSERT INTO visitor_events (
+      session_id, ip_address, country, region, city, timezone, user_agent,
+      browser, os, device, language, referrer, pathname, hostname,
+      screen_resolution, page_title, is_bot
+    ) VALUES (
+      ${values.session_id}, ${values.ip_address}, ${values.country}, ${values.region},
+      ${values.city}, ${values.timezone}, ${values.user_agent}, ${values.browser},
+      ${values.os}, ${values.device}, ${values.language}, ${values.referrer},
+      ${values.pathname}, ${values.hostname}, ${values.screen_resolution},
+      ${values.page_title}, ${values.is_bot}
+    )
+    ON CONFLICT (session_id) WHERE session_id <> '' DO UPDATE SET
+      ip_address = EXCLUDED.ip_address,
+      country = EXCLUDED.country,
+      region = EXCLUDED.region,
+      city = EXCLUDED.city,
+      timezone = EXCLUDED.timezone,
+      user_agent = EXCLUDED.user_agent,
+      browser = EXCLUDED.browser,
+      os = EXCLUDED.os,
+      device = EXCLUDED.device,
+      language = EXCLUDED.language,
+      referrer = EXCLUDED.referrer,
+      pathname = EXCLUDED.pathname,
+      hostname = EXCLUDED.hostname,
+      screen_resolution = EXCLUDED.screen_resolution,
+      page_title = EXCLUDED.page_title,
+      is_bot = EXCLUDED.is_bot,
+      created_at = NOW()
+    RETURNING *;
+  `;
 
   const row = result.rows[0];
   return {
@@ -844,4 +883,11 @@ export async function listVisitorEvents(limit = 100): Promise<VisitorEvent[]> {
     isBot: row.is_bot,
     createdAt: row.created_at,
   }));
+}
+
+export async function deleteVisitorEvents(ids: number[]): Promise<number> {
+  await ensureSchema();
+  if (ids.length === 0) return 0;
+  const result = await sql`DELETE FROM visitor_events WHERE id = ANY(${ids});`;
+  return result.rowCount;
 }

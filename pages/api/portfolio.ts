@@ -8,6 +8,7 @@ let inMemoryPortfolioData = JSON.parse(JSON.stringify(seedPortfolioData));
 function normalizePortfolioData(value: unknown) {
   const normalized = JSON.parse(JSON.stringify(value)) as typeof seedPortfolioData;
   normalized.profile.heroImage ||= normalized.profile.image || "";
+  normalized.profile.heroMobileImage ||= normalized.profile.heroImage || normalized.profile.image || "";
   normalized.profile.aboutImage ||= normalized.profile.image || "";
   normalized.sectionVisibility.skills ??= true;
   const existingIds = new Set(normalized.testimonials.map((item) => item.id));

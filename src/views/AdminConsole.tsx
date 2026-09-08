@@ -18,6 +18,7 @@ import {
   Check,
   CheckSquare,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock3,
   Eye,
@@ -28,6 +29,7 @@ import {
   Layers,
   Layout,
   LayoutDashboard,
+  Link2,
   Maximize2,
   Minimize2,
   PanelLeftClose,
@@ -65,11 +67,14 @@ import { resizeAndUploadImage, uploadFileToCDN } from "@/lib/image-upload";
 import type {
   Education,
   Experience,
+  HeroImageSettings,
   PortfolioData,
   Profile,
   Project,
   Service,
   Stat,
+  SocialLink,
+  SocialLinkLocation,
   Testimonial,
 } from "@/lib/portfolio-types";
 import {
@@ -81,6 +86,7 @@ import {
 import { PortfolioLoading } from "./PublicSite";
 import { useTurnstile } from "@/components/Turnstile";
 import { PasswordInput } from "@/components/admin/PasswordInput";
+import { SocialIcon, socialIconOptions } from "@/components/public/SocialIcon";
 
 // ---------------------------------------------------------------------
 // Console / Admin area - content editing, protected by /api/auth.
@@ -109,9 +115,7 @@ function LoginPage() {
       .then((settings) => {
         const enabled = Boolean(settings.twoFactorEnabled);
         setTwoFactorEnabled(enabled);
-        if (enabled) {
-          setLoginMode("password");
-        }
+        if (enabled) setLoginMode("password");
       })
       .catch(() => undefined);
   }, []);
@@ -347,33 +351,45 @@ function LoginPage() {
             )}
             {loginMode === "password" && !forgotMode && !otpChallengeId && (
               <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 accent-primary" />
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="h-4 w-4 accent-primary"
+                />
                 Remember me for 30 days
               </label>
             )}
             {otpChallengeId && (
               <>
-              <label className="block">
-                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  6-digit OTP
-                </span>
-                <input
-                  required
-                  autoFocus
-                  inputMode="numeric"
-                  pattern="[0-9]{6}"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(event) =>
-                    setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
-                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-center text-lg tracking-[.45em] text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
-                />
-              </label>
-              {loginMode === "password" && <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                <input type="checkbox" checked={trustDevice} onChange={(event) => setTrustDevice(event.target.checked)} className="h-4 w-4 accent-primary" />
-                Trust this device for 30 days
-              </label>}
+                <label className="block">
+                  <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    6-digit OTP
+                  </span>
+                  <input
+                    required
+                    autoFocus
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(event) =>
+                      setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-center text-lg tracking-[.45em] text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/10"
+                  />
+                </label>
+                {loginMode === "password" && (
+                  <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={trustDevice}
+                      onChange={(event) => setTrustDevice(event.target.checked)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    Trust this device for 30 days
+                  </label>
+                )}
               </>
             )}
             {error && (
@@ -450,8 +466,87 @@ type Resource =
   | "experience"
   | "testimonials";
 
+const ADMIN_PAGE_SIZE = 10;
+
+function getTodayDateInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function AdminPagination({
+  page,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  if (total <= ADMIN_PAGE_SIZE) return null;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
+      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        Page {page} of {pageCount}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page === 1}
+          aria-label="Previous page"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-35"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+          (pageNumber) => (
+            <button
+              key={pageNumber}
+              type="button"
+              onClick={() => onPageChange(pageNumber)}
+              aria-label={`Go to page ${pageNumber}`}
+              aria-current={pageNumber === page ? "page" : undefined}
+              className={`flex h-8 min-w-8 items-center justify-center rounded-md border px-2 font-mono text-[10px] font-bold transition-colors ${pageNumber === page ? "border-primary bg-primary text-background" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
+            >
+              {pageNumber}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(pageCount, page + 1))}
+          disabled={page === pageCount}
+          aria-label="Next page"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-35"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type AdminVisitor = {
+  id: number;
+  createdAt: string;
+  ipAddress?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+};
+
 function VisitorsPanel() {
-  const [visitors, setVisitors] = useState<any[]>([]);
+  const [visitors, setVisitors] = useState<AdminVisitor[]>([]);
+  const [page, setPage] = useState(1);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingSelected, setDeletingSelected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -462,7 +557,11 @@ function VisitorsPanel() {
       const response = await fetch("/api/visitors", { credentials: "include" });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(typeof body?.error === "string" ? body.error : "Could not load visitors.");
+        throw new Error(
+          typeof body?.error === "string"
+            ? body.error
+            : "Could not load visitors.",
+        );
       }
       setVisitors(Array.isArray(body.visitors) ? body.visitors : []);
     } catch (loadError) {
@@ -474,8 +573,100 @@ function VisitorsPanel() {
   }, []);
 
   useEffect(() => {
+    // The request updates loading, error, and visitor state when it completes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload();
   }, [reload]);
+
+  const filteredVisitors = visitors.filter((visitor) => {
+    const date = new Date(visitor.createdAt).toISOString().slice(0, 10);
+    return (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo);
+  });
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredVisitors.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedVisitors = filteredVisitors.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
+  const allVisibleSelected =
+    filteredVisitors.length > 0 &&
+    filteredVisitors.every((visitor) => selected.has(visitor.id));
+
+  const toggleAllVisible = () => {
+    setSelected((current) => {
+      const next = new Set(current);
+      filteredVisitors.forEach((visitor) => {
+        if (allVisibleSelected) next.delete(visitor.id);
+        else next.add(visitor.id);
+      });
+      return next;
+    });
+  };
+
+  const deleteVisitor = async (id: number) => {
+    if (!window.confirm("Delete this visitor record? This cannot be undone."))
+      return;
+    setDeletingId(id);
+    try {
+      const response = await fetch(`/api/visitors?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Could not delete visitor.");
+      setVisitors((current) => current.filter((visitor) => visitor.id !== id));
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      toast({ title: "Visitor deleted" });
+    } catch (deleteError) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: (deleteError as Error).message,
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const deleteSelected = async () => {
+    const ids = Array.from(selected);
+    if (
+      ids.length === 0 ||
+      !window.confirm(
+        `Are you sure you want to permanently delete ${ids.length} selected visitor records? This cannot be undone.`,
+      )
+    )
+      return;
+    setDeletingSelected(true);
+    try {
+      const response = await fetch("/api/visitors", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!response.ok) throw new Error("Could not delete visitors.");
+      setVisitors((current) =>
+        current.filter((visitor) => !ids.includes(visitor.id)),
+      );
+      setSelected(new Set());
+      toast({ title: `${ids.length} visitors deleted` });
+    } catch (deleteError) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: (deleteError as Error).message,
+      });
+    } finally {
+      setDeletingSelected(false);
+    }
+  };
 
   return (
     <div className="bento-card overflow-hidden p-0">
@@ -486,53 +677,183 @@ function VisitorsPanel() {
             Latest visits captured from your public site.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void reload()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
-        >
-          <Eye size={13} /> Refresh
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={() => void deleteSelected()}
+              disabled={deletingSelected}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600/90 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-white hover:bg-red-600 disabled:opacity-50"
+            >
+              <Trash2 size={13} /> Delete selected ({selected.size})
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
+          >
+            <Eye size={13} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 border-b border-border bg-secondary/20 px-5 py-3 sm:px-6">
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          From
+          <input
+            type="date"
+            value={dateFrom}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateFrom(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          To
+          <input
+            type="date"
+            value={dateTo}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateTo(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        {(dateFrom || dateTo) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setPage(1);
+            }}
+            className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {loading ? (
-        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">Loading visitors...</div>
+        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">
+          Loading visitors...
+        </div>
       ) : error ? (
         <div className="px-5 py-10 text-sm text-red-500 sm:px-6">{error}</div>
-      ) : visitors.length === 0 ? (
-        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">No visitors recorded yet.</div>
+      ) : filteredVisitors.length === 0 ? (
+        <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">
+          No visitors recorded yet.
+        </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm text-foreground">
+          <table className="w-full min-w-[760px] text-left text-sm text-foreground">
             <thead className="border-b border-border bg-secondary/40">
               <tr className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisible}
+                    aria-label="Select all visitors"
+                    className="accent-primary"
+                  />
+                </th>
                 <th className="px-4 py-3">Time</th>
                 <th className="px-4 py-3">IP</th>
                 <th className="px-4 py-3">Location</th>
                 <th className="px-4 py-3">Browser</th>
                 <th className="px-4 py-3">OS</th>
                 <th className="px-4 py-3">Device</th>
-                <th className="px-4 py-3">Page</th>
-                <th className="px-4 py-3">Referrer</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {visitors.map((visitor) => (
-                <tr key={visitor.id} className="border-b border-border last:border-b-0">
-                  <td className="px-4 py-3 align-top text-muted-foreground">{formatMessageDate(visitor.createdAt)}</td>
-                  <td className="px-4 py-3 align-top font-mono text-[11px]">{visitor.ipAddress || "Unknown"}</td>
-                  <td className="px-4 py-3 align-top text-muted-foreground">
-                    {visitor.city || visitor.region || visitor.country ? [visitor.city, visitor.region, visitor.country].filter(Boolean).join(", ") : "Unknown"}
+              {paginatedVisitors.map((visitor) => (
+                <tr
+                  key={visitor.id}
+                  className="border-b border-border last:border-b-0"
+                >
+                  <td className="px-4 py-3 align-top">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(visitor.id)}
+                      onChange={() =>
+                        setSelected((current) => {
+                          const next = new Set(current);
+                          if (next.has(visitor.id)) next.delete(visitor.id);
+                          else next.add(visitor.id);
+                          return next;
+                        })
+                      }
+                      aria-label={`Select visitor ${visitor.id}`}
+                      className="accent-primary"
+                    />
                   </td>
-                  <td className="px-4 py-3 align-top">{visitor.browser || "Unknown"}</td>
-                  <td className="px-4 py-3 align-top">{visitor.os || "Unknown"}</td>
-                  <td className="px-4 py-3 align-top">{visitor.device || "Unknown"}</td>
-                  <td className="px-4 py-3 align-top max-w-[200px] break-words text-muted-foreground">{visitor.pathname || visitor.hostname || "-"}</td>
-                  <td className="px-4 py-3 align-top max-w-[220px] break-words text-muted-foreground">{visitor.referrer || "Direct"}</td>
+                  <td className="px-4 py-3 align-top text-muted-foreground">
+                    {formatMessageDate(visitor.createdAt)}
+                  </td>
+                  <td className="px-4 py-3 align-top font-mono text-[11px]">
+                    {visitor.ipAddress || "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 align-top text-muted-foreground">
+                    {visitor.city || visitor.region || visitor.country ? (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([visitor.city, visitor.region, visitor.country].filter(Boolean).join(", "))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-primary hover:underline"
+                      >
+                        {[visitor.city, visitor.region, visitor.country]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </a>
+                    ) : (
+                      "Unknown"
+                    )}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    {visitor.browser || "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    {visitor.os || "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 align-top">
+                    {visitor.device || "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 text-right align-top">
+                    <button
+                      type="button"
+                      onClick={() => void deleteVisitor(visitor.id)}
+                      disabled={deletingId === visitor.id}
+                      aria-label="Delete visitor"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/20 hover:text-red-500 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <AdminPagination
+            page={currentPage}
+            total={filteredVisitors.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>
@@ -698,10 +1019,11 @@ function AdminForm({
       toast({ title: "Image uploaded successfully", description: field });
     } catch (error) {
       console.error(error);
-      toast({ 
-        title: "Upload failed", 
-        description: error instanceof Error ? error.message : "Could not upload image",
-        variant: "destructive"
+      toast({
+        title: "Upload failed",
+        description:
+          error instanceof Error ? error.message : "Could not upload image",
+        variant: "destructive",
       });
     } finally {
       event.target.value = "";
@@ -747,72 +1069,25 @@ function AdminForm({
               {labels[field]}
             </span>
             {field === "image" ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg border border-border bg-secondary/50 p-4">
-                {form[field] ? (
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <NextImage
-                      src={form[field]}
-                      alt="Preview"
-                      width={64}
-                      height={64}
-                      className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({ ...prev, [field]: "" }))
-                      }
-                      className="font-mono text-[10px] font-bold text-red-500 uppercase tracking-wider hover:underline whitespace-nowrap"
-                    >
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                    No image uploaded.
-                  </span>
+              <div className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/50 p-4">
+                {form[field] && (
+                  <NextImage
+                    src={form[field]}
+                    alt="Preview"
+                    width={160}
+                    height={96}
+                    className="h-24 w-40 rounded-lg object-cover shadow-sm ring-1 ring-border"
+                  />
                 )}
-                <label className="sm:ml-auto inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+                <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleImageUpload(e, field)}
+                    onChange={(event) => handleImageUpload(event, field)}
                     className="hidden"
                   />
-                  {form[field] ? "Replace Image" : "Upload Image"}
+                  {form[field] ? "Replace image" : "Upload image"}
                 </label>
-              </div>
-            ) : field === "description" && resource === "projects" ? (
-              <div className="overflow-hidden rounded-lg border border-border bg-secondary/50">
-                <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Classic editor
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => document.execCommand("bold")}
-                    className="ml-auto cursor-pointer rounded px-2 py-1 font-bold text-foreground hover:bg-background"
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => document.execCommand("italic")}
-                    className="cursor-pointer rounded px-2 py-1 italic text-foreground hover:bg-background"
-                  >
-                    I
-                  </button>
-                </div>
-                <textarea
-                  required
-                  value={form[field] || ""}
-                  rows={6}
-                  onChange={(event) =>
-                    setForm({ ...form, [field]: event.target.value })
-                  }
-                  className="w-full resize-y bg-transparent px-4 py-3 text-sm text-foreground outline-none"
-                  placeholder="Explain the project, your contribution, and the result..."
-                />
               </div>
             ) : field === "accent" ? (
               <select
@@ -870,6 +1145,246 @@ function AdminForm({
   );
 }
 
+function SocialIconPicker({
+  value,
+  label,
+  iconImage,
+  onChange,
+  onUpload,
+}: {
+  value?: string;
+  label: string;
+  iconImage?: string;
+  onChange: (value: string) => void;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selectedLabel =
+    socialIconOptions.find((option) => option.value === value)?.label ||
+    (iconImage ? "Custom icon" : "Auto detected");
+  const matches = socialIconOptions
+    .filter((option) =>
+      option.label.toLowerCase().includes(query.toLowerCase().trim()),
+    )
+    .slice(0, 120);
+
+  return (
+    <div className="relative w-full sm:w-72">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-left text-xs text-foreground hover:border-primary"
+      >
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-border bg-background text-primary">
+          <SocialIcon
+            label={label}
+            icon={value}
+            iconImage={iconImage}
+            size={14}
+          />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+        <ChevronDown size={14} className={open ? "rotate-180" : ""} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-2 w-full overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
+          <div className="border-b border-border p-2">
+            <input
+              autoFocus
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search Font Awesome icons..."
+              className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <div className="max-h-64 overflow-y-auto p-1">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+                setQuery("");
+              }}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Link2 size={15} /> Auto detect icon
+            </button>
+            {matches.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs hover:bg-secondary ${value === option.value ? "bg-primary/10 text-primary" : "text-foreground"}`}
+              >
+                <span className="flex h-5 w-5 items-center justify-center text-primary">
+                  <SocialIcon
+                    label={option.label}
+                    icon={option.value}
+                    size={15}
+                  />
+                </span>
+                {option.label}
+              </button>
+            ))}
+            {matches.length === 0 && (
+              <p className="px-3 py-4 text-xs text-muted-foreground">
+                No icons found.
+              </p>
+            )}
+          </div>
+          <div className="border-t border-border p-2">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">
+              <Pencil size={13} /> Upload custom icon
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={onUpload}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const defaultHeroImageSettings: HeroImageSettings = {
+  preset: "none",
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  hue: 0,
+  blur: 0,
+  opacity: 100,
+  overlayColor: "#ffffff",
+  overlayOpacity: 0,
+};
+
+function HeroImageControls({
+  label,
+  settings,
+  onChange,
+  onUpload,
+}: {
+  label: string;
+  settings?: HeroImageSettings;
+  onChange: (settings: HeroImageSettings) => void;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const current = { ...defaultHeroImageSettings, ...(settings || {}) };
+  const update = (key: keyof HeroImageSettings, value: string | number) =>
+    onChange({ ...current, [key]: value });
+  const sliders: Array<
+    [keyof HeroImageSettings, string, number, number, string]
+  > = [
+    ["brightness", "Brightness", 0, 200, "%"],
+    ["contrast", "Contrast", 0, 200, "%"],
+    ["saturation", "Saturation", 0, 200, "%"],
+    ["hue", "Hue", -180, 180, "°"],
+    ["blur", "Blur", 0, 20, "px"],
+    ["opacity", "Opacity", 0, 100, "%"],
+    ["overlayOpacity", "Overlay", 0, 100, "%"],
+  ];
+
+  return (
+    <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+          {label} adjustments
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange({ ...defaultHeroImageSettings })}
+          className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+        >
+          Reset
+        </button>
+      </div>
+      <label className="mb-4 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2.5 text-xs text-foreground hover:border-primary">
+        <span>Choose {label.toLowerCase()} image</span>
+        <span className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+          <Pencil size={13} /> Change image
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onUpload}
+        />
+      </label>
+      <label className="mb-4 grid grid-cols-[1fr_auto] items-center gap-3">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+          Overlay color
+        </span>
+        <input
+          type="color"
+          value={current.overlayColor}
+          onChange={(event) => update("overlayColor", event.target.value)}
+          className="h-9 w-14 cursor-pointer rounded border border-border bg-secondary"
+          aria-label={`${label} overlay color`}
+        />
+      </label>
+      <label className="mb-4 grid gap-1.5">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+          Filter preset
+        </span>
+        <select
+          value={current.preset}
+          onChange={(event) => update("preset", event.target.value)}
+          className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+        >
+          {[
+            ["none", "None"],
+            ["grayscale", "Grayscale"],
+            ["sepia", "Sepia"],
+            ["vintage", "Vintage"],
+            ["warm", "Warm"],
+            ["cool", "Cool"],
+            ["blur", "Blur"],
+            ["invert", "Invert"],
+            ["bright", "Bright"],
+            ["pop", "Pop"],
+          ].map(([value, optionLabel]) => (
+            <option key={value} value={value}>
+              {optionLabel}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid gap-3">
+        {sliders.map(([key, sliderLabel, min, max, suffix]) => (
+          <label
+            key={key}
+            className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground"
+          >
+            <span>{sliderLabel}</span>
+            <input
+              type="range"
+              min={min}
+              max={max}
+              value={Number(current[key])}
+              onChange={(event) => update(key, Number(event.target.value))}
+              className="accent-primary"
+            />
+            <span className="text-right font-mono text-[10px] text-foreground">
+              {current[key]}
+              {suffix}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ProfileEditor({
   profile,
   onSave,
@@ -888,6 +1403,9 @@ function ProfileEditor({
     (profile.languages || []).join(", "),
   );
   const [rolesRaw, setRolesRaw] = useState((profile.roles || []).join(", "));
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(
+    profile.socialLinks || [],
+  );
   const [imageError, setImageError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
   useEffect(() => {
@@ -901,6 +1419,7 @@ function ProfileEditor({
     setSkillsRaw((profile.skills || []).join(", "));
     setLanguagesRaw((profile.languages || []).join(", "));
     setRolesRaw((profile.roles || []).join(", "));
+    setSocialLinks(profile.socialLinks || []);
   }, [profile]);
 
   const fields: { key: keyof Profile; label: string; long?: boolean }[] = [
@@ -918,7 +1437,7 @@ function ProfileEditor({
 
   const handleImage = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    field: "heroImage" | "aboutImage",
+    field: "image" | "heroImage" | "heroMobileImage" | "aboutImage",
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -927,8 +1446,34 @@ function ProfileEditor({
       const cdnUrl = await resizeAndUploadImage(file, 1200, 1200);
       setForm((current) => ({ ...current, [field]: cdnUrl }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not upload image";
+      const message =
+        error instanceof Error ? error.message : "Could not upload image";
       setImageError(message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleSocialIconUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    linkId: string,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const iconImage = await resizeAndUploadImage(file, 128, 128);
+      setSocialLinks((current) =>
+        current.map((link) =>
+          link.id === linkId ? { ...link, iconImage, icon: "" } : link,
+        ),
+      );
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Icon upload failed",
+        description:
+          error instanceof Error ? error.message : "Could not upload icon.",
+      });
     } finally {
       event.target.value = "";
     }
@@ -951,7 +1496,8 @@ function ProfileEditor({
         resumeName: file.name,
       }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not upload file";
+      const message =
+        error instanceof Error ? error.message : "Could not upload file";
       setResumeError(message);
     } finally {
       event.target.value = "";
@@ -980,84 +1526,200 @@ function ProfileEditor({
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean),
+          socialLinks: socialLinks
+            .map((link) => ({
+              ...link,
+              label: link.label.trim(),
+              url: link.url.trim(),
+              locations: link.locations?.length
+                ? link.locations
+                : (["nav", "contact", "footer"] as SocialLinkLocation[]),
+            }))
+            .filter((link) => link.label && link.url),
+          heroDesktopSettings: {
+            ...defaultHeroImageSettings,
+            ...(form.heroDesktopSettings || {}),
+          },
+          heroMobileSettings: {
+            ...defaultHeroImageSettings,
+            ...(form.heroMobileSettings || {}),
+          },
         });
       }}
       className="bento-card p-5 md:p-6"
     >
       <div className="mb-8 grid gap-6 md:grid-cols-2">
-        <div className="flex items-center gap-5">
-          <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary transition-colors hover:border-primary">
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
-              {form.heroImage || form.image ? (
+        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center gap-5 rounded-lg border border-border/70 bg-background/30 p-3">
+              <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
+                <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+                  {form.image ? (
+                    <NextImage
+                      src={form.image}
+                      alt="Profile icon"
+                      width={80}
+                      height={80}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User size={22} className="text-muted-foreground" />
+                  )}
+                </div>
+                <label
+                  className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background"
+                  title="Change profile icon"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "image")}
+                    className="hidden"
+                  />
+                  <Pencil size={12} />
+                </label>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                  Profile icon
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Used in the public navigation.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 rounded-lg border border-border/70 bg-background/30 p-3">
+              <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+                {form.aboutImage ? (
+                  <NextImage
+                    src={form.aboutImage}
+                    alt="About"
+                    width={96}
+                    height={64}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                    No image
+                  </span>
+                )}
+                <label
+                  className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                  title="Change about image"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "aboutImage")}
+                    className="hidden"
+                  />
+                  <Pencil size={11} />
+                </label>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                  About image
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Used in the About section.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-4">
+            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+              {form.heroImage ? (
                 <NextImage
-                  src={form.heroImage || form.image}
-                  alt="Profile"
-                  width={80}
-                  height={80}
+                  src={form.heroImage}
+                  alt="Desktop hero"
+                  width={96}
+                  height={64}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <User size={22} className="text-muted-foreground" />
+                <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                  No image
+                </span>
               )}
+              <label
+                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                title="Change desktop hero image"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleImage(event, "heroImage")}
+                  className="hidden"
+                />
+                <Pencil size={11} />
+              </label>
             </div>
-            <label
-              className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background shadow-md transition-transform hover:scale-110"
-              title="Change hero image"
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => handleImage(event, "heroImage")}
-                className="hidden"
-              />
-              <Pencil size={12} />
-            </label>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                Hero desktop
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Wide image for larger screens.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-              Hero image
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Click the pencil to change it.
-            </p>
-          </div>
+          <HeroImageControls
+            label="Desktop hero"
+            settings={form.heroDesktopSettings}
+            onChange={(heroDesktopSettings) =>
+              setForm((current) => ({ ...current, heroDesktopSettings }))
+            }
+            onUpload={(event) => void handleImage(event, "heroImage")}
+          />
         </div>
-        <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-3">
-          <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
-            {form.aboutImage ? (
-              <NextImage
-                src={form.aboutImage}
-                alt="About"
-                width={96}
-                height={64}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                No image
-              </span>
-            )}
-            <label
-              className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background shadow-md transition-transform hover:scale-110"
-              title="Change about image"
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => handleImage(event, "aboutImage")}
-                className="hidden"
-              />
-              <Pencil size={11} />
-            </label>
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-4">
+            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+              {form.heroMobileImage ? (
+                <NextImage
+                  src={form.heroMobileImage}
+                  alt="Mobile hero"
+                  width={96}
+                  height={64}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                  Desktop fallback
+                </span>
+              )}
+              <label
+                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                title="Change mobile hero image"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleImage(event, "heroMobileImage")}
+                  className="hidden"
+                />
+                <Pencil size={11} />
+              </label>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                Hero mobile
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Portrait crop for phones.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-              About image
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use a different image for the About section.
-            </p>
-          </div>
+          <HeroImageControls
+            label="Mobile hero"
+            settings={form.heroMobileSettings}
+            onChange={(heroMobileSettings) =>
+              setForm((current) => ({ ...current, heroMobileSettings }))
+            }
+            onUpload={(event) => void handleImage(event, "heroMobileImage")}
+          />
         </div>
         {imageError && (
           <p className="font-mono text-[11px] text-red-400 md:col-span-2">
@@ -1163,6 +1825,187 @@ function ProfileEditor({
             className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
           />
         </label>
+        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/20 p-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Additional social links
+              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Add any platform without changing the code.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setSocialLinks((current) => [
+                  ...current,
+                  {
+                    id: `social-${Date.now()}`,
+                    label: "",
+                    url: "",
+                    locations: ["nav", "contact", "footer"],
+                  },
+                ])
+              }
+              className="inline-flex shrink-0 items-center gap-2 rounded-md border border-primary/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
+            >
+              <Plus size={13} /> Add link
+            </button>
+          </div>
+          <div className="grid gap-3">
+            {socialLinks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No additional links yet.
+              </p>
+            ) : (
+              socialLinks.map((link, index) => (
+                <div
+                  key={link.id}
+                  className="rounded-lg border border-border/70 bg-background/30 p-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,280px)_auto] sm:items-end">
+                    <label className="grid gap-1.5">
+                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Platform name
+                      </span>
+                      <input
+                        value={link.label}
+                        onChange={(event) =>
+                          setSocialLinks((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, label: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        placeholder="e.g. Facebook"
+                        aria-label={`Social platform ${index + 1}`}
+                        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="grid gap-1.5">
+                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Icon
+                      </span>
+                      <SocialIconPicker
+                        value={link.icon}
+                        label={link.label}
+                        iconImage={link.iconImage}
+                        onChange={(icon) =>
+                          setSocialLinks((current) =>
+                            current.map((item) =>
+                              item.id === link.id
+                                ? { ...item, icon, iconImage: "" }
+                                : item,
+                            ),
+                          )
+                        }
+                        onUpload={(event) =>
+                          void handleSocialIconUpload(event, link.id)
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSocialLinks((current) =>
+                          current.filter((item) => item.id !== link.id),
+                        )
+                      }
+                      aria-label={`Remove ${link.label || "social link"}`}
+                      className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/15 hover:text-red-400 sm:mb-0.5"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                  <label className="mt-3 grid max-w-3xl gap-1.5">
+                    <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Profile URL
+                    </span>
+                    <input
+                      value={link.url}
+                      onChange={(event) =>
+                        setSocialLinks((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, url: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder="https://example.com/your-profile"
+                      aria-label={`Social URL ${index + 1}`}
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                    />
+                  </label>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border/50 pt-3">
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/30 p-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="px-2 text-[9px]">Show in</span>
+                      {(
+                        ["nav", "contact", "footer"] as SocialLinkLocation[]
+                      ).map((location) => (
+                        <button
+                          key={location}
+                          type="button"
+                          aria-pressed={(
+                            link.locations || ["nav", "contact", "footer"]
+                          ).includes(location)}
+                          onClick={() =>
+                            setSocialLinks((current) =>
+                              current.map((item) => {
+                                if (item.id !== link.id) return item;
+                                const currentLocations = item.locations || [
+                                  "nav",
+                                  "contact",
+                                  "footer",
+                                ];
+                                return {
+                                  ...item,
+                                  locations: currentLocations.includes(location)
+                                    ? currentLocations.filter(
+                                        (itemLocation) =>
+                                          itemLocation !== location,
+                                      )
+                                    : [...currentLocations, location],
+                                };
+                              }),
+                            )
+                          }
+                          className={`rounded-md px-2.5 py-1.5 normal-case tracking-normal transition-colors ${(link.locations || ["nav", "contact", "footer"]).includes(location) ? "bg-primary text-background" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                        >
+                          {location === "nav"
+                            ? "Navigation"
+                            : location === "contact"
+                              ? "Contact"
+                              : "Footer"}
+                        </button>
+                      ))}
+                    </div>
+                    {link.iconImage && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSocialLinks((current) =>
+                            current.map((item) =>
+                              item.id === link.id
+                                ? { ...item, iconImage: "" }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:underline"
+                      >
+                        Remove custom icon
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
         <label className="md:col-span-2">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Skills (comma separated)
@@ -1650,9 +2493,13 @@ function ActiveSessions() {
   const [revoking, setRevoking] = useState<string | null>(null);
 
   const loadSessions = async () => {
-    const response = await fetch("/api/auth/sessions", { credentials: "include", cache: "no-store" });
+    const response = await fetch("/api/auth/sessions", {
+      credentials: "include",
+      cache: "no-store",
+    });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || "Could not load active sessions.");
+    if (!response.ok)
+      throw new Error(body.error || "Could not load active sessions.");
     setSessions(body.sessions || []);
   };
 
@@ -1661,11 +2508,17 @@ function ActiveSessions() {
     fetch("/api/auth/sessions", { credentials: "include", cache: "no-store" })
       .then(async (response) => {
         const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error || "Could not load active sessions.");
+        if (!response.ok)
+          throw new Error(body.error || "Could not load active sessions.");
         if (!cancelled) setSessions(body.sessions || []);
       })
       .catch((error) => {
-        if (!cancelled) toast({ variant: "destructive", title: "Could not load sessions", description: error.message });
+        if (!cancelled)
+          toast({
+            variant: "destructive",
+            title: "Could not load sessions",
+            description: error.message,
+          });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -1685,12 +2538,21 @@ function ActiveSessions() {
         body: JSON.stringify({ sessionId: id }),
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Could not revoke session.");
-      if (body.current) await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      if (!response.ok)
+        throw new Error(body.error || "Could not revoke session.");
+      if (body.current)
+        await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       await loadSessions();
-      toast({ title: "Session revoked", description: "That device can no longer access this account." });
+      toast({
+        title: "Session revoked",
+        description: "That device can no longer access this account.",
+      });
     } catch (error) {
-      toast({ variant: "destructive", title: "Could not revoke session", description: (error as Error).message });
+      toast({
+        variant: "destructive",
+        title: "Could not revoke session",
+        description: (error as Error).message,
+      });
     } finally {
       setRevoking(null);
     }
@@ -1699,41 +2561,119 @@ function ActiveSessions() {
   const revokeAll = async () => {
     setRevoking("all");
     try {
-      const response = await fetch("/api/auth/logout-all-devices", { method: "POST", credentials: "include" });
+      const response = await fetch("/api/auth/logout-all-devices", {
+        method: "POST",
+        credentials: "include",
+      });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Could not log out all devices.");
+      if (!response.ok)
+        throw new Error(body.error || "Could not log out all devices.");
       setSessions([]);
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      toast({ title: "Logged out of all devices", description: "All active sessions have been invalidated." });
+      toast({
+        title: "Logged out of all devices",
+        description: "All active sessions have been invalidated.",
+      });
     } catch (error) {
-      toast({ variant: "destructive", title: "Could not log out all devices", description: (error as Error).message });
+      toast({
+        variant: "destructive",
+        title: "Could not log out all devices",
+        description: (error as Error).message,
+      });
     } finally {
       setRevoking(null);
     }
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading active sessions...</p>;
-  if (!sessions.length) return <p className="rounded-lg border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">No active sessions found. Sign in again to register this device.</p>;
+  if (loading)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Loading active sessions...
+      </p>
+    );
+  if (!sessions.length)
+    return (
+      <p className="rounded-lg border border-border bg-secondary/30 p-4 text-sm text-muted-foreground">
+        No active sessions found. Sign in again to register this device.
+      </p>
+    );
 
-  return <div className="grid gap-3">
-    <div className="flex items-center justify-between gap-3">
-      <p className="text-xs text-muted-foreground">Review every browser currently signed in to your account.</p>
-      <div className="flex shrink-0 flex-wrap justify-end gap-2">
-        <button type="button" onClick={() => revoke(sessions.find((session) => session.current)?.id || "")} disabled={!sessions.some((session) => session.current) || !!revoking} className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"><LogOut size={13} /> Log out this device</button>
-        <button type="button" onClick={revokeAll} disabled={!!revoking} className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"><LogOut size={13} /> Log out all</button>
-      </div>
-    </div>
-    {sessions.map((session) => <div key={session.id} className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/20 p-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Smartphone size={17} /></span>
-        <div className="min-w-0">
-          <p className="font-semibold text-foreground">{session.model} · {session.browser} {session.current && <span className="ml-2 rounded bg-primary/15 px-2 py-1 font-mono text-[9px] uppercase text-primary">Current</span>}</p>
-          <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-x-5"><span><Globe2 className="mr-1 inline" size={12} />{session.location}</span><span><Clock3 className="mr-1 inline" size={12} />Active {new Date(session.lastActiveAt).toLocaleString()}</span><span>IP {session.ipAddress}</span><span>Signed in {new Date(session.createdAt).toLocaleString()}</span></div>
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          Review every browser currently signed in to your account.
+        </p>
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={() =>
+              revoke(sessions.find((session) => session.current)?.id || "")
+            }
+            disabled={
+              !sessions.some((session) => session.current) || !!revoking
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            <LogOut size={13} /> Log out this device
+          </button>
+          <button
+            type="button"
+            onClick={revokeAll}
+            disabled={!!revoking}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+          >
+            <LogOut size={13} /> Log out all
+          </button>
         </div>
       </div>
-      <button type="button" onClick={() => revoke(session.id)} disabled={revoking === session.id} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"><LogOut size={13} /> {revoking === session.id ? "Revoking..." : "Revoke"}</button>
-    </div>)}
-  </div>;
+      {sessions.map((session) => (
+        <div
+          key={session.id}
+          className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/20 p-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Smartphone size={17} />
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-foreground">
+                {session.model} · {session.browser}{" "}
+                {session.current && (
+                  <span className="ml-2 rounded bg-primary/15 px-2 py-1 font-mono text-[9px] uppercase text-primary">
+                    Current
+                  </span>
+                )}
+              </p>
+              <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2 sm:gap-x-5">
+                <span>
+                  <Globe2 className="mr-1 inline" size={12} />
+                  {session.location}
+                </span>
+                <span>
+                  <Clock3 className="mr-1 inline" size={12} />
+                  Active {new Date(session.lastActiveAt).toLocaleString()}
+                </span>
+                <span>IP {session.ipAddress}</span>
+                <span>
+                  Signed in {new Date(session.createdAt).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => revoke(session.id)}
+            disabled={revoking === session.id}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-red-500/50 hover:text-red-400 disabled:opacity-50"
+          >
+            <LogOut size={13} />{" "}
+            {revoking === session.id ? "Revoking..." : "Revoke"}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 type SettingsSubtab = "site" | "security" | "sessions" | "email";
@@ -1768,7 +2708,10 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
       const cdnUrl = await resizeAndUploadImage(file, 256, 256);
       setForm((current) => ({ ...current, faviconUrl: cdnUrl }));
     } catch (uploadError) {
-      const message = uploadError instanceof Error ? uploadError.message : "Could not upload favicon";
+      const message =
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Could not upload favicon";
       setFaviconError(message);
     } finally {
       event.target.value = "";
@@ -1863,235 +2806,256 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   return (
     <form onSubmit={handleSubmit} className="bento-card shadow-sm p-5 md:p-6">
       <div className="grid gap-8">
-        {activeTab === "site" && <div>
-          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
-            Site settings
-          </p>
-          <div className="grid gap-5">
-            <label className="block">
-              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Site name
-              </span>
-              <input
-                value={form.siteName}
-                onChange={(event) =>
-                  setForm({ ...form, siteName: event.target.value })
-                }
-                placeholder="Akhilesh Vishwakarma"
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Favicon URL
-              </span>
-              <input
-                type="url"
-                value={form.faviconUrl}
-                onChange={(event) =>
-                  setForm({ ...form, faviconUrl: event.target.value })
-                }
-                placeholder="https://example.com/favicon.png"
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-              />
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml,.ico"
-                    onChange={handleFaviconUpload}
-                    className="hidden"
-                  />
-                  {form.faviconUrl ? "Replace favicon" : "Upload favicon"}
-                </label>
-                {form.faviconUrl && (
-                  <NextImage
-                    src={form.faviconUrl}
-                    loader={({ src }) => src}
-                    unoptimized
-                    alt="Favicon preview"
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 rounded border border-border bg-background object-contain"
-                  />
-                )}
-                {form.faviconUrl?.startsWith("data:") && (
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, faviconUrl: "" })}
-                    className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-              {faviconError && (
-                <p className="mt-2 font-mono text-[10px] text-red-400">
-                  {faviconError}
-                </p>
-              )}
-            </label>
-          </div>
-        </div>}
-
-        {(activeTab === "security" || activeTab === "sessions") && <div className="border-t border-border pt-6">
-          {activeTab === "security" ? <>
-          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Security</p>
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
-            <span>
-              <span className="block text-sm font-semibold text-foreground">
-                Require 2-step verification
-              </span>
-              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                Password ke baad admin email par one-time code aayega.
-              </span>
-            </span>
-            <span className="relative shrink-0">
-              <input
-                type="checkbox"
-                checked={form.twoFactorEnabled}
-                onChange={(event) =>
-                  setForm({ ...form, twoFactorEnabled: event.target.checked })
-                }
-                className="peer sr-only"
-              />
-              <span className="block h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary" />
-              <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
-            </span>
-          </label>
-          </> : activeTab === "sessions" ? <>
-            <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Active sessions</p>
-            <ActiveSessions />
-          </> : null}
-        </div>}
-
-        {activeTab === "security" && <div className="border-t border-border pt-6">
-          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
-            Cloudflare Turnstile
-          </p>
-          <p className="mb-4 text-xs leading-5 text-muted-foreground">
-            Invisible CAPTCHA will be enabled for login, password reset, and
-            contact forms when all three fields are completed. CAPTCHA will
-            remain disabled if any field is left blank.
-          </p>
-          <div className="grid gap-5">
-            <label className="block">
-              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Site key
-              </span>
-              <input
-                value={form.turnstileSiteKey}
-                onChange={(event) =>
-                  setForm({ ...form, turnstileSiteKey: event.target.value })
-                }
-                placeholder="0x4AAAA..."
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Secret key
-              </span>
-              <input
-                type="password"
-                value={
-                  form.turnstileSecretKey ||
-                  (turnstileSecretConfigured ? "********" : "")
-                }
-                onFocus={() => {
-                  if (turnstileSecretConfigured && !form.turnstileSecretKey)
-                    setForm({ ...form, turnstileSecretKey: "" });
-                }}
-                onChange={(event) =>
-                  setForm({ ...form, turnstileSecretKey: event.target.value })
-                }
-                placeholder="Enter Turnstile secret key"
-                autoComplete="new-password"
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-              />
-              {turnstileSecretConfigured && (
-                <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
-                  <Check size={12} /> Secret key saved successfully
+        {activeTab === "site" && (
+          <div>
+            <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+              Site settings
+            </p>
+            <div className="grid gap-5">
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Site name
                 </span>
-              )}
-            </label>
+                <input
+                  value={form.siteName}
+                  onChange={(event) =>
+                    setForm({ ...form, siteName: event.target.value })
+                  }
+                  placeholder="Akhilesh Vishwakarma"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Favicon URL
+                </span>
+                <input
+                  type="url"
+                  value={form.faviconUrl}
+                  onChange={(event) =>
+                    setForm({ ...form, faviconUrl: event.target.value })
+                  }
+                  placeholder="https://example.com/favicon.png"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml,.ico"
+                      onChange={handleFaviconUpload}
+                      className="hidden"
+                    />
+                    {form.faviconUrl ? "Replace favicon" : "Upload favicon"}
+                  </label>
+                  {form.faviconUrl && (
+                    <NextImage
+                      src={form.faviconUrl}
+                      loader={({ src }) => src}
+                      unoptimized
+                      alt="Favicon preview"
+                      width={32}
+                      height={32}
+                      className="h-8 w-8 rounded border border-border bg-background object-contain"
+                    />
+                  )}
+                  {form.faviconUrl?.startsWith("data:") && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, faviconUrl: "" })}
+                      className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {faviconError && (
+                  <p className="mt-2 font-mono text-[10px] text-red-400">
+                    {faviconError}
+                  </p>
+                )}
+              </label>
+            </div>
+          </div>
+        )}
+
+        {(activeTab === "security" || activeTab === "sessions") && (
+          <div className="border-t border-border pt-6">
+            {activeTab === "security" ? (
+              <>
+                <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+                  Security
+                </p>
+                <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-secondary/30 p-4">
+                  <span>
+                    <span className="block text-sm font-semibold text-foreground">
+                      Require 2-step verification
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                      Password ke baad admin email par one-time code aayega.
+                    </span>
+                  </span>
+                  <span className="relative shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={form.twoFactorEnabled}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          twoFactorEnabled: event.target.checked,
+                        })
+                      }
+                      className="peer sr-only"
+                    />
+                    <span className="block h-6 w-11 rounded-full bg-muted transition-colors peer-checked:bg-primary" />
+                    <span className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5" />
+                  </span>
+                </label>
+              </>
+            ) : activeTab === "sessions" ? (
+              <>
+                <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+                  Active sessions
+                </p>
+                <ActiveSessions />
+              </>
+            ) : null}
+          </div>
+        )}
+
+        {activeTab === "security" && (
+          <div className="border-t border-border pt-6">
+            <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+              Cloudflare Turnstile
+            </p>
+            <p className="mb-4 text-xs leading-5 text-muted-foreground">
+              Invisible CAPTCHA will be enabled for login, password reset, and
+              contact forms when all three fields are completed. CAPTCHA will
+              remain disabled if any field is left blank.
+            </p>
+            <div className="grid gap-5">
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Site key
+                </span>
+                <input
+                  value={form.turnstileSiteKey}
+                  onChange={(event) =>
+                    setForm({ ...form, turnstileSiteKey: event.target.value })
+                  }
+                  placeholder="0x4AAAA..."
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Secret key
+                </span>
+                <input
+                  type="password"
+                  value={
+                    form.turnstileSecretKey ||
+                    (turnstileSecretConfigured ? "********" : "")
+                  }
+                  onFocus={() => {
+                    if (turnstileSecretConfigured && !form.turnstileSecretKey)
+                      setForm({ ...form, turnstileSecretKey: "" });
+                  }}
+                  onChange={(event) =>
+                    setForm({ ...form, turnstileSecretKey: event.target.value })
+                  }
+                  placeholder="Enter Turnstile secret key"
+                  autoComplete="new-password"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                {turnstileSecretConfigured && (
+                  <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                    <Check size={12} /> Secret key saved successfully
+                  </span>
+                )}
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Allowed hostnames
+                </span>
+                <input
+                  value={form.turnstileHostnames}
+                  onChange={(event) =>
+                    setForm({ ...form, turnstileHostnames: event.target.value })
+                  }
+                  placeholder="developerakhil.vercel.app,localhost"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                <span className="mt-2 block text-xs text-muted-foreground">
+                  Enter hostnames only, without https://, ports, or page paths.
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "email" && (
+          <>
+            <div className="border-t border-border pt-6">
+              <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+                Email notifications
+              </p>
+            </div>
             <label className="block">
               <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Allowed hostnames
+                Gmail app password
+              </span>
+              <div className="relative">
+                <input
+                  type={showKey ? "text" : "password"}
+                  value={form.gmailAppPassword}
+                  onChange={(event) =>
+                    setForm({ ...form, gmailAppPassword: event.target.value })
+                  }
+                  placeholder="xxxxxxxxxxxxxxxxxxxx"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-11 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey((value) => !value)}
+                  aria-label={showKey ? "Hide key" : "Show key"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Send notifications to
               </span>
               <input
-                value={form.turnstileHostnames}
+                type="email"
+                value={form.contactToEmail}
                 onChange={(event) =>
-                  setForm({ ...form, turnstileHostnames: event.target.value })
+                  setForm({ ...form, contactToEmail: event.target.value })
                 }
-                placeholder="developerakhil.vercel.app,localhost"
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                placeholder="you@example.com"
+                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
               />
-              <span className="mt-2 block text-xs text-muted-foreground">
-                Enter hostnames only, without https://, ports, or page paths.
-              </span>
             </label>
-          </div>
-        </div>}
 
-        {activeTab === "email" && <>
-        <div className="border-t border-border pt-6">
-          <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">Email notifications</p>
-        </div>
-        <label className="block">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Gmail app password
-          </span>
-          <div className="relative">
-            <input
-              type={showKey ? "text" : "password"}
-              value={form.gmailAppPassword}
-              onChange={(event) =>
-                setForm({ ...form, gmailAppPassword: event.target.value })
-              }
-              placeholder="xxxxxxxxxxxxxxxxxxxx"
-              className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-11 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-            />
-            <button
-              type="button"
-              onClick={() => setShowKey((value) => !value)}
-              aria-label={showKey ? "Hide key" : "Show key"}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-            >
-              {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          </div>
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Send notifications to
-          </span>
-          <input
-            type="email"
-            value={form.contactToEmail}
-            onChange={(event) =>
-              setForm({ ...form, contactToEmail: event.target.value })
-            }
-            placeholder="you@example.com"
-            className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-        </label>
-
-        <label className="block">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            From address
-          </span>
-          <input
-            value={form.contactFromEmail}
-            onChange={(event) =>
-              setForm({ ...form, contactFromEmail: event.target.value })
-            }
-            placeholder="contact@yourdomain.com"
-            className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-        </label>
-        </>}
+            <label className="block">
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                From address
+              </span>
+              <input
+                value={form.contactFromEmail}
+                onChange={(event) =>
+                  setForm({ ...form, contactFromEmail: event.target.value })
+                }
+                placeholder="contact@yourdomain.com"
+                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+              />
+            </label>
+          </>
+        )}
       </div>
 
       {error && (
@@ -2100,15 +3064,17 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
         </p>
       )}
 
-      {activeTab !== "sessions" && <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)] transition-all disabled:opacity-50 whitespace-nowrap"
-        >
-          <Save size={16} /> {saving ? "Saving..." : "Save settings"}
-        </button>
-      </div>}
+      {activeTab !== "sessions" && (
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)] transition-all disabled:opacity-50 whitespace-nowrap"
+          >
+            <Save size={16} /> {saving ? "Saving..." : "Save settings"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }
@@ -2128,6 +3094,9 @@ function formatMessageDate(iso: string) {
 
 function MessagesPanel() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [page, setPage] = useState(1);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -2167,7 +3136,22 @@ function MessagesPanel() {
     reload();
   }, [reload]);
 
-  const allSelected = messages.length > 0 && selected.size === messages.length;
+  const filteredMessages = messages.filter((message) => {
+    const date = new Date(message.createdAt).toISOString().slice(0, 10);
+    return (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo);
+  });
+  const allSelected =
+    filteredMessages.length > 0 &&
+    filteredMessages.every((message) => selected.has(message.id));
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredMessages.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedMessages = filteredMessages.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
 
   const toggleOne = (id: number) => {
     setSelected((current) => {
@@ -2179,7 +3163,9 @@ function MessagesPanel() {
   };
 
   const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(messages.map((m) => m.id)));
+    setSelected(
+      allSelected ? new Set() : new Set(filteredMessages.map((m) => m.id)),
+    );
   };
 
   const deleteIds = async (ids: number[]) => {
@@ -2260,8 +3246,9 @@ function MessagesPanel() {
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-foreground">Messages</h2>
           <p className="text-sm text-muted-foreground">
-            {messages.length} {messages.length === 1 ? "message" : "messages"}{" "}
-            from your contact form
+            {filteredMessages.length} of {messages.length}{" "}
+            {messages.length === 1 ? "message" : "messages"} from your contact
+            form
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -2281,6 +3268,55 @@ function MessagesPanel() {
             Refresh
           </button>
         </div>
+      </div>
+      <div className="flex flex-wrap items-end gap-3 border-b border-border bg-secondary/20 px-5 py-3 sm:px-6">
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          From
+          <input
+            type="date"
+            value={dateFrom}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateFrom(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          To
+          <input
+            type="date"
+            value={dateTo}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateTo(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        {(dateFrom || dateTo) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setPage(1);
+            }}
+            className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -2306,7 +3342,7 @@ function MessagesPanel() {
             Retry
           </button>
         </div>
-      ) : messages.length === 0 ? (
+      ) : filteredMessages.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-primary">
             <MailOpen size={18} />
@@ -2332,7 +3368,7 @@ function MessagesPanel() {
             </button>
           </div>
           <div className="divide-y divide-border">
-            {messages.map((msg) => {
+            {paginatedMessages.map((msg) => {
               const isOpen = expanded === msg.id;
               // using green dot indicator by rendering a small dot if it was unread (we mock unread logic since we don't have it in the type, but let's just render the content beautifully)
               return (
@@ -2453,6 +3489,11 @@ function MessagesPanel() {
               );
             })}
           </div>
+          <AdminPagination
+            page={currentPage}
+            total={messages.length}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -2469,6 +3510,7 @@ type AdminNotification = {
 
 function NotificationsPanel() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const reload = useCallback(async () => {
     setLoading(true);
@@ -2487,6 +3529,16 @@ function NotificationsPanel() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     reload();
   }, [reload]);
+
+  const pageCount = Math.max(
+    1,
+    Math.ceil(notifications.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedNotifications = notifications.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
 
   const runAction = async (method: "PATCH" | "DELETE", ids: number[]) => {
     try {
@@ -2561,7 +3613,7 @@ function NotificationsPanel() {
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {notifications.map((notification) => (
+          {paginatedNotifications.map((notification) => (
             <div
               key={notification.id}
               className={`flex items-start gap-4 px-5 py-4 sm:px-6 ${notification.read ? "opacity-65" : "bg-primary/5"}`}
@@ -2602,6 +3654,11 @@ function NotificationsPanel() {
               </div>
             </div>
           ))}
+          <AdminPagination
+            page={currentPage}
+            total={notifications.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>
@@ -2669,6 +3726,7 @@ function AdminArea({
     PortfolioData[Resource][number] | null
   >(null);
   const [search, setSearch] = useState("");
+  const [resourcePage, setResourcePage] = useState(1);
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -2708,7 +3766,9 @@ function AdminArea({
   );
 
   const adminThemeStyle = {
-    "--pattern-color": adminLight ? "hsl(220 15% 25% / 0.12)" : "hsl(220 5% 80% / 0.18)",
+    "--pattern-color": adminLight
+      ? "hsl(220 15% 25% / 0.12)"
+      : "hsl(220 5% 80% / 0.18)",
     ...(adminLight
       ? ({
           "--background": "0 0% 98%",
@@ -2743,7 +3803,11 @@ function AdminArea({
         });
         const visitorsBody = await visitorsResponse.json().catch(() => ({}));
         if (!cancelled && visitorsResponse.ok) {
-          setVisitorCount(Array.isArray(visitorsBody.visitors) ? visitorsBody.visitors.length : 0);
+          setVisitorCount(
+            Array.isArray(visitorsBody.visitors)
+              ? visitorsBody.visitors.length
+              : 0,
+          );
         }
 
         const notificationResponse = await fetch("/api/notifications", {
@@ -2811,6 +3875,15 @@ function AdminArea({
         itemSubtitle(item).toLowerCase().includes(q),
     );
   }, [items, search]);
+  const resourcePageCount = Math.max(
+    1,
+    Math.ceil(filteredItems.length / ADMIN_PAGE_SIZE),
+  );
+  const currentResourcePage = Math.min(resourcePage, resourcePageCount);
+  const paginatedItems = filteredItems.slice(
+    (currentResourcePage - 1) * ADMIN_PAGE_SIZE,
+    currentResourcePage * ADMIN_PAGE_SIZE,
+  );
 
   const goToSection = (
     next:
@@ -2954,15 +4027,9 @@ function AdminArea({
       >
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-            {data.profile?.heroImage ||
-            data.profile?.aboutImage ||
-            data.profile?.image ? (
+            {data.profile?.image || data.profile?.aboutImage ? (
               <NextImage
-                src={
-                  data.profile.heroImage ||
-                  data.profile.aboutImage ||
-                  data.profile.image
-                }
+                src={data.profile.image || data.profile.aboutImage || ""}
                 alt="Profile"
                 width={32}
                 height={32}
@@ -3100,21 +4167,52 @@ function AdminArea({
             <Palette size={16} /> Theme
           </button>
           <div className="flex flex-col gap-1">
-            <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${
-              section === "settings"
-                ? "bg-primary/10 text-primary border-l-2 border-primary"
-                : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
-            }`}>
-              <button onClick={() => goToSection("settings")} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left">
+            <div
+              className={`flex w-full items-center rounded-lg font-medium transition-colors ${
+                section === "settings"
+                  ? "bg-primary/10 text-primary border-l-2 border-primary"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
+              }`}
+            >
+              <button
+                onClick={() => goToSection("settings")}
+                className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
+              >
                 <Settings size={16} /> Settings
               </button>
-              <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">
+              <button
+                type="button"
+                aria-label="Expand Settings"
+                onClick={() => setSettingsOpen((value) => !value)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary"
+              >
                 {settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}
               </button>
             </div>
-            {settingsOpen && <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
-              {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); }} className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
-            </div>}
+            {settingsOpen && (
+              <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
+                {(
+                  [
+                    ["site", "Site settings", Settings],
+                    ["security", "Security", Lock],
+                    ["sessions", "Active Sessions", Smartphone],
+                    ["email", "Email notifications", Mail],
+                  ] as const
+                ).map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      setSettingsSubtab(value);
+                      goToSection("settings");
+                    }}
+                    className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                  >
+                    <Icon size={13} /> {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <button
             onClick={() => router.push("/")}
@@ -3373,11 +4471,7 @@ function AdminArea({
                 </span>
               )}
               <ProfileMenu
-                image={
-                  data.profile?.heroImage ||
-                  data.profile?.aboutImage ||
-                  data.profile?.image
-                }
+                image={data.profile?.image || data.profile?.aboutImage}
                 username={username}
                 isLight={adminLight}
                 section={section}
@@ -3400,14 +4494,10 @@ function AdminArea({
               <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-                    {data.profile?.heroImage ||
-                    data.profile?.aboutImage ||
-                    data.profile?.image ? (
+                    {data.profile?.image || data.profile?.aboutImage ? (
                       <NextImage
                         src={
-                          data.profile.heroImage ||
-                          data.profile.aboutImage ||
-                          data.profile.image
+                          data.profile.image || data.profile.aboutImage || ""
                         }
                         alt="Profile"
                         width={200}
@@ -3549,19 +4639,59 @@ function AdminArea({
                 >
                   <Palette size={16} /> Theme
                 </button>
-                  <div className="flex flex-col gap-1">
-                    <div className={`flex w-full items-center rounded-lg font-medium transition-colors ${
-                    section === "settings"
-                      ? "bg-primary/10 text-primary border-l-2 border-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
-                    }`}>
-                      <button onClick={() => goToSection("settings")} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"><Settings size={16} /> Settings</button>
-                      <button type="button" aria-label="Expand Settings" onClick={() => setSettingsOpen((value) => !value)} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary">{settingsOpen ? <ChevronDown size={15} /> : <Plus size={15} />}</button>
-                    </div>
-                    {settingsOpen && <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
-                      {([["site", "Site settings", Settings], ["security", "Security", Lock], ["sessions", "Active Sessions", Smartphone], ["email", "Email notifications", Mail]] as const).map(([value, label, Icon]) => <button key={value} type="button" onClick={() => { setSettingsSubtab(value); goToSection("settings"); setMobileNavOpen(false); }} className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}><Icon size={13} /> {label}</button>)}
-                    </div>}
+                <div className="flex flex-col gap-1">
+                  <div
+                    className={`flex w-full items-center rounded-lg font-medium transition-colors ${
+                      section === "settings"
+                        ? "bg-primary/10 text-primary border-l-2 border-primary"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground border-l-2 border-transparent"
+                    }`}
+                  >
+                    <button
+                      onClick={() => goToSection("settings")}
+                      className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3 text-left"
+                    >
+                      <Settings size={16} /> Settings
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Expand Settings"
+                      onClick={() => setSettingsOpen((value) => !value)}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md hover:bg-secondary hover:text-primary"
+                    >
+                      {settingsOpen ? (
+                        <ChevronDown size={15} />
+                      ) : (
+                        <Plus size={15} />
+                      )}
+                    </button>
                   </div>
+                  {settingsOpen && (
+                    <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
+                      {(
+                        [
+                          ["site", "Site settings", Settings],
+                          ["security", "Security", Lock],
+                          ["sessions", "Active Sessions", Smartphone],
+                          ["email", "Email notifications", Mail],
+                        ] as const
+                      ).map(([value, label, Icon]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => {
+                            setSettingsSubtab(value);
+                            goToSection("settings");
+                            setMobileNavOpen(false);
+                          }}
+                          className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                        >
+                          <Icon size={13} /> {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={() => {
                     setMobileNavOpen(false);
@@ -3585,7 +4715,7 @@ function AdminArea({
           </div>
         )}
 
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 md:px-8 md:py-8">
           {section === "dashboard" ? (
             <section className="min-w-0">
               <div className="mb-6">
@@ -3830,7 +4960,7 @@ function AdminArea({
                         key={mode}
                         type="button"
                         aria-pressed={
-                          (data.themeSettings?.mode || "dark") === mode
+                          (data.themeSettings?.mode || "light") === mode
                         }
                         onClick={() =>
                           persist({
@@ -3838,7 +4968,7 @@ function AdminArea({
                             themeSettings: { ...data.themeSettings, mode },
                           })
                         }
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "dark") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "light") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
                       >
                         <Icon size={14} /> {label}
                       </button>
@@ -3948,13 +5078,17 @@ function AdminArea({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                          {filteredItems.map((item, index) => (
+                          {paginatedItems.map((item, index) => (
                             <tr
                               key={item.id}
                               className="group transition-colors hover:bg-secondary/20 even:bg-card odd:bg-background/50"
                             >
                               <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-muted-foreground sm:px-6">
-                                {String(index + 1).padStart(2, "0")}
+                                {String(
+                                  (currentResourcePage - 1) * ADMIN_PAGE_SIZE +
+                                    index +
+                                    1,
+                                ).padStart(2, "0")}
                               </td>
                               <td className="max-w-55 truncate px-3 py-3.5 font-semibold text-foreground">
                                 {itemTitle(item)}
@@ -3984,12 +5118,25 @@ function AdminArea({
                           ))}
                         </tbody>
                       </table>
+                      <AdminPagination
+                        page={currentResourcePage}
+                        total={filteredItems.length}
+                        onPageChange={setResourcePage}
+                      />
                     </div>
                   )}
                 </div>
               </section>
             )
           )}
+          <footer className="mt-auto  pt-8 text-center text-xs text-muted-foreground sm:flex sm:items-center sm:justify-between sm:text-left">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">
+              Admin Console
+            </span>
+            <span className="mt-2 block sm:mt-0">
+              {new Date().getFullYear()} · {data.profile.name}
+            </span>
+          </footer>
         </main>
       </div>
     </div>

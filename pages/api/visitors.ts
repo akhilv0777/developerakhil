@@ -1,10 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { randomUUID } from "node:crypto";
 import {
+  deleteVisitorEvents,
   listVisitorEvents,
   recordVisitorEvent,
 } from "@/lib/api-server/db";
 import { getSessionUser } from "@/lib/api-server/auth";
 import { getVisitorMetadata } from "@/lib/visitor-utils";
+
+const VISITOR_SESSION_COOKIE = "visitor_session";
+
+function getCookieValue(req: NextApiRequest, name: string): string {
+  const cookies = req.headers.cookie?.split(";") ?? [];
+  const entry = cookies.find((cookie) => cookie.trim().startsWith(`${name}=`));
+  return entry ? decodeURIComponent(entry.trim().slice(name.length + 1)) : "";
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const isAuthenticated = await getSessionUser(req);
@@ -22,13 +32,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  if (req.method === "DELETE") {
+    const queryId = typeof req.query.id === "string" ? Number(req.query.id) : null;
+    const bodyIds = Array.isArray(req.body?.ids)
+      ? req.body.ids.map((value: unknown) => Number(value)).filter((value: number) => Number.isFinite(value))
+      : [];
+    const ids = queryId && Number.isFinite(queryId) ? [queryId] : bodyIds;
+    if (ids.length === 0) {
+      return res.status(400).json({ error: "Provide an id query param or a body of { ids: number[] }." });
+    }
+    try {
+      const deleted = await deleteVisitorEvents(ids);
+      return res.status(200).json({ deleted });
+    } catch (error) {
+      console.error("Visitor delete error:", error);
+      return res.status(500).json({ error: (error as Error).message || "Could not delete visitors." });
+    }
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
+    res.setHeader("Allow", "GET, POST, DELETE");
     return res.status(405).json({ ok: false, message: "Method not allowed" });
   }
 
   try {
     const payload = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
+    const payloadSessionId = typeof payload.sessionId === "string" && /^[a-f0-9-]{36}$/i.test(payload.sessionId)
+      ? payload.sessionId
+      : "";
+    const sessionId = payloadSessionId || getCookieValue(req, VISITOR_SESSION_COOKIE) || randomUUID();
+    res.setHeader(
+      "Set-Cookie",
+      `${VISITOR_SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Max-Age=1800; Path=/; HttpOnly; SameSite=Lax`,
+    );
     const metadata = getVisitorMetadata(req, {
       ipAddress: typeof payload.ipAddress === "string" ? payload.ipAddress : "",
       country: typeof payload.country === "string" ? payload.country : "",
@@ -44,8 +80,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userAgent: typeof payload.userAgent === "string" ? payload.userAgent : "",
       isBot: typeof payload.isBot === "boolean" ? payload.isBot : undefined,
     });
+    metadata.pathname = "";
+    metadata.referrer = "";
 
-    await recordVisitorEvent(metadata);
+    await recordVisitorEvent({ ...metadata, sessionId });
     return res.status(200).json({ ok: true, saved: true });
   } catch (error) {
     console.error("Visitor tracking failed:", error);

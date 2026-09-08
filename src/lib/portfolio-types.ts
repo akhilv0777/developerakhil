@@ -46,6 +46,29 @@ export type Testimonial = {
 
 export type Stat = { id: string; value: string; label: string };
 
+export type SocialLinkLocation = "nav" | "contact" | "footer";
+
+export type SocialLink = {
+  id: string;
+  label: string;
+  url: string;
+  icon?: string;
+  iconImage?: string;
+  locations?: SocialLinkLocation[];
+};
+
+export type HeroImageSettings = {
+  preset: string;
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  hue: number;
+  blur: number;
+  opacity: number;
+  overlayColor: string;
+  overlayOpacity: number;
+};
+
 export type Profile = {
   name: string;
   tagline: string;
@@ -59,8 +82,12 @@ export type Profile = {
   phone: string;
   github: string;
   linkedin: string;
+  socialLinks?: SocialLink[];
   image: string;
   heroImage?: string;
+  heroMobileImage?: string;
+  heroDesktopSettings?: HeroImageSettings;
+  heroMobileSettings?: HeroImageSettings;
   aboutImage?: string;
   resume: string;
   resumeName: string;
