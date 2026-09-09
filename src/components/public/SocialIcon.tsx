@@ -71,7 +71,7 @@ export function SocialIcon({
         alt=""
         width={size}
         height={size}
-        className="rounded object-cover"
+        className="social-icon-image rounded object-cover"
       />
     );
   }

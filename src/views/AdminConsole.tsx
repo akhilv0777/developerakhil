@@ -4444,16 +4444,16 @@ function AdminArea({
       ? ({
           "--background": "0 0% 98%",
           "--foreground": "220 25% 12%",
-          "--border": "220 18% 86%",
-          "--input": "220 18% 92%",
+          "--border": "220 16% 79%",
+          "--input": "220 16% 84%",
           "--card": "0 0% 100%",
           "--card-foreground": "220 25% 12%",
-          "--card-border": "220 18% 88%",
+          "--card-border": "220 16% 82%",
           "--primary-foreground": "220 25% 12%",
-          "--secondary": "220 17% 96%",
+          "--secondary": "220 17% 93%",
           "--secondary-foreground": "220 25% 12%",
-          "--muted": "220 18% 95%",
-          "--muted-foreground": "220 9% 40%",
+          "--muted": "220 18% 92%",
+          "--muted-foreground": "220 14% 30%",
         } as React.CSSProperties)
       : undefined),
   } as React.CSSProperties;

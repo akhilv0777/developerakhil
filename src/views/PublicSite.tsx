@@ -482,7 +482,7 @@ function Hero({ profile }: { profile: Profile }) {
   return (
     <section
       ref={heroRef}
-      className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
+      className="relative flex min-h-dvh items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
     >
       {(profile.heroImage || profile.image) && (
         <div
@@ -610,11 +610,10 @@ function Hero({ profile }: { profile: Profile }) {
       <a
         href="#about"
         data-hero-reveal
-        className="absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-muted-foreground transition-colors hover:text-primary sm:flex"
+        className="scroll-cue absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-muted-foreground transition-colors hover:text-primary sm:flex"
       >
         <span className="h-px w-8 bg-border" />
-        Scroll to explore
-        <ChevronDown size={14} className="animate-bounce text-primary" />
+        <span className="scroll-cue-mouse" aria-hidden="true"><span /></span>
         <span className="h-px w-8 bg-border" />
       </a>
     </section>
@@ -628,25 +627,27 @@ function About({ profile }: { profile: Profile }) {
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="01">ABOUT</SectionLabel>
-      <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div>
           {profile.aboutImage ? (
-            <div className="about-image-stage mx-auto aspect-square w-full max-w-[460px] lg:mx-0">
+            <div className="about-image-stage mx-auto aspect-square w-full max-w-none lg:mx-0 lg:max-w-[560px]">
               <div className="about-image-frame h-full w-full">
-                <Image
-                  src={profile.aboutImage}
-                  alt={profile.name}
-                  className="h-full w-full object-cover"
-                  width={420}
-                  height={420}
-                />
-                <div className="absolute bottom-7 left-7 z-10">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
-                    Behind the work
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    Developer · Creator · Problem solver
-                  </p>
+                <div className="relative h-full w-full overflow-hidden rounded-[2.7rem_.1rem_.1rem_.1rem]">
+                  <Image
+                    src={profile.aboutImage}
+                    alt={profile.name}
+                    className="h-full w-full object-cover"
+                    width={560}
+                    height={560}
+                  />
+                  <div className="absolute bottom-5 left-5 z-10 sm:bottom-7 sm:left-7">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                      Behind the work
+                    </p>
+                    <p className="mt-1 text-[clamp(.72rem,1.1vw,.875rem)] font-semibold text-white">
+                      Developer · Creator · Problem solver
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -656,9 +657,9 @@ function About({ profile }: { profile: Profile }) {
           <div
             data-mf-stagger-animation="fade-up"
             data-mf-stagger-gap="120"
-            className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
+            className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
           >
-            <p className="text-2xl font-bold leading-[1.35] text-foreground sm:text-3xl lg:text-4xl">
+            <p className="text-[clamp(1.5rem,2.7vw,2.5rem)] font-bold leading-[1.2] text-foreground">
               {profile.bio1}
             </p>
             <p>{profile.bio2}</p>
@@ -1704,16 +1705,16 @@ export function PublicPortfolio() {
       ? {
           "--background": "0 0% 98%",
           "--foreground": "220 25% 12%",
-          "--border": "220 18% 86%",
-          "--input": "220 18% 92%",
+          "--border": "220 16% 79%",
+          "--input": "220 16% 84%",
           "--card": "0 0% 100%",
           "--card-foreground": "220 25% 12%",
-          "--card-border": "220 18% 88%",
+          "--card-border": "220 16% 82%",
           "--primary-foreground": "220 25% 12%",
-          "--secondary": "220 17% 96%",
+          "--secondary": "220 17% 93%",
           "--secondary-foreground": "220 25% 12%",
-          "--muted": "220 18% 95%",
-          "--muted-foreground": "220 9% 40%",
+          "--muted": "220 18% 92%",
+          "--muted-foreground": "220 14% 30%",
           "--accent": "152 100% 45%",
           "--accent-foreground": "220 25% 12%",
           "--destructive": "0 84% 60%",
