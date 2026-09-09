@@ -375,7 +375,6 @@ export type ContactSettings = {
   turnstileSiteKey: string;
   turnstileSecretKey: string;
   turnstileHostnames: string;
-  removeBgApiKey: string;
 };
 
 const defaultContactSettings: ContactSettings = {
@@ -388,7 +387,6 @@ const defaultContactSettings: ContactSettings = {
   turnstileSiteKey: "",
   turnstileSecretKey: "",
   turnstileHostnames: "",
-  removeBgApiKey: "",
 };
 
 export type ContactMessage = {

@@ -45,16 +45,8 @@ function getAutoIcon(label: string) {
     })?.[1];
 }
 
-function FontAwesomeGlyph({
-  Icon,
-  size,
-  className,
-}: {
-  Icon: IconType;
-  size: number;
-  className?: string;
-}) {
-  return <Icon size={size} className={className} />;
+function FontAwesomeGlyph({ Icon, size }: { Icon: IconType; size: number }) {
+  return <Icon size={size} />;
 }
 
 export const socialIconOptions = icons
@@ -66,13 +58,11 @@ export function SocialIcon({
   icon,
   iconImage,
   size = 16,
-  className,
 }: {
   label: string;
   icon?: string;
   iconImage?: string;
   size?: number;
-  className?: string;
 }) {
   if (iconImage) {
     return (
@@ -81,20 +71,15 @@ export function SocialIcon({
         alt=""
         width={size}
         height={size}
-        className={`rounded object-cover ${className || ""}`}
+        className="rounded object-cover"
       />
     );
   }
 
   const SelectedIcon = icons.find(([name]) => name === icon)?.[1];
-  if (SelectedIcon)
-    return <FontAwesomeGlyph Icon={SelectedIcon} size={size} className={className} />;
+  if (SelectedIcon) return <FontAwesomeGlyph Icon={SelectedIcon} size={size} />;
 
     const Icon = getAutoIcon(label);
 
-  return Icon ? (
-    <FontAwesomeGlyph Icon={Icon} size={size} className={className} />
-  ) : (
-    <Link2 size={size} className={className} />
-  );
+  return Icon ? <FontAwesomeGlyph Icon={Icon} size={size} /> : <Link2 size={size} />;
 }

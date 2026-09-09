@@ -5,11 +5,9 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type FormEvent,
 } from "react";
-import Cropper from "cropperjs";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -20,6 +18,7 @@ import {
   Check,
   CheckSquare,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Clock3,
   Eye,
@@ -30,6 +29,7 @@ import {
   Layers,
   Layout,
   LayoutDashboard,
+  Link2,
   Maximize2,
   Minimize2,
   PanelLeftClose,
@@ -67,11 +67,14 @@ import { resizeAndUploadImage, uploadFileToCDN } from "@/lib/image-upload";
 import type {
   Education,
   Experience,
+  HeroImageSettings,
   PortfolioData,
   Profile,
   Project,
   Service,
   Stat,
+  SocialLink,
+  SocialLinkLocation,
   Testimonial,
 } from "@/lib/portfolio-types";
 import {
@@ -83,6 +86,7 @@ import {
 import { PortfolioLoading } from "./PublicSite";
 import { useTurnstile } from "@/components/Turnstile";
 import { PasswordInput } from "@/components/admin/PasswordInput";
+import { SocialIcon, socialIconOptions } from "@/components/public/SocialIcon";
 
 // ---------------------------------------------------------------------
 // Console / Admin area - content editing, protected by /api/auth.
@@ -111,9 +115,7 @@ function LoginPage() {
       .then((settings) => {
         const enabled = Boolean(settings.twoFactorEnabled);
         setTwoFactorEnabled(enabled);
-        if (enabled) {
-          setLoginMode("password");
-        }
+        if (enabled) setLoginMode("password");
       })
       .catch(() => undefined);
   }, []);
@@ -464,8 +466,87 @@ type Resource =
   | "experience"
   | "testimonials";
 
+const ADMIN_PAGE_SIZE = 10;
+
+function getTodayDateInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function AdminPagination({
+  page,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
+  if (total <= ADMIN_PAGE_SIZE) return null;
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-3 sm:px-6">
+      <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        Page {page} of {pageCount}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+          disabled={page === 1}
+          aria-label="Previous page"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-35"
+        >
+          <ChevronLeft size={15} />
+        </button>
+        {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+          (pageNumber) => (
+            <button
+              key={pageNumber}
+              type="button"
+              onClick={() => onPageChange(pageNumber)}
+              aria-label={`Go to page ${pageNumber}`}
+              aria-current={pageNumber === page ? "page" : undefined}
+              className={`flex h-8 min-w-8 items-center justify-center rounded-md border px-2 font-mono text-[10px] font-bold transition-colors ${pageNumber === page ? "border-primary bg-primary text-background" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
+            >
+              {pageNumber}
+            </button>
+          ),
+        )}
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(pageCount, page + 1))}
+          disabled={page === pageCount}
+          aria-label="Next page"
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-35"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type AdminVisitor = {
+  id: number;
+  createdAt: string;
+  ipAddress?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  browser?: string;
+  os?: string;
+  device?: string;
+};
+
 function VisitorsPanel() {
-  const [visitors, setVisitors] = useState<any[]>([]);
+  const [visitors, setVisitors] = useState<AdminVisitor[]>([]);
+  const [page, setPage] = useState(1);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingSelected, setDeletingSelected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -492,8 +573,100 @@ function VisitorsPanel() {
   }, []);
 
   useEffect(() => {
+    // The request updates loading, error, and visitor state when it completes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload();
   }, [reload]);
+
+  const filteredVisitors = visitors.filter((visitor) => {
+    const date = new Date(visitor.createdAt).toISOString().slice(0, 10);
+    return (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo);
+  });
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredVisitors.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedVisitors = filteredVisitors.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
+  const allVisibleSelected =
+    filteredVisitors.length > 0 &&
+    filteredVisitors.every((visitor) => selected.has(visitor.id));
+
+  const toggleAllVisible = () => {
+    setSelected((current) => {
+      const next = new Set(current);
+      filteredVisitors.forEach((visitor) => {
+        if (allVisibleSelected) next.delete(visitor.id);
+        else next.add(visitor.id);
+      });
+      return next;
+    });
+  };
+
+  const deleteVisitor = async (id: number) => {
+    if (!window.confirm("Delete this visitor record? This cannot be undone."))
+      return;
+    setDeletingId(id);
+    try {
+      const response = await fetch(`/api/visitors?id=${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Could not delete visitor.");
+      setVisitors((current) => current.filter((visitor) => visitor.id !== id));
+      setSelected((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+      toast({ title: "Visitor deleted" });
+    } catch (deleteError) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: (deleteError as Error).message,
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const deleteSelected = async () => {
+    const ids = Array.from(selected);
+    if (
+      ids.length === 0 ||
+      !window.confirm(
+        `Are you sure you want to permanently delete ${ids.length} selected visitor records? This cannot be undone.`,
+      )
+    )
+      return;
+    setDeletingSelected(true);
+    try {
+      const response = await fetch("/api/visitors", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!response.ok) throw new Error("Could not delete visitors.");
+      setVisitors((current) =>
+        current.filter((visitor) => !ids.includes(visitor.id)),
+      );
+      setSelected(new Set());
+      toast({ title: `${ids.length} visitors deleted` });
+    } catch (deleteError) {
+      toast({
+        variant: "destructive",
+        title: "Delete failed",
+        description: (deleteError as Error).message,
+      });
+    } finally {
+      setDeletingSelected(false);
+    }
+  };
 
   return (
     <div className="bento-card overflow-hidden p-0">
@@ -504,13 +677,75 @@ function VisitorsPanel() {
             Latest visits captured from your public site.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void reload()}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
-        >
-          <Eye size={13} /> Refresh
-        </button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {selected.size > 0 && (
+            <button
+              type="button"
+              onClick={() => void deleteSelected()}
+              disabled={deletingSelected}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-red-600/90 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-white hover:bg-red-600 disabled:opacity-50"
+            >
+              <Trash2 size={13} /> Delete selected ({selected.size})
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
+          >
+            <Eye size={13} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 border-b border-border bg-secondary/20 px-5 py-3 sm:px-6">
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          From
+          <input
+            type="date"
+            value={dateFrom}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateFrom(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          To
+          <input
+            type="date"
+            value={dateTo}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateTo(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        {(dateFrom || dateTo) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setPage(1);
+            }}
+            className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -519,31 +754,55 @@ function VisitorsPanel() {
         </div>
       ) : error ? (
         <div className="px-5 py-10 text-sm text-red-500 sm:px-6">{error}</div>
-      ) : visitors.length === 0 ? (
+      ) : filteredVisitors.length === 0 ? (
         <div className="px-5 py-10 text-sm text-muted-foreground sm:px-6">
           No visitors recorded yet.
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm text-foreground">
+          <table className="w-full min-w-[760px] text-left text-sm text-foreground">
             <thead className="border-b border-border bg-secondary/40">
               <tr className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisible}
+                    aria-label="Select all visitors"
+                    className="accent-primary"
+                  />
+                </th>
                 <th className="px-4 py-3">Time</th>
                 <th className="px-4 py-3">IP</th>
                 <th className="px-4 py-3">Location</th>
                 <th className="px-4 py-3">Browser</th>
                 <th className="px-4 py-3">OS</th>
                 <th className="px-4 py-3">Device</th>
-                <th className="px-4 py-3">Page</th>
-                <th className="px-4 py-3">Referrer</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {visitors.map((visitor) => (
+              {paginatedVisitors.map((visitor) => (
                 <tr
                   key={visitor.id}
                   className="border-b border-border last:border-b-0"
                 >
+                  <td className="px-4 py-3 align-top">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(visitor.id)}
+                      onChange={() =>
+                        setSelected((current) => {
+                          const next = new Set(current);
+                          if (next.has(visitor.id)) next.delete(visitor.id);
+                          else next.add(visitor.id);
+                          return next;
+                        })
+                      }
+                      aria-label={`Select visitor ${visitor.id}`}
+                      className="accent-primary"
+                    />
+                  </td>
                   <td className="px-4 py-3 align-top text-muted-foreground">
                     {formatMessageDate(visitor.createdAt)}
                   </td>
@@ -551,11 +810,20 @@ function VisitorsPanel() {
                     {visitor.ipAddress || "Unknown"}
                   </td>
                   <td className="px-4 py-3 align-top text-muted-foreground">
-                    {visitor.city || visitor.region || visitor.country
-                      ? [visitor.city, visitor.region, visitor.country]
+                    {visitor.city || visitor.region || visitor.country ? (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([visitor.city, visitor.region, visitor.country].filter(Boolean).join(", "))}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-primary hover:underline"
+                      >
+                        {[visitor.city, visitor.region, visitor.country]
                           .filter(Boolean)
-                          .join(", ")
-                      : "Unknown"}
+                          .join(", ")}
+                      </a>
+                    ) : (
+                      "Unknown"
+                    )}
                   </td>
                   <td className="px-4 py-3 align-top">
                     {visitor.browser || "Unknown"}
@@ -566,16 +834,26 @@ function VisitorsPanel() {
                   <td className="px-4 py-3 align-top">
                     {visitor.device || "Unknown"}
                   </td>
-                  <td className="px-4 py-3 align-top max-w-[200px] break-words text-muted-foreground">
-                    {visitor.pathname || visitor.hostname || "-"}
-                  </td>
-                  <td className="px-4 py-3 align-top max-w-[220px] break-words text-muted-foreground">
-                    {visitor.referrer || "Direct"}
+                  <td className="px-4 py-3 text-right align-top">
+                    <button
+                      type="button"
+                      onClick={() => void deleteVisitor(visitor.id)}
+                      disabled={deletingId === visitor.id}
+                      aria-label="Delete visitor"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/20 hover:text-red-500 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <AdminPagination
+            page={currentPage}
+            total={filteredVisitors.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>
@@ -589,7 +867,7 @@ const resourceMeta: Record<
   services: { label: "Services", singular: "service", icon: Layers },
   projects: { label: "Projects", singular: "project", icon: Briefcase },
   education: { label: "Education", singular: "education", icon: GraduationCap },
-  experience: { label: "Experience", singular: "role", icon: Building2 },
+  experience: { label: "Experience", singular: "experience", icon: Building2 },
   testimonials: { label: "Testimonials", singular: "testimonial", icon: Quote },
 };
 const emptyFor = (resource: Resource): PortfolioData[Resource][number] => {
@@ -791,72 +1069,25 @@ function AdminForm({
               {labels[field]}
             </span>
             {field === "image" ? (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-lg border border-border bg-secondary/50 p-4">
-                {form[field] ? (
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <NextImage
-                      src={form[field]}
-                      alt="Preview"
-                      width={64}
-                      height={64}
-                      className="h-16 w-16 shrink-0 rounded-lg object-cover shadow-sm ring-1 ring-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({ ...prev, [field]: "" }))
-                      }
-                      className="font-mono text-[10px] font-bold text-red-500 uppercase tracking-wider hover:underline whitespace-nowrap"
-                    >
-                      Remove Image
-                    </button>
-                  </div>
-                ) : (
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                    No image uploaded.
-                  </span>
+              <div className="flex flex-col gap-4 rounded-lg border border-border bg-secondary/50 p-4">
+                {form[field] && (
+                  <NextImage
+                    src={form[field]}
+                    alt="Preview"
+                    width={160}
+                    height={96}
+                    className="h-24 w-40 rounded-lg object-cover shadow-sm ring-1 ring-border"
+                  />
                 )}
-                <label className="sm:ml-auto inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+                <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleImageUpload(e, field)}
+                    onChange={(event) => handleImageUpload(event, field)}
                     className="hidden"
                   />
-                  {form[field] ? "Replace Image" : "Upload Image"}
+                  {form[field] ? "Replace image" : "Upload image"}
                 </label>
-              </div>
-            ) : field === "description" && resource === "projects" ? (
-              <div className="overflow-hidden rounded-lg border border-border bg-secondary/50">
-                <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2">
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Classic editor
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => document.execCommand("bold")}
-                    className="ml-auto cursor-pointer rounded px-2 py-1 font-bold text-foreground hover:bg-background"
-                  >
-                    B
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => document.execCommand("italic")}
-                    className="cursor-pointer rounded px-2 py-1 italic text-foreground hover:bg-background"
-                  >
-                    I
-                  </button>
-                </div>
-                <textarea
-                  required
-                  value={form[field] || ""}
-                  rows={6}
-                  onChange={(event) =>
-                    setForm({ ...form, [field]: event.target.value })
-                  }
-                  className="w-full resize-y bg-transparent px-4 py-3 text-sm text-foreground outline-none"
-                  placeholder="Explain the project, your contribution, and the result..."
-                />
               </div>
             ) : field === "accent" ? (
               <select
@@ -914,171 +1145,243 @@ function AdminForm({
   );
 }
 
-type CropPreset = {
-  label: string;
-  value: number;
-};
-
-const cropPresets: CropPreset[] = [
-  { label: "Free", value: NaN },
-  { label: "1:1", value: 1 },
-  { label: "4:3", value: 4 / 3 },
-  { label: "16:9", value: 16 / 9 },
-  { label: "3:4", value: 3 / 4 },
-];
-
-function ImageCropModal({
-  file,
-  defaultAspectRatio,
-  onClose,
-  onApply,
+function SocialIconPicker({
+  value,
+  label,
+  iconImage,
+  onChange,
+  onUpload,
 }: {
-  file: File;
-  defaultAspectRatio: number;
-  onClose: () => void;
-  onApply: (file: File) => void;
+  value?: string;
+  label: string;
+  iconImage?: string;
+  onChange: (value: string) => void;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const imageRef = useRef<HTMLImageElement>(null);
-  const cropperRef = useRef<Cropper | null>(null);
-  const objectUrl = useMemo(() => URL.createObjectURL(file), [file]);
-  const [aspectRatio, setAspectRatio] = useState(defaultAspectRatio);
-  const [applying, setApplying] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selectedLabel =
+    socialIconOptions.find((option) => option.value === value)?.label ||
+    (iconImage ? "Custom icon" : "Auto detected");
+  const matches = socialIconOptions
+    .filter((option) =>
+      option.label.toLowerCase().includes(query.toLowerCase().trim()),
+    )
+    .slice(0, 120);
 
-  useEffect(() => {
-    return () => {
-      cropperRef.current?.destroy();
-      cropperRef.current = null;
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [objectUrl]);
-
-  useEffect(() => {
-    if (!imageRef.current || !objectUrl) return;
-    const image = imageRef.current;
-    const cropper = new Cropper(image, {
-      viewMode: 1,
-      dragMode: "move",
-      aspectRatio: defaultAspectRatio,
-      autoCropArea: 0.85,
-      responsive: true,
-      background: false,
-      guides: true,
-      center: true,
-      checkOrientation: true,
-    });
-    cropperRef.current = cropper;
-    return () => {
-      cropper.destroy();
-      if (cropperRef.current === cropper) cropperRef.current = null;
-    };
-  }, [defaultAspectRatio, objectUrl]);
-
-  useEffect(() => {
-    cropperRef.current?.setAspectRatio(aspectRatio);
-  }, [aspectRatio]);
-
-  const selectAspectRatio = (value: number) => {
-    setAspectRatio(value);
-  };
-
-  const handleApply = () => {
-    const canvas = cropperRef.current?.getCroppedCanvas({
-      maxWidth: 1800,
-      maxHeight: 1800,
-      imageSmoothingEnabled: true,
-      imageSmoothingQuality: "high",
-    });
-    if (!canvas) return;
-    setApplying(true);
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          setApplying(false);
-          return;
-        }
-        onApply(
-          new File(
-            [blob],
-            file.name.replace(/\.[^.]+$/, "") + "-cropped.jpg",
-            { type: "image/jpeg" },
-          ),
-        );
-      },
-      "image/jpeg",
-      0.9,
-    );
-  };
-
-  return createPortal(
-    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <div>
-            <h3 className="text-base font-bold text-foreground">Crop image</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Drag the image, then resize the crop box from any edge or corner.
-            </p>
+  return (
+    <div className="relative w-full sm:w-72">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-left text-xs text-foreground hover:border-primary"
+      >
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-border bg-background text-primary">
+          <SocialIcon
+            label={label}
+            icon={value}
+            iconImage={iconImage}
+            size={14}
+          />
+        </span>
+        <span className="min-w-0 flex-1 truncate">{selectedLabel}</span>
+        <ChevronDown size={14} className={open ? "rotate-180" : ""} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-2 w-full overflow-hidden rounded-lg border border-border bg-card shadow-2xl">
+          <div className="border-b border-border p-2">
+            <input
+              autoFocus
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search Font Awesome icons..."
+              className="w-full rounded-md border border-border bg-secondary/60 px-3 py-2 text-xs text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            />
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close crop editor"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 bg-black/20 p-4">
-          <div className="mx-auto h-[min(62vh,620px)] w-full">
-            {objectUrl && (
-              <img
-                ref={imageRef}
-                src={objectUrl}
-                alt="Image to crop"
-                className="block max-h-full max-w-full"
-              />
+          <div className="max-h-64 overflow-y-auto p-1">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+                setQuery("");
+              }}
+              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+            >
+              <Link2 size={15} /> Auto detect icon
+            </button>
+            {matches.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs hover:bg-secondary ${value === option.value ? "bg-primary/10 text-primary" : "text-foreground"}`}
+              >
+                <span className="flex h-5 w-5 items-center justify-center text-primary">
+                  <SocialIcon
+                    label={option.label}
+                    icon={option.value}
+                    size={15}
+                  />
+                </span>
+                {option.label}
+              </button>
+            ))}
+            {matches.length === 0 && (
+              <p className="px-3 py-4 text-xs text-muted-foreground">
+                No icons found.
+              </p>
             )}
           </div>
-        </div>
-        <div className="flex flex-col gap-3 border-t border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap gap-2">
-            {cropPresets.map((preset) => {
-              const selected = Number.isNaN(preset.value)
-                ? Number.isNaN(aspectRatio)
-                : aspectRatio === preset.value;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => selectAspectRatio(preset.value)}
-                  className={`rounded-md border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${selected ? "border-primary bg-primary text-background" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-2 sm:shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-md border border-border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:bg-secondary"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleApply}
-              disabled={applying}
-              className="rounded-md bg-primary px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 disabled:opacity-50"
-            >
-              {applying ? "Cropping..." : "Crop"}
-            </button>
+          <div className="border-t border-border p-2">
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary">
+              <Pencil size={13} /> Upload custom icon
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={onUpload}
+              />
+            </label>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+const defaultHeroImageSettings: HeroImageSettings = {
+  preset: "none",
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  hue: 0,
+  blur: 0,
+  opacity: 100,
+  overlayColor: "#ffffff",
+  overlayOpacity: 0,
+};
+
+function HeroImageControls({
+  label,
+  settings,
+  onChange,
+  onUpload,
+}: {
+  label: string;
+  settings?: HeroImageSettings;
+  onChange: (settings: HeroImageSettings) => void;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const current = { ...defaultHeroImageSettings, ...(settings || {}) };
+  const update = (key: keyof HeroImageSettings, value: string | number) =>
+    onChange({ ...current, [key]: value });
+  const sliders: Array<
+    [keyof HeroImageSettings, string, number, number, string]
+  > = [
+    ["brightness", "Brightness", 0, 200, "%"],
+    ["contrast", "Contrast", 0, 200, "%"],
+    ["saturation", "Saturation", 0, 200, "%"],
+    ["hue", "Hue", -180, 180, "°"],
+    ["blur", "Blur", 0, 20, "px"],
+    ["opacity", "Opacity", 0, 100, "%"],
+    ["overlayOpacity", "Overlay", 0, 100, "%"],
+  ];
+
+  return (
+    <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+          {label} adjustments
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange({ ...defaultHeroImageSettings })}
+          className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+        >
+          Reset
+        </button>
       </div>
-    </div>,
-    document.body,
+      <label className="mb-4 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2.5 text-xs text-foreground hover:border-primary">
+        <span>Choose {label.toLowerCase()} image</span>
+        <span className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
+          <Pencil size={13} /> Change image
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onUpload}
+        />
+      </label>
+      <label className="mb-4 grid grid-cols-[1fr_auto] items-center gap-3">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+          Overlay color
+        </span>
+        <input
+          type="color"
+          value={current.overlayColor}
+          onChange={(event) => update("overlayColor", event.target.value)}
+          className="h-9 w-14 cursor-pointer rounded border border-border bg-secondary"
+          aria-label={`${label} overlay color`}
+        />
+      </label>
+      <label className="mb-4 grid gap-1.5">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+          Filter preset
+        </span>
+        <select
+          value={current.preset}
+          onChange={(event) => update("preset", event.target.value)}
+          className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
+        >
+          {[
+            ["none", "None"],
+            ["grayscale", "Grayscale"],
+            ["sepia", "Sepia"],
+            ["vintage", "Vintage"],
+            ["warm", "Warm"],
+            ["cool", "Cool"],
+            ["blur", "Blur"],
+            ["invert", "Invert"],
+            ["bright", "Bright"],
+            ["pop", "Pop"],
+          ].map(([value, optionLabel]) => (
+            <option key={value} value={value}>
+              {optionLabel}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="grid gap-3">
+        {sliders.map(([key, sliderLabel, min, max, suffix]) => (
+          <label
+            key={key}
+            className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground"
+          >
+            <span>{sliderLabel}</span>
+            <input
+              type="range"
+              min={min}
+              max={max}
+              value={Number(current[key])}
+              onChange={(event) => update(key, Number(event.target.value))}
+              className="accent-primary"
+            />
+            <span className="text-right font-mono text-[10px] text-foreground">
+              {current[key]}
+              {suffix}
+            </span>
+          </label>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1100,12 +1403,11 @@ function ProfileEditor({
     (profile.languages || []).join(", "),
   );
   const [rolesRaw, setRolesRaw] = useState((profile.roles || []).join(", "));
+  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(
+    profile.socialLinks || [],
+  );
   const [imageError, setImageError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
-  const [pendingImage, setPendingImage] = useState<{
-    file: File;
-    field: "heroImage" | "aboutImage";
-  } | null>(null);
   useEffect(() => {
     // Sync form state when profile prop changes
     // Multiple setState calls are necessary to keep all form fields in sync
@@ -1117,6 +1419,7 @@ function ProfileEditor({
     setSkillsRaw((profile.skills || []).join(", "));
     setLanguagesRaw((profile.languages || []).join(", "));
     setRolesRaw((profile.roles || []).join(", "));
+    setSocialLinks(profile.socialLinks || []);
   }, [profile]);
 
   const fields: { key: keyof Profile; label: string; long?: boolean }[] = [
@@ -1134,19 +1437,11 @@ function ProfileEditor({
 
   const handleImage = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    field: "heroImage" | "aboutImage",
+    field: "image" | "heroImage" | "heroMobileImage" | "aboutImage",
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setImageError(null);
-    setPendingImage({ file, field });
-    event.target.value = "";
-  };
-
-  const handleCroppedImage = async (file: File) => {
-    if (!pendingImage) return;
-    const field = pendingImage.field;
-    setPendingImage(null);
     try {
       const cdnUrl = await resizeAndUploadImage(file, 1200, 1200);
       setForm((current) => ({ ...current, [field]: cdnUrl }));
@@ -1154,6 +1449,33 @@ function ProfileEditor({
       const message =
         error instanceof Error ? error.message : "Could not upload image";
       setImageError(message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleSocialIconUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    linkId: string,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const iconImage = await resizeAndUploadImage(file, 128, 128);
+      setSocialLinks((current) =>
+        current.map((link) =>
+          link.id === linkId ? { ...link, iconImage, icon: "" } : link,
+        ),
+      );
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Icon upload failed",
+        description:
+          error instanceof Error ? error.message : "Could not upload icon.",
+      });
+    } finally {
+      event.target.value = "";
     }
   };
 
@@ -1183,16 +1505,7 @@ function ProfileEditor({
   };
 
   return (
-    <>
-      {pendingImage && (
-        <ImageCropModal
-          file={pendingImage.file}
-          defaultAspectRatio={pendingImage.field === "heroImage" ? 1 : 4 / 3}
-          onClose={() => setPendingImage(null)}
-          onApply={handleCroppedImage}
-        />
-      )}
-      <form
+    <form
       onSubmit={(event) => {
         event.preventDefault();
         onSave({
@@ -1213,84 +1526,200 @@ function ProfileEditor({
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean),
+          socialLinks: socialLinks
+            .map((link) => ({
+              ...link,
+              label: link.label.trim(),
+              url: link.url.trim(),
+              locations: link.locations?.length
+                ? link.locations
+                : (["nav", "contact", "footer"] as SocialLinkLocation[]),
+            }))
+            .filter((link) => link.label && link.url),
+          heroDesktopSettings: {
+            ...defaultHeroImageSettings,
+            ...(form.heroDesktopSettings || {}),
+          },
+          heroMobileSettings: {
+            ...defaultHeroImageSettings,
+            ...(form.heroMobileSettings || {}),
+          },
         });
       }}
       className="bento-card p-5 md:p-6"
     >
       <div className="mb-8 grid gap-6 md:grid-cols-2">
-        <div className="flex items-center gap-5">
-          <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary transition-colors hover:border-primary">
-            <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
-              {form.heroImage || form.image ? (
+        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center gap-5 rounded-lg border border-border/70 bg-background/30 p-3">
+              <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
+                <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+                  {form.image ? (
+                    <NextImage
+                      src={form.image}
+                      alt="Profile icon"
+                      width={80}
+                      height={80}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User size={22} className="text-muted-foreground" />
+                  )}
+                </div>
+                <label
+                  className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background"
+                  title="Change profile icon"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "image")}
+                    className="hidden"
+                  />
+                  <Pencil size={12} />
+                </label>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                  Profile icon
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Used in the public navigation.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 rounded-lg border border-border/70 bg-background/30 p-3">
+              <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+                {form.aboutImage ? (
+                  <NextImage
+                    src={form.aboutImage}
+                    alt="About"
+                    width={96}
+                    height={64}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                    No image
+                  </span>
+                )}
+                <label
+                  className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                  title="Change about image"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "aboutImage")}
+                    className="hidden"
+                  />
+                  <Pencil size={11} />
+                </label>
+              </div>
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                  About image
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Used in the About section.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-4">
+            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+              {form.heroImage ? (
                 <NextImage
-                  src={form.heroImage || form.image}
-                  alt="Profile"
-                  width={80}
-                  height={80}
+                  src={form.heroImage}
+                  alt="Desktop hero"
+                  width={96}
+                  height={64}
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <User size={22} className="text-muted-foreground" />
+                <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                  No image
+                </span>
               )}
+              <label
+                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                title="Change desktop hero image"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleImage(event, "heroImage")}
+                  className="hidden"
+                />
+                <Pencil size={11} />
+              </label>
             </div>
-            <label
-              className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background shadow-md transition-transform hover:scale-110"
-              title="Change hero image"
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => handleImage(event, "heroImage")}
-                className="hidden"
-              />
-              <Pencil size={12} />
-            </label>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                Hero desktop
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Wide image for larger screens.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-              Hero image
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Click the pencil to change it.
-            </p>
-          </div>
+          <HeroImageControls
+            label="Desktop hero"
+            settings={form.heroDesktopSettings}
+            onChange={(heroDesktopSettings) =>
+              setForm((current) => ({ ...current, heroDesktopSettings }))
+            }
+            onUpload={(event) => void handleImage(event, "heroImage")}
+          />
         </div>
-        <div className="flex items-center gap-4 rounded-lg border border-border bg-secondary/30 p-3">
-          <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
-            {form.aboutImage ? (
-              <NextImage
-                src={form.aboutImage}
-                alt="About"
-                width={96}
-                height={64}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                No image
-              </span>
-            )}
-            <label
-              className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background shadow-md transition-transform hover:scale-110"
-              title="Change about image"
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(event) => handleImage(event, "aboutImage")}
-                className="hidden"
-              />
-              <Pencil size={11} />
-            </label>
+        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+          <div className="flex items-center gap-4">
+            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+              {form.heroMobileImage ? (
+                <NextImage
+                  src={form.heroMobileImage}
+                  alt="Mobile hero"
+                  width={96}
+                  height={64}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                  Desktop fallback
+                </span>
+              )}
+              <label
+                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                title="Change mobile hero image"
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => handleImage(event, "heroMobileImage")}
+                  className="hidden"
+                />
+                <Pencil size={11} />
+              </label>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                Hero mobile
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Portrait crop for phones.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-              About image
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use a different image for the About section.
-            </p>
-          </div>
+          <HeroImageControls
+            label="Mobile hero"
+            settings={form.heroMobileSettings}
+            onChange={(heroMobileSettings) =>
+              setForm((current) => ({ ...current, heroMobileSettings }))
+            }
+            onUpload={(event) => void handleImage(event, "heroMobileImage")}
+          />
         </div>
         {imageError && (
           <p className="font-mono text-[11px] text-red-400 md:col-span-2">
@@ -1396,6 +1825,187 @@ function ProfileEditor({
             className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
           />
         </label>
+        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/20 p-4">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Additional social links
+              </span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Add any platform without changing the code.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setSocialLinks((current) => [
+                  ...current,
+                  {
+                    id: `social-${Date.now()}`,
+                    label: "",
+                    url: "",
+                    locations: ["nav", "contact", "footer"],
+                  },
+                ])
+              }
+              className="inline-flex shrink-0 items-center gap-2 rounded-md border border-primary/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
+            >
+              <Plus size={13} /> Add link
+            </button>
+          </div>
+          <div className="grid gap-3">
+            {socialLinks.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No additional links yet.
+              </p>
+            ) : (
+              socialLinks.map((link, index) => (
+                <div
+                  key={link.id}
+                  className="rounded-lg border border-border/70 bg-background/30 p-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,280px)_auto] sm:items-end">
+                    <label className="grid gap-1.5">
+                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Platform name
+                      </span>
+                      <input
+                        value={link.label}
+                        onChange={(event) =>
+                          setSocialLinks((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, label: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        placeholder="e.g. Facebook"
+                        aria-label={`Social platform ${index + 1}`}
+                        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                      />
+                    </label>
+                    <label className="grid gap-1.5">
+                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Icon
+                      </span>
+                      <SocialIconPicker
+                        value={link.icon}
+                        label={link.label}
+                        iconImage={link.iconImage}
+                        onChange={(icon) =>
+                          setSocialLinks((current) =>
+                            current.map((item) =>
+                              item.id === link.id
+                                ? { ...item, icon, iconImage: "" }
+                                : item,
+                            ),
+                          )
+                        }
+                        onUpload={(event) =>
+                          void handleSocialIconUpload(event, link.id)
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSocialLinks((current) =>
+                          current.filter((item) => item.id !== link.id),
+                        )
+                      }
+                      aria-label={`Remove ${link.label || "social link"}`}
+                      className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/15 hover:text-red-400 sm:mb-0.5"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                  <label className="mt-3 grid max-w-3xl gap-1.5">
+                    <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Profile URL
+                    </span>
+                    <input
+                      value={link.url}
+                      onChange={(event) =>
+                        setSocialLinks((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, url: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder="https://example.com/your-profile"
+                      aria-label={`Social URL ${index + 1}`}
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                    />
+                  </label>
+                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border/50 pt-3">
+                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/30 p-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                      <span className="px-2 text-[9px]">Show in</span>
+                      {(
+                        ["nav", "contact", "footer"] as SocialLinkLocation[]
+                      ).map((location) => (
+                        <button
+                          key={location}
+                          type="button"
+                          aria-pressed={(
+                            link.locations || ["nav", "contact", "footer"]
+                          ).includes(location)}
+                          onClick={() =>
+                            setSocialLinks((current) =>
+                              current.map((item) => {
+                                if (item.id !== link.id) return item;
+                                const currentLocations = item.locations || [
+                                  "nav",
+                                  "contact",
+                                  "footer",
+                                ];
+                                return {
+                                  ...item,
+                                  locations: currentLocations.includes(location)
+                                    ? currentLocations.filter(
+                                        (itemLocation) =>
+                                          itemLocation !== location,
+                                      )
+                                    : [...currentLocations, location],
+                                };
+                              }),
+                            )
+                          }
+                          className={`rounded-md px-2.5 py-1.5 normal-case tracking-normal transition-colors ${(link.locations || ["nav", "contact", "footer"]).includes(location) ? "bg-primary text-background" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+                        >
+                          {location === "nav"
+                            ? "Navigation"
+                            : location === "contact"
+                              ? "Contact"
+                              : "Footer"}
+                        </button>
+                      ))}
+                    </div>
+                    {link.iconImage && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSocialLinks((current) =>
+                            current.map((item) =>
+                              item.id === link.id
+                                ? { ...item, iconImage: "" }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:underline"
+                      >
+                        Remove custom icon
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
         <label className="md:col-span-2">
           <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             Skills (comma separated)
@@ -1428,8 +2038,7 @@ function ProfileEditor({
           <Save size={16} /> Save profile
         </button>
       </div>
-      </form>
-    </>
+    </form>
   );
 }
 
@@ -2485,6 +3094,9 @@ function formatMessageDate(iso: string) {
 
 function MessagesPanel() {
   const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [page, setPage] = useState(1);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -2524,7 +3136,22 @@ function MessagesPanel() {
     reload();
   }, [reload]);
 
-  const allSelected = messages.length > 0 && selected.size === messages.length;
+  const filteredMessages = messages.filter((message) => {
+    const date = new Date(message.createdAt).toISOString().slice(0, 10);
+    return (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo);
+  });
+  const allSelected =
+    filteredMessages.length > 0 &&
+    filteredMessages.every((message) => selected.has(message.id));
+  const pageCount = Math.max(
+    1,
+    Math.ceil(filteredMessages.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedMessages = filteredMessages.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
 
   const toggleOne = (id: number) => {
     setSelected((current) => {
@@ -2536,7 +3163,9 @@ function MessagesPanel() {
   };
 
   const toggleAll = () => {
-    setSelected(allSelected ? new Set() : new Set(messages.map((m) => m.id)));
+    setSelected(
+      allSelected ? new Set() : new Set(filteredMessages.map((m) => m.id)),
+    );
   };
 
   const deleteIds = async (ids: number[]) => {
@@ -2617,8 +3246,9 @@ function MessagesPanel() {
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-foreground">Messages</h2>
           <p className="text-sm text-muted-foreground">
-            {messages.length} {messages.length === 1 ? "message" : "messages"}{" "}
-            from your contact form
+            {filteredMessages.length} of {messages.length}{" "}
+            {messages.length === 1 ? "message" : "messages"} from your contact
+            form
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -2638,6 +3268,55 @@ function MessagesPanel() {
             Refresh
           </button>
         </div>
+      </div>
+      <div className="flex flex-wrap items-end gap-3 border-b border-border bg-secondary/20 px-5 py-3 sm:px-6">
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          From
+          <input
+            type="date"
+            value={dateFrom}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateFrom(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        <label className="flex flex-col gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          To
+          <input
+            type="date"
+            value={dateTo}
+            max={getTodayDateInputValue()}
+            onChange={(event) => {
+              setDateTo(
+                event.target.value > getTodayDateInputValue()
+                  ? getTodayDateInputValue()
+                  : event.target.value,
+              );
+              setPage(1);
+            }}
+            className="rounded-md border border-border bg-background px-2 py-1.5 font-sans text-xs font-normal text-foreground"
+          />
+        </label>
+        {(dateFrom || dateTo) && (
+          <button
+            type="button"
+            onClick={() => {
+              setDateFrom("");
+              setDateTo("");
+              setPage(1);
+            }}
+            className="mb-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -2663,7 +3342,7 @@ function MessagesPanel() {
             Retry
           </button>
         </div>
-      ) : messages.length === 0 ? (
+      ) : filteredMessages.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-primary">
             <MailOpen size={18} />
@@ -2689,7 +3368,7 @@ function MessagesPanel() {
             </button>
           </div>
           <div className="divide-y divide-border">
-            {messages.map((msg) => {
+            {paginatedMessages.map((msg) => {
               const isOpen = expanded === msg.id;
               // using green dot indicator by rendering a small dot if it was unread (we mock unread logic since we don't have it in the type, but let's just render the content beautifully)
               return (
@@ -2810,6 +3489,11 @@ function MessagesPanel() {
               );
             })}
           </div>
+          <AdminPagination
+            page={currentPage}
+            total={messages.length}
+            onPageChange={setPage}
+          />
         </>
       )}
     </div>
@@ -2826,6 +3510,7 @@ type AdminNotification = {
 
 function NotificationsPanel() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const reload = useCallback(async () => {
     setLoading(true);
@@ -2844,6 +3529,16 @@ function NotificationsPanel() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     reload();
   }, [reload]);
+
+  const pageCount = Math.max(
+    1,
+    Math.ceil(notifications.length / ADMIN_PAGE_SIZE),
+  );
+  const currentPage = Math.min(page, pageCount);
+  const paginatedNotifications = notifications.slice(
+    (currentPage - 1) * ADMIN_PAGE_SIZE,
+    currentPage * ADMIN_PAGE_SIZE,
+  );
 
   const runAction = async (method: "PATCH" | "DELETE", ids: number[]) => {
     try {
@@ -2918,7 +3613,7 @@ function NotificationsPanel() {
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {notifications.map((notification) => (
+          {paginatedNotifications.map((notification) => (
             <div
               key={notification.id}
               className={`flex items-start gap-4 px-5 py-4 sm:px-6 ${notification.read ? "opacity-65" : "bg-primary/5"}`}
@@ -2959,6 +3654,11 @@ function NotificationsPanel() {
               </div>
             </div>
           ))}
+          <AdminPagination
+            page={currentPage}
+            total={notifications.length}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>
@@ -3026,6 +3726,7 @@ function AdminArea({
     PortfolioData[Resource][number] | null
   >(null);
   const [search, setSearch] = useState("");
+  const [resourcePage, setResourcePage] = useState(1);
   const [saved, setSaved] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -3174,6 +3875,15 @@ function AdminArea({
         itemSubtitle(item).toLowerCase().includes(q),
     );
   }, [items, search]);
+  const resourcePageCount = Math.max(
+    1,
+    Math.ceil(filteredItems.length / ADMIN_PAGE_SIZE),
+  );
+  const currentResourcePage = Math.min(resourcePage, resourcePageCount);
+  const paginatedItems = filteredItems.slice(
+    (currentResourcePage - 1) * ADMIN_PAGE_SIZE,
+    currentResourcePage * ADMIN_PAGE_SIZE,
+  );
 
   const goToSection = (
     next:
@@ -3317,15 +4027,9 @@ function AdminArea({
       >
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-            {data.profile?.heroImage ||
-            data.profile?.aboutImage ||
-            data.profile?.image ? (
+            {data.profile?.image || data.profile?.aboutImage ? (
               <NextImage
-                src={
-                  data.profile.heroImage ||
-                  data.profile.aboutImage ||
-                  data.profile.image
-                }
+                src={data.profile.image || data.profile.aboutImage || ""}
                 alt="Profile"
                 width={32}
                 height={32}
@@ -3767,11 +4471,7 @@ function AdminArea({
                 </span>
               )}
               <ProfileMenu
-                image={
-                  data.profile?.heroImage ||
-                  data.profile?.aboutImage ||
-                  data.profile?.image
-                }
+                image={data.profile?.image || data.profile?.aboutImage}
                 username={username}
                 isLight={adminLight}
                 section={section}
@@ -3794,14 +4494,10 @@ function AdminArea({
               <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-                    {data.profile?.heroImage ||
-                    data.profile?.aboutImage ||
-                    data.profile?.image ? (
+                    {data.profile?.image || data.profile?.aboutImage ? (
                       <NextImage
                         src={
-                          data.profile.heroImage ||
-                          data.profile.aboutImage ||
-                          data.profile.image
+                          data.profile.image || data.profile.aboutImage || ""
                         }
                         alt="Profile"
                         width={200}
@@ -4019,7 +4715,7 @@ function AdminArea({
           </div>
         )}
 
-        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto px-4 py-6 md:px-8 md:py-8">
           {section === "dashboard" ? (
             <section className="min-w-0">
               <div className="mb-6">
@@ -4264,7 +4960,7 @@ function AdminArea({
                         key={mode}
                         type="button"
                         aria-pressed={
-                          (data.themeSettings?.mode || "dark") === mode
+                          (data.themeSettings?.mode || "light") === mode
                         }
                         onClick={() =>
                           persist({
@@ -4272,7 +4968,7 @@ function AdminArea({
                             themeSettings: { ...data.themeSettings, mode },
                           })
                         }
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "dark") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "light") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
                       >
                         <Icon size={14} /> {label}
                       </button>
@@ -4382,13 +5078,17 @@ function AdminArea({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                          {filteredItems.map((item, index) => (
+                          {paginatedItems.map((item, index) => (
                             <tr
                               key={item.id}
                               className="group transition-colors hover:bg-secondary/20 even:bg-card odd:bg-background/50"
                             >
                               <td className="px-5 py-3.5 font-mono text-[11px] font-bold text-muted-foreground sm:px-6">
-                                {String(index + 1).padStart(2, "0")}
+                                {String(
+                                  (currentResourcePage - 1) * ADMIN_PAGE_SIZE +
+                                    index +
+                                    1,
+                                ).padStart(2, "0")}
                               </td>
                               <td className="max-w-55 truncate px-3 py-3.5 font-semibold text-foreground">
                                 {itemTitle(item)}
@@ -4418,12 +5118,25 @@ function AdminArea({
                           ))}
                         </tbody>
                       </table>
+                      <AdminPagination
+                        page={currentResourcePage}
+                        total={filteredItems.length}
+                        onPageChange={setResourcePage}
+                      />
                     </div>
                   )}
                 </div>
               </section>
             )
           )}
+          <footer className="mt-auto  pt-8 text-center text-xs text-muted-foreground sm:flex sm:items-center sm:justify-between sm:text-left">
+            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">
+              Admin Console
+            </span>
+            <span className="mt-2 block sm:mt-0">
+              {new Date().getFullYear()} · {data.profile.name}
+            </span>
+          </footer>
         </main>
       </div>
     </div>
