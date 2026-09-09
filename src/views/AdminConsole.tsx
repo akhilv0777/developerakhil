@@ -3149,6 +3149,8 @@ type ContactSettings = {
   twoFactorEnabled: boolean;
   siteName: string;
   faviconUrl: string;
+  removeBgApiUrl: string;
+  removeBgApiKey: string;
   turnstileSiteKey: string;
   turnstileSecretKey: string;
   turnstileHostnames: string;
