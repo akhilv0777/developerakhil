@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
+  ChevronUp,
   Menu,
   Minus,
   Moon,
@@ -12,9 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { FaGithub, FaLinkedin } from "react-icons/fa";
 import type { PortfolioData } from "@/lib/portfolio-types";
-import { SocialIcon } from "./SocialIcon";
 
 export function PublicNav({
   data,
@@ -27,8 +26,6 @@ export function PublicNav({
 }) {
   const profile = data.profile;
   const [open, setOpen] = useState(false);
-  const [isNavVisible, setIsNavVisible] = useState(true);
-  const lastScrollY = useRef(0);
   const [activeHash, setActiveHash] = useState("");
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const profileLinks: Array<[string, string]> = [];
@@ -49,21 +46,6 @@ export function PublicNav({
   ];
   const links = groups.flatMap((group) => group.items);
   const initials = profile.name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "AV";
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const isAtTop = currentScrollY < 32;
-      const scrollingUp = currentScrollY < lastScrollY.current;
-
-      setIsNavVisible(isAtTop || scrollingUp);
-      lastScrollY.current = currentScrollY;
-    };
-
-    lastScrollY.current = window.scrollY;
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     const updateActiveHash = () => {
@@ -92,13 +74,13 @@ export function PublicNav({
   }, [links]);
 
   return (
-    <header className={`glass-nav fixed top-3 left-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 border px-4 py-3 backdrop-blur-md transition-all duration-300 sm:top-5 sm:px-6 sm:py-4 ${isNavVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0"}`}>
+    <header className="glass-nav fixed top-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 rounded-full border px-4 py-3 backdrop-blur-md transition-all sm:px-6 sm:py-4">
       <div className="flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group" data-testid="link-home">
-          {profile.image ? (
-            <Image src={profile.image} alt={profile.name} className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110" width={36} height={36} />
+          {profile.heroImage || profile.image ? (
+            <Image src={profile.heroImage || profile.image} alt={profile.name} className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110" width={36} height={36} />
           ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">{initials}</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">{initials}</span>
           )}
           <span className="max-w-[38vw] truncate font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground sm:max-w-none">{profile.name}</span>
         </Link>
@@ -108,63 +90,25 @@ export function PublicNav({
             const groupActive = group.items.some(([href]) => activeHash === href);
             if (isSingle) {
               const [href, label] = group.items[0];
-              return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className="available-for-btn shrink-0" data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>
-                <span>{label}</span>
-              </a>;
+              return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>{label}</a>;
             }
             return <div key={group.label} className="group relative w-full shrink-0 lg:w-auto">
               <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors lg:w-auto lg:border-0 lg:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
                 {group.label}<span className="lg:hidden" aria-hidden="true">{openGroup === group.label ? <Minus size={15} /> : <Plus size={15} />}</span><ChevronDown size={13} className={`hidden transition-transform lg:block ${openGroup === group.label ? "rotate-180" : ""}`} />
               </button>
-              <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-48 flex-col gap-1 rounded-lg border border-border/80 bg-card/95 p-2 shadow-2xl backdrop-blur-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}>
+              <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:border lg:bg-background lg:p-3 lg:pl-3 lg:shadow-xl lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}>
+                <span className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground lg:flex" aria-hidden="true"><ChevronUp size={12} strokeWidth={2.5} /></span>
                 {group.items.map(([href, label]) => {
                   const isActive = activeHash === href || (!activeHash && href === "about");
-                  return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`rounded-md border-l-2 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-primary/40 hover:bg-secondary hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
+                  return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
                 })}
               </div>
             </div>;
           })}
         </nav>
         <div className="flex items-center gap-2">
-          {profile.github && (
-            <a
-              href={profile.github}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open GitHub profile"
-              title="GitHub"
-              className="hidden rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary sm:inline-flex"
-            >
-              <FaGithub size={15} />
-            </a>
-          )}
-          {profile.linkedin && (
-            <a
-              href={profile.linkedin}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Open LinkedIn profile"
-              title="LinkedIn"
-              className="hidden rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary sm:inline-flex"
-            >
-              <FaLinkedin size={15} />
-            </a>
-          )}
-          {profile.socialLinks?.filter((link) => !link.locations || link.locations.includes("nav")).map((link) => (
-            <a
-              key={link.id}
-              href={/^https?:\/\//i.test(link.url) ? link.url : `https://${link.url}`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Open ${link.label}`}
-              title={link.label}
-              className="hidden rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary sm:inline-flex"
-            >
-              <SocialIcon label={link.label} icon={link.icon} iconImage={link.iconImage} size={15} />
-            </a>
-          ))}
-          <button type="button" onClick={onToggleTheme} className="rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary" aria-label={`Switch to ${isLight ? "dark" : "light"} theme`} data-testid="button-toggle-theme">{isLight ? <Moon size={16} /> : <Sun size={16} />}</button>
-          <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-md bg-secondary p-2 text-foreground lg:hidden hover:text-primary" aria-label="Toggle navigation" data-testid="button-toggle-nav">{open ? <X size={20} /> : <Menu size={20} />}</button>
+          <button type="button" onClick={onToggleTheme} className="rounded-full border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary" aria-label={`Switch to ${isLight ? "dark" : "light"} theme`} data-testid="button-toggle-theme">{isLight ? <Moon size={16} /> : <Sun size={16} />}</button>
+          <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-full bg-secondary p-2 text-foreground lg:hidden hover:text-primary" aria-label="Toggle navigation" data-testid="button-toggle-nav">{open ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
       </div>
     </header>

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type FormEvent,
-} from "react";
+import { useEffect, useState, type ReactNode, type FormEvent } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -15,18 +9,14 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Check,
-  Copy,
   Download,
   ExternalLink,
-  Heart,
   Mail,
   MapPin,
   Menu,
   Minus,
   Moon,
   Plus,
-  Share2,
   Sun,
   Star,
   Phone,
@@ -37,7 +27,6 @@ import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
 import { useMotionFlow } from "@/lib/motionflow";
 import type {
-  HeroImageSettings,
   PortfolioData,
   Profile,
   Project,
@@ -47,7 +36,6 @@ import type {
 import { usePortfolioQuery } from "@/lib/portfolio-api";
 import { useTurnstile } from "@/components/Turnstile";
 import { PublicNav } from "@/components/public/PublicNav";
-import { SocialIcon } from "@/components/public/SocialIcon";
 import Image from "next/image";
 
 function hexToHsl(hex: string): string {
@@ -346,67 +334,35 @@ function SectionLabel({
 
 function TypingRoles({ roles }: { roles: string[] }) {
   const safeRoles = roles.filter(Boolean);
-  const rolesKey = safeRoles.join("|");
-  const [roleIndex, setRoleIndex] = useState(0);
-  const [displayedRole, setDisplayedRole] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const effectRoles = rolesKey ? rolesKey.split("|") : [];
-    if (!effectRoles.length) return;
-    const currentRole = effectRoles[roleIndex % effectRoles.length];
-    const isComplete = displayedRole === currentRole;
-    const isEmpty = displayedRole.length === 0;
-    const delay =
-      !isDeleting && isComplete
-        ? 1200
-        : isDeleting && isEmpty
-          ? 300
-          : isDeleting
-            ? 45
-            : 85;
-    const timer = window.setTimeout(() => {
-      if (!isDeleting && isComplete) {
-        setIsDeleting(true);
-      } else if (isDeleting && isEmpty) {
-        setIsDeleting(false);
-        setRoleIndex((current) => (current + 1) % effectRoles.length);
-      } else {
-        setDisplayedRole(
-          isDeleting
-            ? currentRole.slice(0, Math.max(0, displayedRole.length - 1))
-            : currentRole.slice(0, displayedRole.length + 1),
-        );
-      }
-    }, delay);
-
-    return () => window.clearTimeout(timer);
-  }, [displayedRole, isDeleting, roleIndex, rolesKey]);
 
   if (!safeRoles.length) {
     return (
-      <span className="font-mono text-[11px] uppercase tracking-[.15em] text-primary font-semibold">
-        Developer.
+      <span className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+        Developer
       </span>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[.18em] text-foreground font-semibold">
-      <span>a</span>
+    <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+      <span>I am a</span>
       <span
-        className="terminal-caret inline-flex min-w-[10ch] items-center text-primary"
-        aria-live="polite"
-      >
-        {displayedRole}
-      </span>
-      <span>.</span>
+        data-mf-text-type="typing"
+        data-mf-text-typing-speed="85"
+        data-mf-text-typing-delete-speed="45"
+        data-mf-text-typing-interval="1200"
+        data-mf-text-typing-loop="true"
+        data-mf-text-typing-cursor="true"
+        className="inline-flex min-w-[120px] items-center text-primary"
+        dangerouslySetInnerHTML={{
+          __html: safeRoles.map((role) => `<span>${role}</span>`).join(""),
+        }}
+      />
     </span>
   );
 }
 
 function Hero({ profile }: { profile: Profile }) {
-  const heroRef = useRef<HTMLElement>(null);
   const roles = (
     profile.roles?.length ? profile.roles : [profile.tagline]
   ).filter(Boolean);
@@ -416,154 +372,31 @@ function Hero({ profile }: { profile: Profile }) {
       ? "Available for freelance work"
       : profile.tagline || "Available for freelance work";
   const resumeHref = profile.resume || "#contact";
-  const desktopImageSettings = profile.heroDesktopSettings;
-  const mobileImageSettings = profile.heroMobileSettings;
-
-  const imageFilter = (settings?: HeroImageSettings) => {
-    if (!settings) return undefined;
-    const presets: Record<string, string> = {
-      grayscale: "grayscale(1)",
-      sepia: "sepia(.75)",
-      vintage: "sepia(.35) saturate(.8) contrast(.95)",
-      warm: "sepia(.18) saturate(1.25) hue-rotate(-8deg)",
-      cool: "saturate(.85) hue-rotate(12deg)",
-      blur: "blur(3px)",
-      invert: "invert(1)",
-      bright: "brightness(1.18) contrast(1.05)",
-      pop: "saturate(1.45) contrast(1.12)",
-    };
-    return `${presets[settings.preset] || ""} brightness(${settings.brightness / 100}) contrast(${settings.contrast / 100}) saturate(${settings.saturation / 100}) hue-rotate(${settings.hue}deg) blur(${settings.blur}px)`.trim();
-  };
-
-  useEffect(() => {
-    let context: { revert: () => void } | undefined;
-    import("gsap").then(({ gsap }) => {
-      if (!heroRef.current) return;
-      context = gsap.context(() => {
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-          return;
-
-        gsap.fromTo(
-          "[data-hero-reveal]",
-          { opacity: 0, y: 24 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.09,
-            ease: "power3.out",
-          },
-        );
-        gsap.fromTo(
-          ".hero-background-image img",
-          { scale: 1.08 },
-          { scale: 1, duration: 1.5, ease: "power3.out" },
-        );
-      }, heroRef);
-    });
-
-    return () => context?.revert();
-  }, []);
 
   return (
-    <section
-      ref={heroRef}
-      className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
-    >
-      {(profile.heroImage || profile.image) && (
-        <div
-          className="hero-background-image absolute inset-0 z-0"
-          aria-hidden="true"
-          style={
-            {
-              "--hero-desktop-filter":
-                imageFilter(desktopImageSettings) || "none",
-              "--hero-mobile-filter":
-                imageFilter(mobileImageSettings) || "none",
-              "--hero-desktop-opacity": desktopImageSettings?.opacity
-                ? desktopImageSettings.opacity / 100
-                : 1,
-              "--hero-mobile-opacity": mobileImageSettings?.opacity
-                ? mobileImageSettings.opacity / 100
-                : 1,
-              "--hero-desktop-overlay-color":
-                desktopImageSettings?.overlayColor || "#ffffff",
-              "--hero-mobile-overlay-color":
-                mobileImageSettings?.overlayColor || "#ffffff",
-              "--hero-desktop-overlay-opacity":
-                desktopImageSettings?.overlayOpacity
-                  ? desktopImageSettings.overlayOpacity / 100
-                  : 0,
-              "--hero-mobile-overlay-opacity":
-                mobileImageSettings?.overlayOpacity
-                  ? mobileImageSettings.overlayOpacity / 100
-                  : 0,
-            } as React.CSSProperties
-          }
-        >
-          <picture className="absolute inset-0 block">
-            {profile.heroMobileImage && (
-              <source
-                media="(max-width: 767px)"
-                srcSet={profile.heroMobileImage}
-              />
-            )}
-            <Image
-              src={profile.heroImage || profile.image}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover object-[68%_center]"
-            />
-          </picture>
-          <div className="hero-custom-overlay" />
-        </div>
-      )}
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl min-w-0 items-center">
-        <div className="hero-copy flex max-w-3xl flex-col items-start">
-          <div
-            data-hero-reveal
-            className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm"
-          >
+    <section className="relative flex min-h-[min(900px,100dvh)] items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24">
+      <div className="relative mx-auto grid w-full max-w-7xl min-w-0 items-center gap-10 z-10 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="flex flex-col items-start">
+          <div className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
               {heroBadge}
             </p>
           </div>
 
-          <p
-            data-hero-reveal
-            className="mb-3 font-mono text-sm font-semibold uppercase tracking-[.16em] text-primary"
-          >
-            Hello 👋, I am
-          </p>
-
-          <h1
-            data-hero-reveal
-            className="display-title reveal reveal-delay-1 max-w-4xl text-5xl font-bold leading-[1.02] text-foreground tracking-tight sm:text-6xl lg:text-8xl"
-          >
+          <h1 className="display-title reveal reveal-delay-1 max-w-5xl text-5xl font-bold leading-[1.05] text-foreground tracking-tight sm:text-6xl lg:text-7xl">
             {profile.name}
           </h1>
 
-          <div
-            data-hero-reveal
-            className="reveal reveal-delay-2 mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-foreground"
-          >
+          <div className="reveal reveal-delay-2 mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-muted-foreground">
             <TypingRoles roles={roles} />
           </div>
 
-          <p
-            data-hero-reveal
-            className="reveal reveal-delay-3 mt-8 max-w-xl text-base leading-[1.8] text-foreground sm:text-lg"
-          >
+          <p className="reveal reveal-delay-3 mt-8 max-w-2xl text-lg leading-[1.8] text-muted-foreground">
             {profile.bio1}
           </p>
 
-          <div
-            data-hero-reveal
-            className="reveal reveal-delay-4 mt-10 flex flex-wrap items-center gap-3 sm:mt-12 sm:gap-4"
-          >
+          <div className="reveal reveal-delay-4 mt-12 flex flex-wrap items-center gap-4">
             <a
               href="#work"
               className="group inline-flex w-fit items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all duration-300 hover:scale-105 glow-border"
@@ -586,17 +419,49 @@ function Hero({ profile }: { profile: Profile }) {
             </a>
           </div>
         </div>
+
+        {(profile.heroImage || profile.image) && (
+          <div className="reveal reveal-delay-2 relative mx-auto w-full max-w-[420px]">
+            <div className="absolute -inset-8 -z-10 rounded-full bg-primary/10 blur-3xl" />
+            <div className="portrait-frame aspect-[4/5] p-3">
+              <Image
+                src={profile.heroImage || profile.image}
+                alt={profile.name}
+                className="h-full w-full rounded-[1.1rem] object-cover"
+                width={420}
+                height={300}
+              />
+              <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
+              <div className="absolute inset-x-7 bottom-7 z-10 flex items-end justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    Currently building
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    Digital products with purpose.
+                  </p>
+                </div>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/20 bg-black/20 text-primary backdrop-blur-md">
+                  <ArrowUpRight size={15} />
+                </span>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 font-mono text-[10px] uppercase tracking-wider">
+              <div className="glass-surface rounded-lg px-3 py-3 text-muted-foreground">
+                <span className="mb-1 block text-primary">Based in</span>
+                {profile.location}
+              </div>
+              <a
+                href={`mailto:${profile.email}`}
+                className="glass-surface rounded-lg px-3 py-3 text-muted-foreground transition-colors hover:text-primary"
+              >
+                <span className="mb-1 block text-primary">Open to</span>
+                Collaborations
+              </a>
+            </div>
+          </div>
+        )}
       </div>
-      <a
-        href="#about"
-        data-hero-reveal
-        className="absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-muted-foreground transition-colors hover:text-primary sm:flex"
-      >
-        <span className="h-px w-8 bg-border" />
-        Scroll to explore
-        <ChevronDown size={14} className="animate-bounce text-primary" />
-        <span className="h-px w-8 bg-border" />
-      </a>
     </section>
   );
 }
@@ -609,66 +474,67 @@ function About({ profile }: { profile: Profile }) {
     >
       <SectionLabel number="01">ABOUT</SectionLabel>
       <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[1.1fr_0.9fr]">
-        <div>
-          {profile.aboutImage ? (
-            <div className="about-image-stage mx-auto aspect-square w-full max-w-[460px] lg:mx-0">
-              <div className="about-image-frame h-full w-full">
+          <div>
+            {profile.aboutImage ? (
+              <div className="portrait-frame mx-auto aspect-[4/5] w-full max-w-[520px] p-3 lg:mx-0">
                 <Image
                   src={profile.aboutImage}
                   alt={profile.name}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full rounded-[1.1rem] object-cover"
                   width={420}
-                  height={420}
+                  height={300}
                 />
+                <div className="portrait-wash absolute inset-3 rounded-[1.1rem]" />
                 <div className="absolute bottom-7 left-7 z-10">
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
-                    Behind the work
+                    Profile / Snapshot
                   </p>
                   <p className="mt-1 text-sm font-semibold text-white">
                     Developer · Creator · Problem solver
                   </p>
                 </div>
               </div>
-            </div>
-          ) : null}
-        </div>
-        <div className="space-y-8">
-          <div
-            data-mf-stagger-animation="fade-up"
-            data-mf-stagger-gap="120"
-            className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
-          >
-            <p className="text-2xl font-bold leading-[1.35] text-foreground sm:text-3xl lg:text-4xl">
-              {profile.bio1}
-            </p>
-            <p>{profile.bio2}</p>
-            <p>{profile.bio3}</p>
+            ) : null}
           </div>
-          {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
+          <div className="space-y-8">
             <div
-              id="skills"
-              data-mf-animation="fade-up"
-              className="flex flex-wrap gap-2"
+              data-mf-stagger-animation="fade-up"
+              data-mf-stagger-gap="120"
+              className="grid gap-8 text-base leading-[1.8] text-muted-foreground"
             >
-              {profile.skills?.map((skill) => (
-                <span
-                  key={skill}
-                  className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
-                >
-                  {skill}
-                </span>
-              ))}
-              {profile.languages?.map((lang) => (
-                <span
-                  key={lang}
-                  className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
-                >
-                  {lang}
-                </span>
-              ))}
+              <p
+                className="text-2xl font-bold leading-[1.35] text-foreground sm:text-3xl lg:text-4xl"
+              >
+                {profile.bio1}
+              </p>
+              <p>{profile.bio2}</p>
+              <p>{profile.bio3}</p>
             </div>
-          )}
-        </div>
+            {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
+              <div
+                id="skills"
+                data-mf-animation="fade-up"
+                className="flex flex-wrap gap-2"
+              >
+                {profile.skills?.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {profile.languages?.map((lang) => (
+                  <span
+                    key={lang}
+                    className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
+                  >
+                    {lang}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
       </div>
     </section>
   );
@@ -738,7 +604,7 @@ function Marquee({ services }: { services: Service[] }) {
   return (
     <div
       id="services-strip"
-      className="mx-auto my-10 max-w-7xl overflow-hidden rounded-xl border border-border/60 bg-secondary/55 py-6 backdrop-blur-sm [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
+      className="my-10 overflow-hidden bg-secondary py-6 border-y border-border"
     >
       <div
         data-mf-ticker
@@ -813,44 +679,35 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
       id="experience"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
-        <div data-mf-animation="fade-up">
-          <SectionLabel number="03">EXPERIENCE</SectionLabel>
-          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
-            Professional <br />
-            <span>Timeline.</span>
-          </h2>
-        </div>
-
-        <div
-          data-mf-stagger-animation="fade-left"
-          data-mf-stagger-gap="100"
-          className="grid gap-6"
-        >
-          {data.experience.map((item) => (
-            <div
-              className="bento-card group flex flex-col sm:flex-row gap-5 p-6 transition-all hover:-translate-y-1"
-              key={item.id}
-            >
-              <div className="sm:w-32 shrink-0">
-                <span className="font-mono text-[12px] font-bold text-primary tracking-wider">
-                  {item.period}
-                </span>
-              </div>
+      <SectionLabel number="03">EXPERIENCE</SectionLabel>
+      <div
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-gap="90"
+        className="grid gap-6 lg:grid-cols-2 mt-12"
+      >
+        {data.experience.map((item) => (
+          <div
+            className="bento-card group p-6 transition-all hover:-translate-y-1"
+            key={item.id}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-xl font-bold text-foreground">
+                <h3 className="text-2xl font-bold text-foreground">
                   {item.role}
                 </h3>
-                <p className="mt-2 font-mono text-[12px] text-muted-foreground">
+                <p className="mt-2 font-mono text-[12px] font-bold text-primary">
                   {item.company}
                 </p>
-                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                  {item.detail}
-                </p>
               </div>
+              <span className="inline-flex h-8 items-center rounded-full border border-border px-4 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {item.period}
+              </span>
             </div>
-          ))}
-        </div>
+            <p className="text-base leading-[1.7] text-muted-foreground">
+              {item.detail}
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -860,7 +717,7 @@ function Services({ data }: { data: PortfolioData }) {
   return (
     <section
       id="services"
-      className="mx-auto max-w-7xl border-y border-border/60 bg-secondary/10 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <SectionLabel number="04">SERVICES</SectionLabel>
 
@@ -894,81 +751,13 @@ function Services({ data }: { data: PortfolioData }) {
 
 function Work({ data }: { data: PortfolioData }) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const selectedProjectIndex = selectedProject
-    ? data.projects.findIndex((project) => project.id === selectedProject.id)
-    : -1;
-
-  const showAdjacentProject = (direction: -1 | 1) => {
-    const nextIndex = selectedProjectIndex + direction;
-    if (nextIndex >= 0 && nextIndex < data.projects.length) {
-      setSelectedProject(data.projects[nextIndex]);
-    }
-  };
-  const [activeCategory, setActiveCategory] = useState("All projects");
-  const categories = Array.from(
-    new Set(
-      data.projects
-        .map((project) => project.category.trim() || "Uncategorized")
-        .filter(Boolean),
-    ),
-  );
-  const filteredProjects =
-    activeCategory === "All projects"
-      ? data.projects
-      : data.projects.filter(
-          (project) =>
-            (project.category.trim() || "Uncategorized") === activeCategory,
-        );
-
-  const shareProject = async (project: Project) => {
-    const shareUrl = `${window.location.origin}/projects/${encodeURIComponent(project.id)}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: project.title,
-          text: project.description,
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success("Project link copied");
-      }
-    } catch (error) {
-      if ((error as DOMException).name !== "AbortError") {
-        toast.error("Could not share this project");
-      }
-    }
-  };
-
   return (
     <section
       id="work"
-      className="mx-auto max-w-[1400px] border-b border-border/60 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end mb-12">
         <SectionLabel number="05">PROJECTS</SectionLabel>
-        <div
-          className="flex flex-wrap gap-2"
-          role="tablist"
-          aria-label="Filter projects by category"
-        >
-          {["All projects", ...categories].map((category) => (
-            <button
-              key={category}
-              type="button"
-              role="tab"
-              aria-selected={activeCategory === category}
-              onClick={() => setActiveCategory(category)}
-              className={`rounded-full border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                activeCategory === category
-                  ? "border-primary bg-primary text-background"
-                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div
@@ -976,7 +765,7 @@ function Work({ data }: { data: PortfolioData }) {
         data-mf-stagger-gap="90"
         className="grid gap-8 lg:grid-cols-2"
       >
-        {filteredProjects.map((project) => (
+        {data.projects.map((project) => (
           <article
             key={project.id}
             className="bento-card group flex flex-col transition-all hover:-translate-y-2 overflow-hidden"
@@ -1020,21 +809,13 @@ function Work({ data }: { data: PortfolioData }) {
               <p className="mb-8 line-clamp-6 text-sm leading-[1.8] text-muted-foreground">
                 {project.description}
               </p>
-              <div className="flex w-full flex-wrap items-center gap-3">
+              <div className="flex w-full flex-wrap items-center gap-3 opacity-100 transition-opacity duration-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                 <button
                   type="button"
                   onClick={() => setSelectedProject(project)}
                   className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
                 >
                   View project details <ArrowUpRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void shareProject(project)}
-                  aria-label={`Share ${project.title}`}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
-                >
-                  <Share2 size={13} /> Share
                 </button>
                 {project.liveUrl && (
                   <a
@@ -1051,11 +832,6 @@ function Work({ data }: { data: PortfolioData }) {
           </article>
         ))}
       </div>
-      {filteredProjects.length === 0 && (
-        <p className="mt-8 text-sm text-muted-foreground">
-          No projects in this category yet.
-        </p>
-      )}
       {selectedProject && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md"
@@ -1063,7 +839,7 @@ function Work({ data }: { data: PortfolioData }) {
           aria-modal="true"
           aria-label={`${selectedProject.title} details`}
         >
-          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-9 lg:p-8 lg:pb-10">
+          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 sm:p-6 lg:p-8">
             <button
               type="button"
               onClick={() => setSelectedProject(null)}
@@ -1081,55 +857,16 @@ function Work({ data }: { data: PortfolioData }) {
             <p className="mt-6 whitespace-pre-line text-base leading-[1.8] text-muted-foreground">
               {selectedProject.description}
             </p>
-            <div className="mt-8 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button
-                type="button"
-                onClick={() => showAdjacentProject(-1)}
-                disabled={selectedProjectIndex <= 0}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
+            {selectedProject.liveUrl && (
+              <a
+                href={selectedProject.liveUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-8 inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background"
               >
-                <ChevronLeft size={14} /> Previous
-              </button>
-              <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                {selectedProjectIndex + 1} / {data.projects.length}
-              </span>
-              <button
-                type="button"
-                onClick={() => showAdjacentProject(1)}
-                disabled={
-                  selectedProjectIndex < 0 ||
-                  selectedProjectIndex >= data.projects.length - 1
-                }
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-30"
-              >
-                Next <ChevronRight size={14} />
-              </button>
-            </div>
-            <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-border pt-6">
-              <Link
-                href={`/projects/${encodeURIComponent(selectedProject.id)}`}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-primary/50 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
-              >
-                <ArrowUpRight size={14} /> Open full case study
-              </Link>
-              {selectedProject.liveUrl && (
-                <a
-                  href={selectedProject.liveUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background"
-                >
-                  <ExternalLink size={14} /> Open live project
-                </a>
-              )}
-              <button
-                type="button"
-                onClick={() => void shareProject(selectedProject)}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary"
-              >
-                <Share2 size={14} /> Share project
-              </button>
-            </div>
+                <ExternalLink size={14} /> Open live project
+              </a>
+            )}
           </div>
         </div>
       )}
@@ -1170,17 +907,9 @@ function Testimonials({ data }: { data: PortfolioData }) {
             key={currentIndex}
             className="flex w-full max-w-5xl flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out"
           >
-            <div
-              className="mb-6 flex items-center gap-1 text-primary"
-              aria-label="5 out of 5 stars"
-            >
+            <div className="mb-6 flex items-center gap-1 text-primary" aria-label="5 out of 5 stars">
               {Array.from({ length: 5 }, (_, index) => (
-                <Star
-                  key={index}
-                  size={18}
-                  fill="currentColor"
-                  strokeWidth={1.5}
-                />
+                <Star key={index} size={18} fill="currentColor" strokeWidth={1.5} />
               ))}
             </div>
             <p className="max-w-5xl text-center text-2xl font-bold leading-[1.4] tracking-tight text-foreground sm:text-3xl lg:text-4xl">
@@ -1380,7 +1109,6 @@ function ContactLinks({
   variant: "contact" | "footer";
 }) {
   const isContact = variant === "contact";
-  const [copiedEmail, setCopiedEmail] = useState(false);
   const linkClass = isContact
     ? "group flex min-h-14 items-center gap-3 border-b border-border py-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition-colors hover:text-primary"
     : "group inline-flex items-center gap-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary";
@@ -1413,66 +1141,19 @@ function ContactLinks({
         </a>
       )}
 
-      {profile.socialLinks
-        ?.filter((link) => !link.locations || link.locations.includes(variant))
-        .map((link) => (
-          <a
-            key={link.id}
-            href={
-              /^https?:\/\//i.test(link.url) ? link.url : `https://${link.url}`
-            }
-            target="_blank"
-            rel="noreferrer"
-            className={linkClass}
-            aria-label={`Open ${link.label}`}
-          >
-            <SocialIcon
-              label={link.label}
-              icon={link.icon}
-              iconImage={link.iconImage}
-              size={16}
-            />
-            {link.label}
-          </a>
-        ))}
-
-      <div
-        className={
-          isContact
-            ? "flex min-h-14 items-center border-b border-border"
-            : "contents"
-        }
+      <a
+        href={`mailto:${profile.email}`}
+        className={linkClass}
       >
-        <a
-          href={`mailto:${profile.email}`}
-          className={`${linkClass} min-w-0 flex-1 border-0`}
-        >
-          <Mail className={iconClass} size={16} />
-          <span className="truncate">say hello</span>
-        </a>
-        {isContact && (
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(profile.email);
-                setCopiedEmail(true);
-                toast.success("Email copied");
-                window.setTimeout(() => setCopiedEmail(false), 1800);
-              } catch {
-                toast.error("Could not copy email");
-              }
-            }}
-            aria-label={copiedEmail ? "Email copied" : "Copy email address"}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            {copiedEmail ? <Check size={14} /> : <Copy size={14} />}
-          </button>
-        )}
-      </div>
+        <Mail className={iconClass} size={16} />
+        say hello
+      </a>
 
       {profile.phone && (
-        <a href={`tel:${profile.phone}`} className={linkClass}>
+        <a
+          href={`tel:${profile.phone}`}
+          className={linkClass}
+        >
           <Phone className={iconClass} size={16} />
           {profile.phone}
         </a>
@@ -1489,44 +1170,26 @@ function ContactLinks({
 function Footer({ profile }: { profile: Profile }) {
   return (
     <footer className="border-t border-border bg-background px-4 py-8 sm:px-5 sm:py-12 md:px-8 lg:px-10">
-      <div className="mx-auto flex max-w-7xl flex-col items-center text-center">
+      <div className="mx-auto max-w-7xl">
         <ContactLinks profile={profile} variant="footer" />
         <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
-          <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            © {new Date().getFullYear()} {profile.name}
-          </span>
-          <span className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            Built with code & coffee
-          </span>
+        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          © {new Date().getFullYear()} {profile.name}
+        </span>
+        <span className="flex items-center gap-2 rounded-full border border-border bg-secondary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          Built with code & coffee
+        </span>
+        <a
+          href="#top"
+          className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-secondary text-primary shadow-lg transition-transform hover:-translate-y-1 hover:bg-primary hover:text-background sm:bottom-6 sm:right-6"
+          aria-label="Back to top"
+        >
+          ↑
+        </a>
         </div>
       </div>
     </footer>
-  );
-}
-
-function ThankYouSection({ profile }: { profile: Profile }) {
-  return (
-    <section className="border-y border-border/70 px-4 py-20 sm:px-5 sm:py-28 md:px-8 lg:px-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center text-center">
-        <div>
-          <p className="w-full text-center font-mono text-[11px] font-semibold uppercase tracking-[.2em] text-primary">
-            End note
-          </p>
-          <h2 className="display-title mt-4 flex flex-wrap items-center justify-center gap-3 text-5xl font-bold leading-none text-foreground sm:text-7xl lg:text-8xl">
-            Thank you<span className="text-primary">.</span>
-            <Heart
-              className="heartbeat h-8 w-8 text-primary sm:h-12 sm:w-12"
-              fill="currentColor"
-              aria-hidden="true"
-            />
-          </h2>
-        </div>
-        <p className="mt-7 w-full max-w-2xl text-center text-base leading-7 text-muted-foreground sm:text-lg">
-          Thanks for taking the time to look through {profile.name}&apos;s work.
-        </p>
-      </div>
-    </section>
   );
 }
 
@@ -1561,7 +1224,7 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
           </div>
           <div className="mt-6 text-center">
             <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">
-              Opening portfolio
+              Compiling portfolio
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Building a sharper view of the work.
@@ -1579,9 +1242,10 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   useMotionFlow([data]);
-  const [themeOverride, setThemeOverride] = useState<"dark" | "light">("light");
+  const [themeOverride, setThemeOverride] = useState<"dark" | "light" | null>(
+    null,
+  );
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     fetch("/api/site-settings", { cache: "no-store" })
@@ -1611,7 +1275,6 @@ export function PublicPortfolio() {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
       setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
-      setShowBackToTop(window.scrollY > window.innerHeight * 0.75);
     };
     const scheduleProgress = () => {
       if (!frame) frame = window.requestAnimationFrame(updateProgress);
@@ -1629,16 +1292,9 @@ export function PublicPortfolio() {
   useEffect(() => {
     const recordVisit = async () => {
       try {
-        const storageKey = "portfolio-visitor-session";
-        let sessionId = sessionStorage.getItem(storageKey);
-        if (!sessionId) {
-          sessionId = crypto.randomUUID();
-          sessionStorage.setItem(storageKey, sessionId);
-        }
         const payload = {
-          sessionId,
           ipAddress: "",
-          country: "",
+          country: "",  
           region: "",
           city: "",
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
@@ -1669,7 +1325,7 @@ export function PublicPortfolio() {
   if (isLoading) return <PortfolioLoading />;
   if (isError || !data) return <PortfolioLoading error />;
 
-  const themeMode = data.themeSettings?.mode ?? "light";
+  const themeMode = data.themeSettings?.mode ?? "dark";
   const prefersLightMode =
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
@@ -1736,11 +1392,11 @@ export function PublicPortfolio() {
       />
       <main>
         {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
+        {data.sectionVisibility?.about && <About profile={data.profile} />}
+        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
         {data.sectionVisibility?.services && (
           <Marquee services={data.services} />
         )}
-        {data.sectionVisibility?.about && <About profile={data.profile} />}
-        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
         {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && (
           <ExperienceSection data={data} />
@@ -1750,21 +1406,6 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
         {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
       </main>
-      <ThankYouSection profile={data.profile} />
-      {showBackToTop && (
-        <a
-          href="#top"
-          className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg transition-all hover:-translate-y-1 sm:bottom-6 sm:right-6"
-          style={{
-            background: `conic-gradient(hsl(var(--primary)) ${scrollProgress}%, hsl(var(--border)) ${scrollProgress}% 100%)`,
-          }}
-          aria-label="Back to top"
-        >
-          <span className="flex h-full w-full items-center justify-center rounded-full bg-secondary hover:bg-primary hover:text-background">
-            ↑
-          </span>
-        </a>
-      )}
       <Footer profile={data.profile} />
     </div>
   );
