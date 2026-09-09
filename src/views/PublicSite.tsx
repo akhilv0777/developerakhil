@@ -435,6 +435,20 @@ function Hero({ profile }: { profile: Profile }) {
     return `${presets[settings.preset] || ""} brightness(${settings.brightness / 100}) contrast(${settings.contrast / 100}) saturate(${settings.saturation / 100}) hue-rotate(${settings.hue}deg) blur(${settings.blur}px)`.trim();
   };
 
+  const imagePosition = (settings?: HeroImageSettings) => {
+    if (!settings) return "50% 50%";
+    const useRight = settings.left === 50 && settings.right !== 50;
+    const useBottom = settings.top === 50 && settings.bottom !== 50;
+    const horizontal = useRight
+      ? `right ${settings.right}%`
+      : `left ${settings.left}%`;
+    const vertical = useBottom
+      ? `bottom ${settings.bottom}%`
+      : `top ${settings.top}%`;
+
+    return `${horizontal} ${vertical}`;
+  };
+
   useEffect(() => {
     let context: { revert: () => void } | undefined;
     import("gsap").then(({ gsap }) => {
@@ -480,6 +494,12 @@ function Hero({ profile }: { profile: Profile }) {
                 imageFilter(desktopImageSettings) || "none",
               "--hero-mobile-filter":
                 imageFilter(mobileImageSettings) || "none",
+              "--hero-desktop-object-position": imagePosition(
+                desktopImageSettings,
+              ),
+              "--hero-mobile-object-position": imagePosition(
+                mobileImageSettings,
+              ),
               "--hero-desktop-opacity": desktopImageSettings?.opacity
                 ? desktopImageSettings.opacity / 100
                 : 1,
@@ -514,7 +534,7 @@ function Hero({ profile }: { profile: Profile }) {
               fill
               priority
               sizes="100vw"
-              className="object-cover object-[68%_center]"
+              className="object-cover"
             />
           </picture>
           <div className="hero-custom-overlay" />

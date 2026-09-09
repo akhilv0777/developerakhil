@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'cropperjs/dist/cropper.css';
 @plugin "tailwindcss-animate";
 @plugin "@tailwindcss/typography";
 
@@ -167,10 +168,10 @@
   .about-image-frame::after { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 48%, hsl(240 15% 4% / 0.72)); content: ""; pointer-events: none; }
 
   .hero-background-image { opacity: .82; }
-  .hero-background-image picture { position: absolute; inset: 0; }
-  .hero-background-image picture > img { height: 100%; width: 100%; filter: var(--hero-desktop-filter, none); opacity: var(--hero-desktop-opacity, 1); }
-  .hero-custom-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: var(--hero-desktop-overlay-color, #fff); opacity: var(--hero-desktop-overlay-opacity, 0); }
-  .hero-background-image::after { position: absolute; inset: 0; background: linear-gradient(90deg, hsl(var(--background) / .98) 0%, hsl(var(--background) / .9) 35%, hsl(var(--background) / .38) 68%, hsl(var(--background) / .12) 100%), linear-gradient(180deg, hsl(var(--background) / .18), hsl(var(--background) / .48)); content: ""; }
+  .hero-background-image picture { position: absolute; inset: 0; z-index: 0; }
+  .hero-background-image picture > img { height: 100%; width: 100%; object-position: var(--hero-desktop-object-position, 50% 50%); filter: var(--hero-desktop-filter, none); opacity: var(--hero-desktop-opacity, 1); }
+  .hero-custom-overlay { position: absolute; inset: 0; z-index: 1; pointer-events: none; background-color: var(--hero-desktop-overlay-color, #fff); opacity: var(--hero-desktop-overlay-opacity, 0); }
+  .hero-background-image::after { position: absolute; inset: 0; z-index: 2; background: linear-gradient(90deg, hsl(var(--background) / .98) 0%, hsl(var(--background) / .9) 35%, hsl(var(--background) / .38) 68%, hsl(var(--background) / .12) 100%), linear-gradient(180deg, hsl(var(--background) / .18), hsl(var(--background) / .48)); content: ""; }
   .hero-copy { text-shadow: 0 2px 24px hsl(var(--background) / .32); }
   .light .hero-copy { text-shadow: 0 1px 3px hsl(0 0% 0% / .16); }
   .light .hero-copy .text-muted-foreground { color: hsl(var(--foreground)); }
@@ -184,8 +185,8 @@
     .hero-image-frame { min-height: 460px; }
   }
   @media (max-width: 61.99rem) {
-    .hero-background-image picture > img { filter: var(--hero-mobile-filter, none); opacity: var(--hero-mobile-opacity, 1); }
-    .hero-custom-overlay { background: var(--hero-mobile-overlay-color, #fff); opacity: var(--hero-mobile-overlay-opacity, 0); }
+    .hero-background-image picture > img { object-position: var(--hero-mobile-object-position, 50% 50%); filter: var(--hero-mobile-filter, none); opacity: var(--hero-mobile-opacity, 1); }
+    .hero-custom-overlay { background-color: var(--hero-mobile-overlay-color, #fff); opacity: var(--hero-mobile-overlay-opacity, 0); }
     .available-for-btn { width: 100%; justify-content: center; }
     .hero-background-image { opacity: .46; }
     .hero-background-image::after { background: linear-gradient(180deg, hsl(var(--background) / .86) 0%, hsl(var(--background) / .62) 48%, hsl(var(--background) / .88) 100%); }

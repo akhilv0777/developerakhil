@@ -5,11 +5,13 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import Cropper from "cropperjs";
 import {
   BarChart3,
   Bell,
@@ -21,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  Crop,
   Eye,
   EyeOff,
   ExternalLink,
@@ -50,6 +53,7 @@ import {
   Save,
   Search,
   Settings,
+  Sparkles,
   Square,
   Smartphone,
   Sun,
@@ -63,7 +67,11 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMotionFlow } from "@/lib/motionflow";
-import { resizeAndUploadImage, uploadFileToCDN } from "@/lib/image-upload";
+import {
+  resizeAndUploadImage,
+  uploadFileToCDN,
+  uploadImageToCDN,
+} from "@/lib/image-upload";
 import type {
   Education,
   Experience,
@@ -1264,20 +1272,201 @@ const defaultHeroImageSettings: HeroImageSettings = {
   hue: 0,
   blur: 0,
   opacity: 100,
+  top: 50,
+  left: 50,
+  right: 50,
+  bottom: 50,
   overlayColor: "#ffffff",
   overlayOpacity: 0,
 };
+
+function getHeroImageObjectPosition(settings?: HeroImageSettings) {
+  if (!settings) return "50% 50%";
+  const useRight = settings.left === 50 && settings.right !== 50;
+  const useBottom = settings.top === 50 && settings.bottom !== 50;
+  const horizontal = useRight
+    ? `right ${settings.right}%`
+    : `left ${settings.left}%`;
+  const vertical = useBottom
+    ? `bottom ${settings.bottom}%`
+    : `top ${settings.top}%`;
+
+  return `${horizontal} ${vertical}`;
+}
+
+function getHeroFilterValue(settings?: HeroImageSettings) {
+  if (!settings) return "none";
+  const presets: Record<string, string> = {
+    none: "",
+    grayscale: "grayscale(1)",
+    sepia: "sepia(.75)",
+    vintage: "sepia(.35) saturate(.8) contrast(.95)",
+    warm: "sepia(.18) saturate(1.25) hue-rotate(-8deg)",
+    cool: "saturate(.85) hue-rotate(12deg)",
+    blur: "blur(3px)",
+    invert: "invert(1)",
+    bright: "brightness(1.18) contrast(1.05)",
+    pop: "saturate(1.45) contrast(1.12)",
+  };
+
+  const presetFilter = presets[settings.preset] || "";
+  return [
+    presetFilter,
+    `brightness(${settings.brightness / 100})`,
+    `contrast(${settings.contrast / 100})`,
+    `saturate(${settings.saturation / 100})`,
+    `hue-rotate(${settings.hue}deg)`,
+    `blur(${settings.blur}px)`,
+    `opacity(${settings.opacity / 100})`,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+function HeroImageCropModal({
+  file,
+  src,
+  aspectRatio,
+  onCancel,
+  onConfirm,
+  onChangeImage,
+  onRemoveBackground,
+  onUndoBackgroundRemoval,
+  isRemovingBackground,
+  settings,
+}: {
+  file?: File;
+  src?: string;
+  aspectRatio: number;
+  onCancel: () => void;
+  onConfirm: (blob: Blob) => void;
+  onChangeImage?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveBackground?: () => Promise<void> | void;
+  onUndoBackgroundRemoval?: () => Promise<void> | void;
+  isRemovingBackground?: boolean;
+  settings?: HeroImageSettings;
+}) {
+  const imageRef = useRef<HTMLImageElement>(null);
+  const cropperRef = useRef<Cropper | null>(null);
+  const objectUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+  const previewUrl = objectUrl || src || null;
+
+  useEffect(() => {
+    if (!objectUrl) return;
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [objectUrl]);
+
+  useEffect(() => {
+    if (!imageRef.current || !previewUrl) return;
+
+    cropperRef.current?.destroy();
+    cropperRef.current = new Cropper(imageRef.current, {
+      aspectRatio,
+      viewMode: 1,
+      dragMode: "move",
+      cropBoxMovable: true,
+      cropBoxResizable: true,
+      autoCropArea: 1,
+      responsive: true,
+      background: false,
+      checkCrossOrigin: false,
+      scalable: false,
+      zoomable: true,
+      wheelZoomRatio: 0.15,
+      movable: true,
+      cropmove(event) {
+        if (event) return;
+      },
+    });
+
+    return () => {
+      cropperRef.current?.destroy();
+      cropperRef.current = null;
+    };
+  }, [aspectRatio, previewUrl]);
+
+  const handleConfirm = () => {
+    const canvas = cropperRef.current?.getCroppedCanvas({
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageSmoothingEnabled: true,
+      imageSmoothingQuality: "high",
+    });
+    if (!canvas) return;
+
+    canvas.toBlob((blob) => {
+      if (blob) onConfirm(blob);
+    }, "image/jpeg", 0.9);
+  };
+
+  return (
+    <div className="rounded-xl border border-[#f97316]/60 bg-[#0d1117] p-3">
+      <div className="max-h-[52vh] min-h-48 overflow-hidden rounded-lg border border-border bg-black/40">
+        {previewUrl && (
+          <img
+            ref={imageRef}
+            src={previewUrl}
+            alt="Crop hero image"
+            className="block max-h-[52vh] max-w-full"
+          />
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {onChangeImage && (
+          <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-border bg-secondary/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-foreground hover:border-[#f97316]/60 hover:text-[#f97316]">
+            Change image
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onChangeImage}
+            />
+          </label>
+        )}
+        {settings?.backgroundRemoved && settings.backupUrl ? (
+          <button
+            type="button"
+            onClick={() => onUndoBackgroundRemoval?.()}
+            className="rounded-lg border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-emerald-400 hover:bg-emerald-500/20"
+          >
+            Undo bg
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onRemoveBackground?.()}
+            disabled={Boolean(isRemovingBackground)}
+            className="rounded-lg border border-[#f97316]/60 bg-[#f97316]/10 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#f97316] hover:bg-[#f97316]/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRemovingBackground ? "Removing..." : "Remove bg"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function HeroImageControls({
   label,
   settings,
   onChange,
   onUpload,
+  onRemoveBackground,
+  onUndoBackgroundRemoval,
+  isRemovingBackground,
 }: {
   label: string;
   settings?: HeroImageSettings;
   onChange: (settings: HeroImageSettings) => void;
   onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveBackground?: () => Promise<void> | void;
+  onUndoBackgroundRemoval?: () => Promise<void> | void;
+  isRemovingBackground?: boolean;
 }) {
   const current = { ...defaultHeroImageSettings, ...(settings || {}) };
   const update = (key: keyof HeroImageSettings, value: string | number) =>
@@ -1291,95 +1480,120 @@ function HeroImageControls({
     ["hue", "Hue", -180, 180, "°"],
     ["blur", "Blur", 0, 20, "px"],
     ["opacity", "Opacity", 0, 100, "%"],
-    ["overlayOpacity", "Overlay", 0, 100, "%"],
+  ];
+  const positionSliders: Array<
+    [keyof HeroImageSettings, string, number, number, string]
+  > = [
+    ["top", "Top", 0, 100, "%"],
+    ["left", "Left", 0, 100, "%"],
+    ["right", "Right", 0, 100, "%"],
+    ["bottom", "Bottom", 0, 100, "%"],
   ];
 
   return (
-    <div className="mt-4 rounded-lg border border-border bg-secondary/20 p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+    <div className="rounded-xl border border-border bg-[#0d1117] p-0">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
           {label} adjustments
         </span>
         <button
           type="button"
           onClick={() => onChange({ ...defaultHeroImageSettings })}
-          className="font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#f97316] hover:underline"
         >
           Reset
         </button>
       </div>
-      <label className="mb-4 flex cursor-pointer items-center justify-between gap-3 rounded-lg border border-border bg-secondary/40 px-3 py-2.5 text-xs text-foreground hover:border-primary">
-        <span>Choose {label.toLowerCase()} image</span>
-        <span className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary">
-          <Pencil size={13} /> Change image
-        </span>
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onUpload}
-        />
-      </label>
-      <label className="mb-4 grid grid-cols-[1fr_auto] items-center gap-3">
-        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-          Overlay color
-        </span>
-        <input
-          type="color"
-          value={current.overlayColor}
-          onChange={(event) => update("overlayColor", event.target.value)}
-          className="h-9 w-14 cursor-pointer rounded border border-border bg-secondary"
-          aria-label={`${label} overlay color`}
-        />
-      </label>
-      <label className="mb-4 grid gap-1.5">
-        <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-          Filter preset
-        </span>
-        <select
-          value={current.preset}
-          onChange={(event) => update("preset", event.target.value)}
-          className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-primary"
-        >
-          {[
-            ["none", "None"],
-            ["grayscale", "Grayscale"],
-            ["sepia", "Sepia"],
-            ["vintage", "Vintage"],
-            ["warm", "Warm"],
-            ["cool", "Cool"],
-            ["blur", "Blur"],
-            ["invert", "Invert"],
-            ["bright", "Bright"],
-            ["pop", "Pop"],
-          ].map(([value, optionLabel]) => (
-            <option key={value} value={value}>
-              {optionLabel}
-            </option>
+
+      <div className="space-y-4 p-4">
+        <label className="grid grid-cols-[1fr_auto] items-center gap-3">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+            Overlay color
+          </span>
+          <input
+            type="color"
+            value={current.overlayColor}
+            onChange={(event) => update("overlayColor", event.target.value)}
+            className="h-9 w-14 cursor-pointer rounded border border-border bg-secondary"
+            aria-label={`${label} overlay color`}
+          />
+        </label>
+
+        <div className="rounded-xl border border-border bg-secondary/20 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Image position
+            </span>
+            <span className="font-mono text-[9px] text-foreground/80">
+              {getHeroImageObjectPosition(current)}
+            </span>
+          </div>
+          <div className="grid gap-3">
+            {positionSliders.map(([key, sliderLabel, min, max, suffix]) => (
+              <label
+                key={key}
+                className="grid grid-cols-[4rem_minmax(0,1fr)_3.2rem] items-center gap-3 text-[11px] text-muted-foreground"
+              >
+                <span>{sliderLabel}</span>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  value={Number(current[key])}
+                  onChange={(event) => update(key, Number(event.target.value))}
+                  className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
+                />
+                <span className="text-right font-mono text-[10px] text-foreground">
+                  {current[key]}
+                  {suffix}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid gap-3 pt-1">
+          {sliders.map(([key, sliderLabel, min, max, suffix]) => (
+            <label
+              key={key}
+              className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground"
+            >
+              <span>{sliderLabel}</span>
+              <input
+                type="range"
+                min={min}
+                max={max}
+                value={Number(current[key])}
+                onChange={(event) => update(key, Number(event.target.value))}
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
+              />
+              <span className="text-right font-mono text-[10px] text-foreground">
+                {current[key]}
+                {suffix}
+              </span>
+            </label>
           ))}
-        </select>
-      </label>
-      <div className="grid gap-3">
-        {sliders.map(([key, sliderLabel, min, max, suffix]) => (
-          <label
-            key={key}
-            className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground"
-          >
-            <span>{sliderLabel}</span>
+        </div>
+
+        <div className="rounded-xl border border-border bg-secondary/20 p-3">
+          <label className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground">
+            <span>Overlay</span>
             <input
               type="range"
-              min={min}
-              max={max}
-              value={Number(current[key])}
-              onChange={(event) => update(key, Number(event.target.value))}
-              className="accent-primary"
+              min={0}
+              max={100}
+              value={Number(current.overlayOpacity)}
+              onChange={(event) =>
+                update("overlayOpacity", Number(event.target.value))
+              }
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
             />
             <span className="text-right font-mono text-[10px] text-foreground">
-              {current[key]}
-              {suffix}
+              {current.overlayOpacity}
+              %
             </span>
           </label>
-        ))}
+        </div>
       </div>
     </div>
   );
@@ -1408,6 +1622,19 @@ function ProfileEditor({
   );
   const [imageError, setImageError] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
+  const [heroAdjustmentsOpen, setHeroAdjustmentsOpen] = useState<
+    "desktop" | "mobile" | null
+  >(null);
+  const [cropEditorField, setCropEditorField] = useState<
+    "heroImage" | "heroMobileImage" | null
+  >(null);
+  const [cropRequest, setCropRequest] = useState<{
+    file: File;
+    field: "heroImage" | "heroMobileImage";
+  } | null>(null);
+  const [removingBackgroundField, setRemovingBackgroundField] = useState<
+    "heroImage" | "heroMobileImage" | null
+  >(null);
   useEffect(() => {
     // Sync form state when profile prop changes
     // Multiple setState calls are necessary to keep all form fields in sync
@@ -1442,6 +1669,11 @@ function ProfileEditor({
     const file = event.target.files?.[0];
     if (!file) return;
     setImageError(null);
+    if (field === "heroImage" || field === "heroMobileImage") {
+      setCropRequest({ file, field });
+      return;
+    }
+
     try {
       const cdnUrl = await resizeAndUploadImage(file, 1200, 1200);
       setForm((current) => ({ ...current, [field]: cdnUrl }));
@@ -1451,6 +1683,28 @@ function ProfileEditor({
       setImageError(message);
     } finally {
       event.target.value = "";
+    }
+  };
+
+  const handleCroppedHeroImage = async (
+    blob: Blob,
+    fallbackField?: "heroImage" | "heroMobileImage",
+  ) => {
+    const field = cropRequest?.field || fallbackField;
+    if (!field) return;
+    const file = cropRequest?.file;
+    setCropRequest(null);
+
+    try {
+      const croppedFile = new File([blob], file?.name || `${field}.jpg`, {
+        type: "image/jpeg",
+      });
+      const cdnUrl = await uploadImageToCDN(croppedFile);
+      setForm((current) => ({ ...current, [field]: cdnUrl }));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Could not upload image";
+      setImageError(message);
     }
   };
 
@@ -1504,7 +1758,169 @@ function ProfileEditor({
     }
   };
 
+  const activeHeroModal =
+    heroAdjustmentsOpen === "desktop"
+      ? {
+          label: "Desktop hero",
+          field: "heroImage" as const,
+          imageUrl: form.heroImage,
+          settings: form.heroDesktopSettings,
+          onChange: (heroDesktopSettings: HeroImageSettings) =>
+            setForm((current) => ({ ...current, heroDesktopSettings })),
+          onUpload: (event: React.ChangeEvent<HTMLInputElement>) =>
+            void handleImage(event, "heroImage"),
+          onRemoveBackground: async () => {
+            const sourceUrl = form.heroImage;
+            if (!sourceUrl) return;
+            const currentSettings = form.heroDesktopSettings || defaultHeroImageSettings;
+            const originalSource = currentSettings.backgroundRemoved
+              ? currentSettings.backupUrl || sourceUrl
+              : sourceUrl;
+            setRemovingBackgroundField("heroImage");
+            try {
+              const response = await fetch('/api/remove-bg', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: originalSource }),
+              });
+              const body = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                throw new Error(body.error || 'Background removal failed.');
+              }
+              const nextUrl = body.url || originalSource;
+              setForm((current) => ({
+                ...current,
+                heroImage: nextUrl,
+                heroDesktopSettings: {
+                  ...defaultHeroImageSettings,
+                  ...(current.heroDesktopSettings || {}),
+                  backgroundRemoved: true,
+                  backupUrl: currentSettings.backgroundRemoved ? currentSettings.backupUrl || originalSource : originalSource,
+                },
+              }));
+            } catch (error) {
+              toast({
+                variant: 'destructive',
+                title: 'Background removal failed',
+                description: error instanceof Error ? error.message : 'Could not remove background.',
+              });
+            } finally {
+              setRemovingBackgroundField(null);
+            }
+          },
+          onUndoBackgroundRemoval: () => {
+            const backupUrl = form.heroDesktopSettings?.backupUrl || form.heroImage;
+            setForm((current) => ({
+              ...current,
+              heroImage: backupUrl,
+              heroDesktopSettings: {
+                ...defaultHeroImageSettings,
+                ...(current.heroDesktopSettings || {}),
+                backgroundRemoved: false,
+                backupUrl: backupUrl,
+              },
+            }));
+          },
+        }
+      : heroAdjustmentsOpen === "mobile"
+        ? {
+            label: "Mobile hero",
+            field: "heroMobileImage" as const,
+            imageUrl: form.heroMobileImage,
+            settings: form.heroMobileSettings,
+            onChange: (heroMobileSettings: HeroImageSettings) =>
+              setForm((current) => ({ ...current, heroMobileSettings })),
+            onUpload: (event: React.ChangeEvent<HTMLInputElement>) =>
+              void handleImage(event, "heroMobileImage"),
+          onRemoveBackground: async () => {
+            const sourceUrl = form.heroMobileImage;
+            if (!sourceUrl) return;
+            const currentSettings = form.heroMobileSettings || defaultHeroImageSettings;
+            const originalSource = currentSettings.backgroundRemoved
+              ? currentSettings.backupUrl || sourceUrl
+              : sourceUrl;
+            setRemovingBackgroundField("heroMobileImage");
+            try {
+              const response = await fetch('/api/remove-bg', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: originalSource }),
+              });
+              const body = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                throw new Error(body.error || 'Background removal failed.');
+              }
+              const nextUrl = body.url || originalSource;
+              setForm((current) => ({
+                ...current,
+                heroMobileImage: nextUrl,
+                heroMobileSettings: {
+                  ...defaultHeroImageSettings,
+                  ...(current.heroMobileSettings || {}),
+                  backgroundRemoved: true,
+                  backupUrl: currentSettings.backgroundRemoved ? currentSettings.backupUrl || originalSource : originalSource,
+                },
+              }));
+            } catch (error) {
+              toast({
+                variant: 'destructive',
+                title: 'Background removal failed',
+                description: error instanceof Error ? error.message : 'Could not remove background.',
+              });
+            } finally {
+              setRemovingBackgroundField(null);
+            }
+          },
+          onUndoBackgroundRemoval: () => {
+            const backupUrl = form.heroMobileSettings?.backupUrl || form.heroMobileImage;
+            setForm((current) => ({
+              ...current,
+              heroMobileImage: backupUrl,
+              heroMobileSettings: {
+                ...defaultHeroImageSettings,
+                ...(current.heroMobileSettings || {}),
+                backgroundRemoved: false,
+                backupUrl: backupUrl,
+              },
+            }));
+          },
+        }
+        : null;
+
+  const presetOptions: Array<[string, string]> = [
+    ["none", "None"],
+    ["grayscale", "Grayscale"],
+    ["sepia", "Sepia"],
+    ["vintage", "Vintage"],
+    ["warm", "Warm"],
+    ["cool", "Cool"],
+    ["blur", "Blur"],
+    ["invert", "Invert"],
+    ["bright", "Bright"],
+    ["pop", "Pop"],
+  ];
+
+  const getPresetPreviewFilter = (preset: string) => {
+    const presetMap: Record<string, string> = {
+      none: "none",
+      grayscale: "grayscale(1)",
+      sepia: "sepia(.75)",
+      vintage: "sepia(.35) saturate(.8) contrast(.95)",
+      warm: "sepia(.18) saturate(1.25) hue-rotate(-8deg)",
+      cool: "saturate(.85) hue-rotate(12deg)",
+      blur: "blur(3px)",
+      invert: "invert(1)",
+      bright: "brightness(1.18) contrast(1.05)",
+      pop: "saturate(1.45) contrast(1.12)",
+    };
+
+    return presetMap[preset] || "none";
+  };
+
   return (
+    <>
     <form
       onSubmit={(event) => {
         event.preventDefault();
@@ -1627,15 +2043,15 @@ function ProfileEditor({
             </div>
           </div>
         </div>
-        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+        <div className="rounded-xl border border-orange-500/60 bg-[#0d1117] p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
           <div className="flex items-center gap-4">
-            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
               {form.heroImage ? (
                 <NextImage
                   src={form.heroImage}
                   alt="Desktop hero"
-                  width={96}
-                  height={64}
+                  width={128}
+                  height={96}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -1643,46 +2059,48 @@ function ProfileEditor({
                   No image
                 </span>
               )}
-              <label
-                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
-                title="Change desktop hero image"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => handleImage(event, "heroImage")}
-                  className="hidden"
-                />
-                <Pencil size={11} />
-              </label>
             </div>
-            <div>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
                 Hero desktop
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Wide image for larger screens.
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "heroImage")}
+                    className="hidden"
+                  />
+                  <Pencil size={10} /> Edit
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setHeroAdjustmentsOpen("desktop")}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                >
+                  <Sparkles size={10} /> Magic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCropEditorField("heroImage")}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                >
+                  <Crop size={10} /> Crop
+                </button>
+              </div>
             </div>
           </div>
-          <HeroImageControls
-            label="Desktop hero"
-            settings={form.heroDesktopSettings}
-            onChange={(heroDesktopSettings) =>
-              setForm((current) => ({ ...current, heroDesktopSettings }))
-            }
-            onUpload={(event) => void handleImage(event, "heroImage")}
-          />
         </div>
-        <div className="rounded-lg border border-border bg-secondary/30 p-3">
+        <div className="rounded-xl border border-orange-500/60 bg-[#0d1117] p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
           <div className="flex items-center gap-4">
-            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+            <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
               {form.heroMobileImage ? (
                 <NextImage
                   src={form.heroMobileImage}
                   alt="Mobile hero"
-                  width={96}
-                  height={64}
+                  width={128}
+                  height={160}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -1690,36 +2108,38 @@ function ProfileEditor({
                   Desktop fallback
                 </span>
               )}
-              <label
-                className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
-                title="Change mobile hero image"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => handleImage(event, "heroMobileImage")}
-                  className="hidden"
-                />
-                <Pencil size={11} />
-              </label>
             </div>
-            <div>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
                 Hero mobile
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Portrait crop for phones.
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => handleImage(event, "heroMobileImage")}
+                    className="hidden"
+                  />
+                  <Pencil size={10} /> Edit
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setHeroAdjustmentsOpen("mobile")}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                >
+                  <Sparkles size={10} /> Magic
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCropEditorField("heroMobileImage")}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                >
+                  <Crop size={10} /> Crop
+                </button>
+              </div>
             </div>
           </div>
-          <HeroImageControls
-            label="Mobile hero"
-            settings={form.heroMobileSettings}
-            onChange={(heroMobileSettings) =>
-              setForm((current) => ({ ...current, heroMobileSettings }))
-            }
-            onUpload={(event) => void handleImage(event, "heroMobileImage")}
-          />
         </div>
         {imageError && (
           <p className="font-mono text-[11px] text-red-400 md:col-span-2">
@@ -2039,6 +2459,252 @@ function ProfileEditor({
         </button>
       </div>
     </form>
+    {cropEditorField && createPortal(
+      <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+        <button
+          aria-label="Close crop editor"
+          onClick={() => setCropEditorField(null)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        />
+        <div className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
+          <HeroImageCropModal
+            file={
+              cropRequest?.field === cropEditorField ? cropRequest.file : undefined
+            }
+            src={
+              cropEditorField === "heroImage"
+                ? form.heroImage
+                : form.heroMobileImage
+            }
+            aspectRatio={
+              cropEditorField === "heroImage" ? 16 / 9 : 9 / 16
+            }
+            settings={
+              cropEditorField === "heroImage"
+                ? form.heroDesktopSettings
+                : form.heroMobileSettings
+            }
+            onCancel={() => {
+              setCropRequest(null);
+              setCropEditorField(null);
+            }}
+            onConfirm={(blob) => {
+              setCropEditorField(null);
+              void handleCroppedHeroImage(blob, cropEditorField);
+            }}
+            onChangeImage={
+              cropEditorField === "heroImage"
+                ? (event) => void handleImage(event, "heroImage")
+                : (event) => void handleImage(event, "heroMobileImage")
+            }
+            onRemoveBackground={
+              cropEditorField === "heroImage"
+                ? activeHeroModal?.onRemoveBackground
+                : activeHeroModal?.onRemoveBackground
+            }
+            onUndoBackgroundRemoval={
+              cropEditorField === "heroImage"
+                ? activeHeroModal?.onUndoBackgroundRemoval
+                : activeHeroModal?.onUndoBackgroundRemoval
+            }
+            isRemovingBackground={
+              removingBackgroundField === cropEditorField
+            }
+          />
+        </div>
+      </div>,
+      document.body,
+    )}
+    {activeHeroModal && createPortal(
+      <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+        <button
+          aria-label="Close hero adjustments"
+          onClick={() => setHeroAdjustmentsOpen(null)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        />
+        <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
+          <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+              {heroAdjustmentsOpen === "desktop"
+                ? "Desktop hero adjustments"
+                : "Mobile hero adjustments"}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setHeroAdjustmentsOpen(null)}
+              aria-label="Close"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="p-4 md:p-6">
+            <div className="grid gap-6 md:grid-cols-[minmax(270px,0.9fr)_minmax(360px,1.1fr)]">
+              <div className="contents">
+                {(() => {
+                  const isDesktopPreview = heroAdjustmentsOpen === "desktop";
+                  const previewImage = isDesktopPreview
+                    ? form.heroImage
+                    : form.heroMobileImage;
+                  const cropField = isDesktopPreview
+                    ? "heroImage"
+                    : "heroMobileImage";
+                  const activeSettings =
+                    (isDesktopPreview
+                      ? form.heroDesktopSettings
+                      : form.heroMobileSettings) || defaultHeroImageSettings;
+                  const activePreset = activeSettings.preset || "none";
+
+                  return (
+                    <>
+                      <div className="order-1 flex flex-col gap-3 md:col-start-1 md:row-start-1">
+                        <div className="flex items-center justify-center">
+                          <div
+                              className={`relative overflow-hidden rounded-xl border border-border bg-secondary/20 ${isDesktopPreview ? "w-full max-w-[480px] aspect-[16/9]" : "w-full max-w-[240px] aspect-[9/16]"}`}
+                          >
+                            {previewImage ? (
+                              <>
+                                <NextImage
+                                  src={previewImage}
+                                  alt={
+                                    isDesktopPreview
+                                      ? "Desktop hero preview"
+                                      : "Mobile hero preview"
+                                  }
+                                  fill
+                                  className="object-cover"
+                                  style={{
+                                    filter: getHeroFilterValue(activeSettings),
+                                    objectPosition: getHeroImageObjectPosition(
+                                      activeSettings,
+                                    ),
+                                    opacity:
+                                      (activeSettings.opacity ?? 100) / 100,
+                                  }}
+                                />
+                                <div
+                                  className="absolute inset-0 pointer-events-none"
+                                  style={{
+                                    backgroundColor:
+                                      activeSettings.overlayColor || "#ffffff",
+                                    opacity:
+                                      (activeSettings.overlayOpacity ?? 0) / 100,
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <div className="flex h-full items-center justify-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                                No image
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+
+                      <div className="order-3 rounded-xl border border-border bg-[#0d1117] p-3 md:col-span-2 md:row-start-2">
+                        <div className="mb-2 flex items-center justify-between gap-2">
+                          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                            Filter Type
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(76px,1fr))] gap-2">
+                          {presetOptions.map(([value, label]) => {
+                            const isSelected = activePreset === value;
+                            const applyPreset = () => {
+                              if (isDesktopPreview) {
+                                setForm((current) => ({
+                                  ...current,
+                                  heroDesktopSettings: {
+                                    ...defaultHeroImageSettings,
+                                    ...(current.heroDesktopSettings || {}),
+                                    preset: value,
+                                  },
+                                }));
+                                return;
+                              }
+
+                              setForm((current) => ({
+                                ...current,
+                                heroMobileSettings: {
+                                  ...defaultHeroImageSettings,
+                                  ...(current.heroMobileSettings || {}),
+                                  preset: value,
+                                },
+                              }));
+                            };
+
+                            return (
+                              <button
+                                key={value}
+                                type="button"
+                                onClick={applyPreset}
+                                className={`rounded-lg border px-2 py-2 text-center transition-all ${
+                                  isSelected
+                                    ? "border-[#f97316] bg-[#f97316]/10 shadow-[0_0_0_1px_rgba(249,115,22,0.4)]"
+                                    : "border-border bg-secondary/30 hover:border-[#f97316]/60"
+                                }`}
+                              >
+                                <span className="relative mb-1.5 flex h-10 items-center justify-center overflow-hidden rounded-md border border-border bg-secondary/50">
+                                  {previewImage ? (
+                                    <NextImage
+                                      src={previewImage}
+                                      alt={`${label} filter preview`}
+                                      fill
+                                      sizes="100px"
+                                      className="object-cover"
+                                      style={{
+                                        filter: getHeroFilterValue({
+                                          ...defaultHeroImageSettings,
+                                          ...(isDesktopPreview
+                                            ? form.heroDesktopSettings
+                                            : form.heroMobileSettings),
+                                          preset: value,
+                                        }),
+                                        objectPosition: getHeroImageObjectPosition(
+                                          isDesktopPreview
+                                            ? form.heroDesktopSettings
+                                            : form.heroMobileSettings,
+                                        ),
+                                      }}
+                                    />
+                                  ) : (
+                                    <span className="block h-full w-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.38),rgba(15,23,42,0.7)_50%,rgba(15,23,42,0.9))]" />
+                                  )}
+                                </span>
+                                <span className="flex min-h-6 items-start justify-center font-mono text-[8px] font-bold uppercase leading-3 tracking-[0.08em] text-foreground [overflow-wrap:anywhere]">
+                                  {label}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              <div className="order-2 md:col-start-2 md:row-start-1">
+                <HeroImageControls
+                  label={activeHeroModal.label}
+                  settings={activeHeroModal.settings}
+                  onChange={activeHeroModal.onChange}
+                  onUpload={activeHeroModal.onUpload}
+                  onRemoveBackground={activeHeroModal.onRemoveBackground}
+                  onUndoBackgroundRemoval={activeHeroModal.onUndoBackgroundRemoval}
+                  isRemovingBackground={
+                    removingBackgroundField === activeHeroModal.field
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    )}
+  </>
   );
 }
 
@@ -2352,6 +3018,7 @@ function ProfileMenu({
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setOpen((value) => !value)}
         aria-label="Account menu"
         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-background ring-2 ring-primary/20 transition-transform hover:scale-105"
@@ -2359,46 +3026,56 @@ function ProfileMenu({
         {image ? (
           <NextImage
             src={image}
-            alt={username || "Profile"}
+            alt="Profile avatar"
             width={36}
             height={36}
             className="h-full w-full object-cover"
           />
         ) : (
-          <User size={16} />
+          <User size={15} className="shrink-0 text-primary" />
         )}
       </button>
 
       {open && (
-        <>
-          <button
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <div className="absolute right-0 top-full z-50 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
-            {username && (
-              <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-                <User size={15} className="shrink-0 text-primary" />
-                <p className="truncate text-sm font-semibold text-foreground">
-                  {username}
-                </p>
+        <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+          <div className="border-b border-border bg-secondary/30 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary text-background">
+                {image ? (
+                  <NextImage
+                    src={image}
+                    alt="Profile avatar"
+                    width={32}
+                    height={32}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User size={14} className="shrink-0 text-primary" />
+                )}
               </div>
-            )}
+              <p className="truncate text-sm font-semibold text-foreground">
+                {username}
+              </p>
+            </div>
+          </div>
+
+          <div className="p-1">
             <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 onEditProfile();
               }}
               className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary group"
             >
-              <Pencil
+              <Sparkles
                 size={14}
                 className="group-hover:text-primary transition-colors"
-              />{" "}
+              />
               Edit profile
             </button>
             <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 setChangingUsername(true);
@@ -2408,10 +3085,11 @@ function ProfileMenu({
               <User
                 size={14}
                 className="group-hover:text-primary transition-colors"
-              />{" "}
+              />
               Change username
             </button>
             <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 setChangingPassword(true);
@@ -2421,10 +3099,11 @@ function ProfileMenu({
               <KeyRound
                 size={14}
                 className="group-hover:text-primary transition-colors"
-              />{" "}
+              />
               Change password
             </button>
             <button
+              type="button"
               onClick={() => {
                 setOpen(false);
                 onLogout();
@@ -2434,7 +3113,7 @@ function ProfileMenu({
               <LogOut size={14} /> Log out
             </button>
           </div>
-        </>
+        </div>
       )}
 
       {changingPassword && (
@@ -2686,6 +3365,8 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     twoFactorEnabled: false,
     siteName: "Akhilesh Vishwakarma",
     faviconUrl: "",
+    removeBgApiUrl: "",
+    removeBgApiKey: "",
     turnstileSiteKey: "",
     turnstileSecretKey: "",
     turnstileHostnames: "",
@@ -2738,6 +3419,8 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
               twoFactorEnabled: false,
               siteName: "Akhilesh Vishwakarma",
               faviconUrl: "",
+              removeBgApiUrl: "",
+              removeBgApiKey: "",
               turnstileSiteKey: "",
               turnstileSecretKey: "",
               turnstileHostnames: "",
@@ -2875,6 +3558,42 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   </p>
                 )}
               </label>
+
+              <div className="rounded-xl border border-border bg-secondary/20 p-4">
+                <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+                  Background remover API
+                </p>
+                <div className="grid gap-4">
+                  <label className="block">
+                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      API URL
+                    </span>
+                    <input
+                      type="url"
+                      value={form.removeBgApiUrl}
+                      onChange={(event) =>
+                        setForm({ ...form, removeBgApiUrl: event.target.value })
+                      }
+                      placeholder="https://api.example.com/remove-bg"
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      API key / token
+                    </span>
+                    <input
+                      type="password"
+                      value={form.removeBgApiKey}
+                      onChange={(event) =>
+                        setForm({ ...form, removeBgApiKey: event.target.value })
+                      }
+                      placeholder="Enter API key"
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -65,6 +65,12 @@ export type HeroImageSettings = {
   hue: number;
   blur: number;
   opacity: number;
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  backgroundRemoved?: boolean;
+  backupUrl?: string;
   overlayColor: string;
   overlayOpacity: number;
 };

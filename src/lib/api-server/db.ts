@@ -372,6 +372,8 @@ export type ContactSettings = {
   twoFactorEnabled: boolean;
   siteName: string;
   faviconUrl: string;
+  removeBgApiUrl: string;
+  removeBgApiKey: string;
   turnstileSiteKey: string;
   turnstileSecretKey: string;
   turnstileHostnames: string;
@@ -384,6 +386,8 @@ const defaultContactSettings: ContactSettings = {
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
   faviconUrl: "",
+  removeBgApiUrl: "",
+  removeBgApiKey: "",
   turnstileSiteKey: "",
   turnstileSecretKey: "",
   turnstileHostnames: "",

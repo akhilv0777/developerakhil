@@ -13,6 +13,8 @@ let inMemorySettings: ContactSettings = {
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
   faviconUrl: "",
+  removeBgApiUrl: "",
+  removeBgApiKey: "",
   turnstileSiteKey: "",
   turnstileSecretKey: "",
   turnstileHostnames: "",
@@ -45,7 +47,9 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.contactFromEmail === "string" &&
     typeof record.twoFactorEnabled === "boolean" &&
     typeof record.siteName === "string" &&
-    typeof record.faviconUrl === "string"
+    typeof record.faviconUrl === "string" &&
+    typeof record.removeBgApiUrl === "string" &&
+    typeof record.removeBgApiKey === "string"
   );
 }
 
@@ -60,10 +64,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const settings = await getContactSettings();
         inMemorySettings = settings;
-        return res.status(200).json({ settings: { ...settings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(settings.turnstileSecretKey) });
+        return res.status(200).json({ settings: { ...settings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(settings.turnstileSecretKey) });
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
-          return res.status(200).json({ settings: { ...inMemorySettings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
+          return res.status(200).json({ settings: { ...inMemorySettings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
@@ -87,6 +91,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         twoFactorEnabled: req.body.twoFactorEnabled,
         siteName: req.body.siteName.trim(),
         faviconUrl: req.body.faviconUrl.trim(),
+        removeBgApiUrl: typeof req.body.removeBgApiUrl === "string" ? req.body.removeBgApiUrl.trim() : current.removeBgApiUrl,
+        removeBgApiKey: typeof req.body.removeBgApiKey === "string" ? req.body.removeBgApiKey.trim() : current.removeBgApiKey,
         turnstileSiteKey: typeof req.body.turnstileSiteKey === "string" ? req.body.turnstileSiteKey.trim() : current.turnstileSiteKey,
         turnstileSecretKey: typeof req.body.turnstileSecretKey === "string" && req.body.turnstileSecretKey.trim() ? req.body.turnstileSecretKey.trim() : current.turnstileSecretKey,
         turnstileHostnames: typeof req.body.turnstileHostnames === "string" ? req.body.turnstileHostnames.trim() : current.turnstileHostnames,
@@ -97,13 +103,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
           inMemorySettings = next;
-          return res.status(200).json({ settings: { ...inMemorySettings, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
+          return res.status(200).json({ settings: { ...inMemorySettings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
 
       inMemorySettings = next;
-      return res.status(200).json({ settings: { ...next, turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(next.turnstileSecretKey) });
+      return res.status(200).json({ settings: { ...next, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(next.turnstileSecretKey) });
     }
 
     res.setHeader("Allow", "GET, PUT");
