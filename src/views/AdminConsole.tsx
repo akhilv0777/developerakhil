@@ -2011,7 +2011,7 @@ function ProfileEditor({
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-orange-500/60 bg-[#0d1117] p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
+        <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
           <div className="flex items-center gap-4">
             <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
               {form.heroImage ? (
@@ -2051,7 +2051,7 @@ function ProfileEditor({
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-orange-500/60 bg-[#0d1117] p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
+        <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
           <div className="flex items-center gap-4">
             <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
               {form.heroMobileImage ? (

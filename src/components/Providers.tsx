@@ -7,13 +7,11 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function LiquidCursor() {
-  const cursorRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const cursor = cursorRef.current;
     const canvas = canvasRef.current;
-    if (!cursor || !canvas || window.matchMedia("(pointer: coarse)").matches)
+    if (!canvas || window.matchMedia("(pointer: coarse)").matches)
       return;
 
     const context = canvas.getContext("2d");
@@ -56,11 +54,7 @@ function LiquidCursor() {
       }
       lastX = event.clientX;
       lastY = event.clientY;
-      cursor.style.setProperty("--cursor-x", `${event.clientX}px`);
-      cursor.style.setProperty("--cursor-y", `${event.clientY}px`);
-      cursor.classList.add("is-visible");
     };
-    const handlePointerLeave = () => cursor.classList.remove("is-visible");
     const handlePointerDown = (event: PointerEvent) => {
       if (event.target instanceof Element && event.target.closest("input, button, a")) return;
       addRipple(event.clientX, event.clientY, 1.8);
@@ -78,11 +72,11 @@ function LiquidCursor() {
         }
         for (let ring = 0; ring < 3; ring += 1) {
           const radius = ripple.radius + ring * 13;
-          const opacity = ripple.strength * (0.16 - ring * 0.035);
+          const opacity = ripple.strength * (0.3 - ring * 0.07);
           context.beginPath();
           context.arc(ripple.x, ripple.y, radius, 0, Math.PI * 2);
           context.strokeStyle = `hsl(${primary} / ${opacity})`;
-          context.lineWidth = ring === 0 ? 1.4 : 0.8;
+          context.lineWidth = ring === 0 ? 1.8 : 1;
           context.stroke();
         }
       }
@@ -94,21 +88,16 @@ function LiquidCursor() {
     window.addEventListener("pointermove", handlePointerMove, { passive: true });
     window.addEventListener("pointerdown", handlePointerDown, { passive: true });
     window.addEventListener("resize", resize);
-    document.documentElement.addEventListener("pointerleave", handlePointerLeave);
     return () => {
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("resize", resize);
-      document.documentElement.removeEventListener("pointerleave", handlePointerLeave);
     };
   }, []);
 
   return (
-    <>
-      <canvas ref={canvasRef} className="liquid-water-canvas" aria-hidden="true" />
-      <div ref={cursorRef} className="liquid-cursor" aria-hidden="true" />
-    </>
+    <canvas ref={canvasRef} className="liquid-water-canvas" aria-hidden="true" />
   );
 }
 
