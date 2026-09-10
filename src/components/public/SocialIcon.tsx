@@ -58,12 +58,16 @@ export function SocialIcon({
   icon,
   iconImage,
   size = 16,
+  className,
 }: {
   label: string;
   icon?: string;
   iconImage?: string;
   size?: number;
+  className?: string;
 }) {
+  const iconClassName = className ?? "text-current";
+
   if (iconImage) {
     return (
       <Image
@@ -71,15 +75,32 @@ export function SocialIcon({
         alt=""
         width={size}
         height={size}
-        className="social-icon-image rounded object-cover"
+        className={`${iconClassName} social-link-custom-image rounded object-cover`}
+        style={{ filter: "grayscale(1) brightness(0.88) contrast(1.25) saturate(0.2)" }}
       />
     );
   }
 
   const SelectedIcon = icons.find(([name]) => name === icon)?.[1];
-  if (SelectedIcon) return <FontAwesomeGlyph Icon={SelectedIcon} size={size} />;
+  if (SelectedIcon)
+    return (
+      <span className={iconClassName}>
+        <FontAwesomeGlyph Icon={SelectedIcon} size={size} />
+      </span>
+    );
 
-    const Icon = getAutoIcon(label);
+  const Icon = getAutoIcon(label);
 
-  return Icon ? <FontAwesomeGlyph Icon={Icon} size={size} /> : <Link2 size={size} />;
+  if (Icon)
+    return (
+      <span className={iconClassName}>
+        <FontAwesomeGlyph Icon={Icon} size={size} />
+      </span>
+    );
+
+  return (
+    <span className={iconClassName}>
+      <Link2 size={size} />
+    </span>
+  );
 }

@@ -4,9 +4,10 @@ import {
   useEffect,
   useRef,
   useState,
-  type ReactNode,
   type FormEvent,
+  type ReactNode,
 } from "react";
+
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -494,12 +495,10 @@ function Hero({ profile }: { profile: Profile }) {
                 imageFilter(desktopImageSettings) || "none",
               "--hero-mobile-filter":
                 imageFilter(mobileImageSettings) || "none",
-              "--hero-desktop-object-position": imagePosition(
-                desktopImageSettings,
-              ),
-              "--hero-mobile-object-position": imagePosition(
-                mobileImageSettings,
-              ),
+              "--hero-desktop-object-position":
+                imagePosition(desktopImageSettings),
+              "--hero-mobile-object-position":
+                imagePosition(mobileImageSettings),
               "--hero-desktop-opacity": desktopImageSettings?.opacity
                 ? desktopImageSettings.opacity / 100
                 : 1,
@@ -544,7 +543,7 @@ function Hero({ profile }: { profile: Profile }) {
         <div className="hero-copy flex max-w-3xl flex-col items-start">
           <div
             data-hero-reveal
-            className="reveal inline-flex items-center gap-3 rounded-full border border-border bg-background/50 px-5 py-2.5 mb-8 backdrop-blur-sm"
+            className="glass-pill reveal mb-8"
           >
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
@@ -586,7 +585,7 @@ function Hero({ profile }: { profile: Profile }) {
           >
             <a
               href="#work"
-              className="group inline-flex w-fit items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all duration-300 hover:scale-105 glow-border"
+              className="glass-button group w-fit items-center gap-3 border-primary/60 bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-primary-foreground shadow-[0_16px_35px_hsl(var(--primary)/0.2)] hover:scale-105"
               data-testid="link-hero-work"
             >
               See my work{" "}
@@ -598,7 +597,7 @@ function Hero({ profile }: { profile: Profile }) {
               download={
                 profile.resume ? profile.resumeName || "resume.pdf" : undefined
               }
-              className="group inline-flex w-fit items-center gap-3 rounded-full border border-primary/60 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground transition-all duration-300 hover:border-primary hover:text-primary"
+              className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
               data-testid="link-hero-resume"
             >
               <Download className="h-4 w-4" />
@@ -613,7 +612,9 @@ function Hero({ profile }: { profile: Profile }) {
         className="scroll-cue absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-muted-foreground transition-colors hover:text-primary sm:flex"
       >
         <span className="h-px w-8 bg-border" />
-        <span className="scroll-cue-mouse" aria-hidden="true"><span /></span>
+        <span className="scroll-cue-mouse" aria-hidden="true">
+          <span />
+        </span>
         <span className="h-px w-8 bg-border" />
       </a>
     </section>
@@ -1404,7 +1405,7 @@ function ContactLinks({
   const [copiedEmail, setCopiedEmail] = useState(false);
   const linkClass = isContact
     ? "group flex min-h-14 items-center gap-3 border-b border-border py-3 font-mono text-[11px] font-semibold uppercase tracking-wider text-foreground transition-colors hover:text-primary"
-    : "group inline-flex items-center gap-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary";
+    : "group inline-flex items-center gap-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-foreground transition-colors hover:text-primary";
   const iconClass = isContact
     ? "h-4 w-4 shrink-0 text-primary"
     : "h-4 w-4 shrink-0 text-primary";
@@ -1452,6 +1453,7 @@ function ContactLinks({
               icon={link.icon}
               iconImage={link.iconImage}
               size={16}
+              className="shrink-0 text-primary"
             />
             {link.label}
           </a>
@@ -1509,7 +1511,7 @@ function ContactLinks({
 
 function Footer({ profile }: { profile: Profile }) {
   return (
-    <footer className="border-t border-border bg-background px-4 py-8 sm:px-5 sm:py-12 md:px-8 lg:px-10">
+    <footer className="glass-footer px-4 py-8 sm:px-5 sm:py-12 md:px-8 lg:px-10">
       <div className="mx-auto flex max-w-7xl flex-col items-center text-center">
         <ContactLinks profile={profile} variant="footer" />
         <div className="flex flex-col items-center justify-between gap-6 lg:flex-row">
@@ -1703,20 +1705,20 @@ export function PublicPortfolio() {
     "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
     ...(activeMode === "light"
       ? {
-          "--background": "0 0% 98%",
-          "--foreground": "220 25% 12%",
-          "--border": "220 16% 79%",
-          "--input": "220 16% 84%",
-          "--card": "0 0% 100%",
-          "--card-foreground": "220 25% 12%",
-          "--card-border": "220 16% 82%",
-          "--primary-foreground": "220 25% 12%",
-          "--secondary": "220 17% 93%",
-          "--secondary-foreground": "220 25% 12%",
-          "--muted": "220 18% 92%",
-          "--muted-foreground": "220 14% 30%",
-          "--accent": "152 100% 45%",
-          "--accent-foreground": "220 25% 12%",
+          "--background": "38 38% 94%",
+          "--foreground": "28 25% 17%",
+          "--border": "34 20% 73%",
+          "--input": "34 22% 78%",
+          "--card": "40 42% 97%",
+          "--card-foreground": "28 25% 17%",
+          "--card-border": "34 24% 78%",
+          "--primary-foreground": "38 38% 94%",
+          "--secondary": "36 25% 87%",
+          "--secondary-foreground": "28 25% 17%",
+          "--muted": "36 25% 89%",
+          "--muted-foreground": "28 14% 36%",
+          "--accent": "84 20% 38%",
+          "--accent-foreground": "40 42% 97%",
           "--destructive": "0 84% 60%",
           "--destructive-foreground": "0 0% 100%",
         }
@@ -1726,7 +1728,7 @@ export function PublicPortfolio() {
   return (
     <div
       id="top"
-      className={`${activeMode === "light" ? "light" : "dark"} min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
+      className={`${activeMode === "light" ? "light" : "dark"} public-shell min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
       style={customStyle}
     >
       <ToastContainer

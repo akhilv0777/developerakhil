@@ -160,7 +160,7 @@ export function PublicNav({
               title={link.label}
               className="hidden rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary sm:inline-flex"
             >
-              <SocialIcon label={link.label} icon={link.icon} iconImage={link.iconImage} size={15} />
+              <SocialIcon label={link.label} icon={link.icon} iconImage={link.iconImage} size={15} className="shrink-0 text-primary" />
             </a>
           ))}
           <button type="button" onClick={onToggleTheme} className="rounded-md border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary" aria-label={`Switch to ${isLight ? "dark" : "light"} theme`} data-testid="button-toggle-theme">{isLight ? <Moon size={16} /> : <Sun size={16} />}</button>

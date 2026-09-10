@@ -88,12 +88,17 @@ export async function resizeAndUploadImage(
   maxHeight = 1200,
 ): Promise<string> {
   try {
+    const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+    if (isSvg) {
+      return await uploadImageToCDN(file);
+    }
+
     // Resize the image
     const resizedFile = await resizeImageFile(file, maxWidth, maxHeight, 0.85);
-    
+
     // Upload to CDN
     const cdnUrl = await uploadImageToCDN(resizedFile);
-    
+
     return cdnUrl;
   } catch (error) {
     console.error('Image upload failed:', error);
