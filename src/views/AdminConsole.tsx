@@ -1417,6 +1417,22 @@ function HeroImageCropModal({
           </button>
         )}
       </div>
+      <div className="mt-4 flex justify-end gap-2 border-t border-border/70 pt-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground hover:bg-secondary hover:text-foreground"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleConfirm}
+          className="inline-flex items-center gap-2 rounded-lg bg-[#f97316] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-white hover:bg-[#ea580c]"
+        >
+          <Save size={13} /> Save crop
+        </button>
+      </div>
     </div>
   );
 }
@@ -2648,6 +2664,22 @@ function ProfileEditor({
                   }
                 />
               </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2 border-t border-border/70 pt-4">
+              <button
+                type="button"
+                onClick={() => setHeroAdjustmentsOpen(null)}
+                className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setHeroAdjustmentsOpen(null)}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#f97316] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-white hover:bg-[#ea580c]"
+              >
+                <Save size={13} /> Save adjustments
+              </button>
             </div>
           </div>
         </div>
@@ -4399,6 +4431,9 @@ function AdminArea({
   const [search, setSearch] = useState("");
   const [resourcePage, setResourcePage] = useState(1);
   const [saved, setSaved] = useState(false);
+  const [themeDraft, setThemeDraft] = useState<PortfolioData["themeSettings"]>(
+    data.themeSettings || { accentColor: "#10b981", mode: "light" },
+  );
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSubtab, setSettingsSubtab] = useState<SettingsSubtab>("site");
@@ -4601,6 +4636,14 @@ function AdminArea({
         });
       },
     });
+  };
+
+  const saveTheme = () => {
+    persist(
+      { ...data, themeSettings: themeDraft },
+      undefined,
+      "Theme settings saved.",
+    );
   };
 
   const saveProfile = (value: Profile) => persist({ ...data, profile: value });
@@ -5587,29 +5630,23 @@ function AdminArea({
                   <div className="flex gap-4 items-center">
                     <input
                       type="color"
-                      value={data.themeSettings?.accentColor || "#10b981"}
+                      value={themeDraft.accentColor || "#10b981"}
                       onChange={(e) => {
-                        persist({
-                          ...data,
-                          themeSettings: {
-                            ...data.themeSettings,
-                            accentColor: e.target.value,
-                          },
-                        });
+                        setThemeDraft((current) => ({
+                          ...current,
+                          accentColor: e.target.value,
+                        }));
                       }}
                       className="h-11 w-16 cursor-pointer rounded-lg border border-border bg-secondary p-1"
                     />
                     <input
                       type="text"
-                      value={data.themeSettings?.accentColor || "#10b981"}
+                      value={themeDraft.accentColor || "#10b981"}
                       onChange={(e) => {
-                        persist({
-                          ...data,
-                          themeSettings: {
-                            ...data.themeSettings,
-                            accentColor: e.target.value,
-                          },
-                        });
+                        setThemeDraft((current) => ({
+                          ...current,
+                          accentColor: e.target.value,
+                        }));
                       }}
                       className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-2 text-sm uppercase text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                     />
@@ -5631,21 +5668,35 @@ function AdminArea({
                         key={mode}
                         type="button"
                         aria-pressed={
-                          (data.themeSettings?.mode || "light") === mode
+                          (themeDraft.mode || "light") === mode
                         }
                         onClick={() =>
-                          persist({
-                            ...data,
-                            themeSettings: { ...data.themeSettings, mode },
-                          })
+                          setThemeDraft((current) => ({
+                            ...current,
+                            mode,
+                          }))
                         }
-                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(data.themeSettings?.mode || "light") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
+                        className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-3 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${(themeDraft.mode || "light") === mode ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}
                       >
                         <Icon size={14} /> {label}
                       </button>
                     ))}
                   </div>
                 </label>
+                <div className="flex items-center justify-between gap-4 border-t border-border/70 pt-5">
+                  <p className="text-xs text-muted-foreground">
+                    Changes apply after saving.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={saveTheme}
+                    disabled={saveMutation.isPending}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Save size={14} />
+                    {saveMutation.isPending ? "Saving..." : "Save theme"}
+                  </button>
+                </div>
               </div>
             </section>
           ) : section === "settings" ? (

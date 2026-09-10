@@ -585,7 +585,7 @@ function Hero({ profile }: { profile: Profile }) {
           >
             <a
               href="#work"
-              className="glass-button group w-fit items-center gap-3 border-primary/60 bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-primary-foreground shadow-[0_16px_35px_hsl(var(--primary)/0.2)] hover:scale-105"
+              className="hero-work-button glass-button group w-fit items-center gap-3 border-foreground/80 bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background shadow-[0_16px_35px_hsl(var(--foreground)/0.2)] hover:scale-105"
               data-testid="link-hero-work"
             >
               See my work{" "}
@@ -1705,20 +1705,20 @@ export function PublicPortfolio() {
     "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
     ...(activeMode === "light"
       ? {
-          "--background": "38 38% 94%",
-          "--foreground": "28 25% 17%",
-          "--border": "34 20% 73%",
-          "--input": "34 22% 78%",
-          "--card": "40 42% 97%",
-          "--card-foreground": "28 25% 17%",
-          "--card-border": "34 24% 78%",
-          "--primary-foreground": "38 38% 94%",
-          "--secondary": "36 25% 87%",
-          "--secondary-foreground": "28 25% 17%",
-          "--muted": "36 25% 89%",
-          "--muted-foreground": "28 14% 36%",
-          "--accent": "84 20% 38%",
-          "--accent-foreground": "40 42% 97%",
+          "--background": "40 100% 97%",
+          "--foreground": "222 47% 13%",
+          "--border": "35 26% 80%",
+          "--input": "35 30% 84%",
+          "--card": "40 100% 99%",
+          "--card-foreground": "222 47% 13%",
+          "--card-border": "35 30% 84%",
+          "--primary-foreground": "40 100% 97%",
+          "--secondary": "37 50% 92%",
+          "--secondary-foreground": "222 47% 13%",
+          "--muted": "37 45% 93%",
+          "--muted-foreground": "220 18% 38%",
+          "--accent": "174 55% 36%",
+          "--accent-foreground": "40 100% 99%",
           "--destructive": "0 84% 60%",
           "--destructive-foreground": "0 0% 100%",
         }
