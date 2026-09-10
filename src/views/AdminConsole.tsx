@@ -23,7 +23,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
-  Crop,
   Eye,
   EyeOff,
   ExternalLink,
@@ -2034,15 +2033,6 @@ function ProfileEditor({
                 Hero desktop
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImage(event, "heroImage")}
-                    className="hidden"
-                  />
-                  <Pencil size={10} /> Edit
-                </label>
                 <button
                   type="button"
                   onClick={() => setHeroAdjustmentsOpen("desktop")}
@@ -2055,7 +2045,7 @@ function ProfileEditor({
                   onClick={() => setCropEditorField("heroImage")}
                   className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
                 >
-                  <Crop size={10} /> Crop
+                  <Pencil size={10} /> Edit
                 </button>
               </div>
             </div>
@@ -2083,15 +2073,6 @@ function ProfileEditor({
                 Hero mobile
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImage(event, "heroMobileImage")}
-                    className="hidden"
-                  />
-                  <Pencil size={10} /> Edit
-                </label>
                 <button
                   type="button"
                   onClick={() => setHeroAdjustmentsOpen("mobile")}
@@ -2104,7 +2085,7 @@ function ProfileEditor({
                   onClick={() => setCropEditorField("heroMobileImage")}
                   className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
                 >
-                  <Crop size={10} /> Crop
+                  <Pencil size={10} /> Edit
                 </button>
               </div>
             </div>
