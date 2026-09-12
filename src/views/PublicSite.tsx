@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -43,7 +44,9 @@ import {
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { toast, ToastContainer } from "react-toastify";
 import Link from "next/link";
-import { useMotionFlow } from "@/lib/motionflow";
+import { registerGsap } from "@/lib/gsap-client";
+import { usePublicGsap } from "@/hooks/usePublicGsap";
+import { Flip } from "gsap/Flip";
 import type {
   HeroImageSettings,
   PortfolioData,
@@ -346,11 +349,11 @@ function SectionLabel({
   return (
     <div className="mb-12 flex items-center gap-3">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary/30 bg-primary/8 text-primary shadow-[0_0_18px_rgba(249,115,22,0.12)]">
-        {icon ?? (
+        {icon ? icon : (
           <span className="font-mono text-[11px] font-bold">{number}</span>
         )}
       </span>
-      <span className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
+      <span data-gsap-scramble-scroll className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
         {children}
       </span>
     </div>
@@ -360,41 +363,40 @@ function SectionLabel({
 function TypingRoles({ roles }: { roles: string[] }) {
   const safeRoles = roles.filter(Boolean);
   const rolesKey = safeRoles.join("|");
-  const [roleIndex, setRoleIndex] = useState(0);
-  const [displayedRole, setDisplayedRole] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
+  const textRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const effectRoles = rolesKey ? rolesKey.split("|") : [];
-    if (!effectRoles.length) return;
-    const currentRole = effectRoles[roleIndex % effectRoles.length];
-    const isComplete = displayedRole === currentRole;
-    const isEmpty = displayedRole.length === 0;
-    const delay =
-      !isDeleting && isComplete
-        ? 1200
-        : isDeleting && isEmpty
-          ? 300
-          : isDeleting
-            ? 45
-            : 85;
-    const timer = window.setTimeout(() => {
-      if (!isDeleting && isComplete) {
-        setIsDeleting(true);
-      } else if (isDeleting && isEmpty) {
-        setIsDeleting(false);
-        setRoleIndex((current) => (current + 1) % effectRoles.length);
-      } else {
-        setDisplayedRole(
-          isDeleting
-            ? currentRole.slice(0, Math.max(0, displayedRole.length - 1))
-            : currentRole.slice(0, displayedRole.length + 1),
-        );
-      }
-    }, delay);
-
-    return () => window.clearTimeout(timer);
-  }, [displayedRole, isDeleting, roleIndex, rolesKey]);
+    if (!effectRoles.length || !textRef.current) return;
+    const { gsap } = registerGsap();
+    const el = textRef.current;
+    let index = 0;
+    let active = true;
+    const cycle = () => {
+      if (!active) return;
+      const text = effectRoles[index % effectRoles.length];
+      gsap.to(el, {
+        duration: 1.05,
+        scrambleText: {
+          text,
+          chars: "upperCase",
+          speed: 0.45,
+        },
+        onComplete: () => {
+          gsap.delayedCall(1.35, () => {
+            index += 1;
+            cycle();
+          });
+        },
+      });
+    };
+    el.textContent = effectRoles[0];
+    gsap.delayedCall(0.4, cycle);
+    return () => {
+      active = false;
+      gsap.killTweensOf(el);
+    };
+  }, [rolesKey]);
 
   if (!safeRoles.length) {
     return (
@@ -408,10 +410,11 @@ function TypingRoles({ roles }: { roles: string[] }) {
     <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[.18em] text-foreground font-semibold">
       <span>a</span>
       <span
+        ref={textRef}
         className="terminal-caret inline-flex min-w-[10ch] items-center text-primary"
         aria-live="polite"
       >
-        {displayedRole}
+        {safeRoles[0]}
       </span>
       <span>.</span>
     </span>
@@ -419,7 +422,6 @@ function TypingRoles({ roles }: { roles: string[] }) {
 }
 
 function Hero({ profile }: { profile: Profile }) {
-  const heroRef = useRef<HTMLElement>(null);
   const roles = (
     profile.roles?.length ? profile.roles : [profile.tagline]
   ).filter(Boolean);
@@ -462,39 +464,9 @@ function Hero({ profile }: { profile: Profile }) {
     return `${horizontal} ${vertical}`;
   };
 
-  useEffect(() => {
-    let context: { revert: () => void } | undefined;
-    import("gsap").then(({ gsap }) => {
-      if (!heroRef.current) return;
-      context = gsap.context(() => {
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-          return;
-
-        gsap.fromTo(
-          "[data-hero-reveal]",
-          { opacity: 0, y: 24 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.09,
-            ease: "power3.out",
-          },
-        );
-        gsap.fromTo(
-          ".hero-background-image img",
-          { scale: 1.08 },
-          { scale: 1, duration: 1.5, ease: "power3.out" },
-        );
-      }, heroRef);
-    });
-
-    return () => context?.revert();
-  }, []);
-
   return (
     <section
-      ref={heroRef}
+      data-gsap-hero
       className="relative flex min-h-dvh items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
     >
       {(profile.heroImage || profile.image) && (
@@ -553,7 +525,7 @@ function Hero({ profile }: { profile: Profile }) {
       )}
       <div className="relative z-10 mx-auto flex w-full max-w-7xl min-w-0 items-center">
         <div className="hero-copy flex max-w-3xl flex-col items-start">
-          <div data-hero-reveal className="glass-pill reveal mb-8">
+          <div data-hero-reveal className="glass-pill mb-8">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
               {heroBadge}
@@ -568,33 +540,55 @@ function Hero({ profile }: { profile: Profile }) {
           </p>
 
           <h1
-            data-hero-reveal
-            className="display-title reveal reveal-delay-1 max-w-4xl text-5xl font-bold leading-[1.02] text-foreground tracking-tight sm:text-6xl lg:text-8xl"
+            data-gsap-split
+            className="display-title max-w-4xl text-5xl font-bold leading-[1.02] text-foreground tracking-tight sm:text-6xl lg:text-8xl"
           >
             {profile.name}
           </h1>
+          <svg
+            className="mt-3 h-6 w-full max-w-md text-primary"
+            viewBox="0 0 400 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              data-gsap-draw
+              d="M4 16 C 70 6, 140 22, 210 12 S 330 4, 396 14"
+              stroke="currentColor"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            />
+            <circle
+              data-motion-spark
+              r="3.5"
+              cx="4"
+              cy="16"
+              fill="currentColor"
+            />
+          </svg>
 
           <div
             data-hero-reveal
-            className="reveal reveal-delay-2 mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-foreground"
+            className="mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-foreground"
           >
             <TypingRoles roles={roles} />
           </div>
 
           <p
             data-hero-reveal
-            className="reveal reveal-delay-3 mt-8 max-w-xl text-base leading-[1.8] text-foreground sm:text-lg"
+            className="mt-8 max-w-xl text-base leading-[1.8] text-foreground sm:text-lg"
           >
             {profile.bio1}
           </p>
 
           <div
             data-hero-reveal
-            className="reveal reveal-delay-4 mt-10 flex flex-wrap items-center gap-3 sm:mt-12 sm:gap-4"
+            className="mt-10 flex flex-wrap items-center gap-3 sm:mt-12 sm:gap-4"
           >
             <a
               href="#work"
-              className="hero-work-button glass-button group w-fit items-center gap-3 border-foreground/80 bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background shadow-[0_16px_35px_hsl(var(--foreground)/0.2)] hover:scale-105"
+              data-magnetic
+              className="hero-work-button glass-button group w-fit items-center gap-3 border-foreground/80 bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background shadow-[0_16px_35px_hsl(var(--foreground)/0.2)]"
               data-testid="link-hero-work"
             >
               See my work{" "}
@@ -606,6 +600,7 @@ function Hero({ profile }: { profile: Profile }) {
               download={
                 profile.resume ? profile.resumeName || "resume.pdf" : undefined
               }
+              data-magnetic
               className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
               data-testid="link-hero-resume"
             >
@@ -649,6 +644,7 @@ function About({ profile }: { profile: Profile }) {
                     src={profile.aboutImage}
                     alt={profile.name}
                     className="h-full w-full object-cover"
+                    data-gsap-parallax
                     width={560}
                     height={560}
                   />
@@ -666,11 +662,11 @@ function About({ profile }: { profile: Profile }) {
           ) : null}
         </div>
         <div className="space-y-8">
-          <div
-            data-mf-stagger-animation="fade-up"
-            data-mf-stagger-gap="120"
-            className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
-          >
+            <div
+              data-gsap-stagger="up"
+              data-gsap-gap="120"
+              className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
+            >
             <p className="text-[clamp(1.5rem,2.7vw,2.5rem)] font-bold leading-[1.2] text-foreground">
               {profile.bio1}
             </p>
@@ -680,12 +676,14 @@ function About({ profile }: { profile: Profile }) {
           {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
             <div
               id="skills"
-              data-mf-animation="fade-up"
+              data-gsap-reveal="up"
               className="flex flex-wrap gap-2"
             >
               {profile.skills?.map((skill) => (
                 <span
                   key={skill}
+                  data-scramble
+                  data-gsap-float
                   className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
                 >
                   {skill}
@@ -694,6 +692,7 @@ function About({ profile }: { profile: Profile }) {
               {profile.languages?.map((lang) => (
                 <span
                   key={lang}
+                  data-gsap-float
                   className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
                 >
                   {lang}
@@ -721,10 +720,8 @@ function StatValue({ value }: { value: string }) {
   return (
     <span className="font-mono text-4xl lg:text-5xl font-bold text-foreground">
       <span
-        data-mf-count-to={target}
-        data-mf-count-duration="1600"
-        data-mf-count-once="true"
-        data-mf-count-trigger="top 95%"
+        data-gsap-count
+        data-count-to={target}
       >
         0
       </span>
@@ -740,8 +737,8 @@ function Stats({ stats }: { stats: Stat[] }) {
       className="mx-auto max-w-7xl px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
     >
       <div
-        data-mf-stagger-animation="fade-up"
-        data-mf-stagger-gap="100"
+        data-gsap-stagger="up"
+        data-gsap-gap="100"
         className="grid grid-cols-2 gap-6 lg:grid-cols-4"
       >
         {stats.map((stat) => (
@@ -770,6 +767,7 @@ function Marquee({ services }: { services: Service[] }) {
     services.length > 0
       ? services.map((service) => service.title)
       : ["Research", "Design", "Code", "Ship", "Learn"];
+  const sequence = [...words, ...words];
 
   return (
     <div
@@ -777,19 +775,21 @@ function Marquee({ services }: { services: Service[] }) {
       className="mx-auto my-10 max-w-7xl overflow-hidden rounded-xl border border-border/60 bg-secondary/55 py-6 backdrop-blur-sm [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
     >
       <div
-        data-mf-ticker
-        data-mf-ticker-speed="45"
-        data-mf-ticker-pause-on-hover="true"
-        className="font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
-        dangerouslySetInnerHTML={{
-          __html: words
-            .map(
-              (word, index) =>
-                `<span key="${word}-${index}" class="px-6 flex items-center gap-6">${word} <span class="h-2 w-2 rounded-full bg-primary animate-pulse"></span></span>`,
-            )
-            .join(""),
-        }}
-      />
+        data-gsap-marquee
+        data-marquee-speed="32"
+        className="flex w-max font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
+      >
+        {sequence.map((word, index) => (
+          <span
+            key={`${word}-${index}`}
+            className="flex items-center gap-6 px-6"
+            aria-hidden={index >= words.length}
+          >
+            {word}
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -801,21 +801,39 @@ function Timeline({ data }: { data: PortfolioData }) {
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
-        <div data-mf-animation="fade-up">
+        <div data-gsap-reveal="up">
           <SectionLabel number="02" icon={<GraduationCap size={14} />}>
             EDUCATION
           </SectionLabel>
-          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
+          <h2
+            data-gsap-split-scroll
+            className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
+          >
             Academic <br />
             <span>Timeline.</span>
           </h2>
         </div>
 
-        <div
-          data-mf-stagger-animation="fade-left"
-          data-mf-stagger-gap="100"
-          className="grid gap-6"
-        >
+        <div className="relative">
+          <svg
+            className="pointer-events-none absolute left-[19px] top-4 hidden h-[calc(100%-2rem)] w-10 text-primary/70 sm:block"
+            aria-hidden="true"
+          >
+            <line
+              data-gsap-draw-scroll
+              x1="20"
+              y1="0"
+              x2="20"
+              y2="100%"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+          <div
+            data-gsap-stagger="left"
+            data-gsap-gap="100"
+            className="grid gap-6"
+          >
           {data.education.map((item) => (
             <div
               className="bento-card group relative overflow-hidden p-5 sm:p-6"
@@ -848,6 +866,7 @@ function Timeline({ data }: { data: PortfolioData }) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
     </section>
@@ -861,21 +880,39 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
-        <div data-mf-animation="fade-up">
+        <div data-gsap-reveal="up">
           <SectionLabel number="03" icon={<BriefcaseBusiness size={14} />}>
             EXPERIENCE
           </SectionLabel>
-          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
+          <h2
+            data-gsap-split-scroll
+            className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
+          >
             Professional <br />
             <span>Timeline.</span>
           </h2>
         </div>
 
-        <div
-          data-mf-stagger-animation="fade-left"
-          data-mf-stagger-gap="100"
-          className="grid gap-6"
-        >
+        <div className="relative">
+          <svg
+            className="pointer-events-none absolute left-[19px] top-4 hidden h-[calc(100%-2rem)] w-10 text-primary/70 sm:block"
+            aria-hidden="true"
+          >
+            <line
+              data-gsap-draw-scroll
+              x1="20"
+              y1="0"
+              x2="20"
+              y2="100%"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+          <div
+            data-gsap-stagger="left"
+            data-gsap-gap="100"
+            className="grid gap-6"
+          >
           {data.experience.map((item) => (
             <div
               className="bento-card group relative overflow-hidden p-5 sm:p-6"
@@ -908,6 +945,7 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
               </div>
             </div>
           ))}
+          </div>
         </div>
       </div>
     </section>
@@ -925,8 +963,8 @@ function Services({ data }: { data: PortfolioData }) {
       </SectionLabel>
 
       <div
-        data-mf-stagger-animation="zoom-in"
-        data-mf-stagger-gap="110"
+        data-gsap-stagger="zoom"
+        data-gsap-gap="110"
         className="grid gap-6 lg:grid-cols-3 mt-12"
       >
         {data.services.map((service) => (
@@ -962,6 +1000,8 @@ function Work({ data }: { data: PortfolioData }) {
   const selectedProjectIndex = selectedProject
     ? data.projects.findIndex((project) => project.id === selectedProject.id)
     : -1;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const flipState = useRef<ReturnType<typeof Flip.getState> | null>(null);
 
   const showAdjacentProject = (direction: -1 | 1) => {
     const nextIndex = selectedProjectIndex + direction;
@@ -977,13 +1017,58 @@ function Work({ data }: { data: PortfolioData }) {
         .filter(Boolean),
     ),
   );
-  const filteredProjects =
+  const visibleCount =
     activeCategory === "All projects"
-      ? data.projects
+      ? data.projects.length
       : data.projects.filter(
           (project) =>
             (project.category.trim() || "Uncategorized") === activeCategory,
-        );
+        ).length;
+
+  const setCategory = (category: string) => {
+    const { Flip } = registerGsap();
+    const cards = gridRef.current?.querySelectorAll("[data-project-card]");
+    if (cards?.length) flipState.current = Flip.getState(cards);
+    setActiveCategory(category);
+  };
+
+  useLayoutEffect(() => {
+    const state = flipState.current;
+    if (!state || !gridRef.current) return;
+    const { gsap, Flip } = registerGsap();
+    const cards = gridRef.current.querySelectorAll("[data-project-card]");
+    Flip.from(state, {
+      duration: 0.7,
+      ease: "power2.inOut",
+      absolute: true,
+      nested: true,
+      stagger: 0.04,
+      onEnter: (elements) =>
+        gsap.fromTo(
+          elements,
+          { opacity: 0, scale: 0.92 },
+          { opacity: 1, scale: 1, duration: 0.45, ease: "folio" },
+        ),
+      onLeave: (elements) =>
+        gsap.to(elements, { opacity: 0, scale: 0.94, duration: 0.3 }),
+    });
+    void cards;
+    flipState.current = null;
+  }, [activeCategory]);
+
+  useEffect(() => {
+    if (!selectedProject) return;
+    const { gsap } = registerGsap();
+    const overlay = document.querySelector("[data-project-modal]");
+    const card = overlay?.querySelector("[data-modal-card]");
+    if (!overlay || !card) return;
+    gsap.fromTo(overlay, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 });
+    gsap.fromTo(
+      card,
+      { y: 28, scale: 0.96, autoAlpha: 0 },
+      { y: 0, scale: 1, autoAlpha: 1, duration: 0.45, ease: "folio" },
+    );
+  }, [selectedProject]);
 
   const shareProject = async (project: Project) => {
     const shareUrl = `${window.location.origin}/projects/${encodeURIComponent(project.id)}`;
@@ -1025,7 +1110,7 @@ function Work({ data }: { data: PortfolioData }) {
               type="button"
               role="tab"
               aria-selected={activeCategory === category}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => setCategory(category)}
               className={`rounded-full border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${
                 activeCategory === category
                   ? "border-primary bg-primary text-background"
@@ -1039,14 +1124,18 @@ function Work({ data }: { data: PortfolioData }) {
       </div>
 
       <div
-        data-mf-stagger-animation="fade-up"
-        data-mf-stagger-gap="90"
+        ref={gridRef}
         className="grid gap-8 lg:grid-cols-2"
       >
-        {filteredProjects.map((project) => (
+        {data.projects.map((project) => {
+          const category = project.category.trim() || "Uncategorized";
+          const isHidden =
+            activeCategory !== "All projects" && category !== activeCategory;
+          return (
           <article
             key={project.id}
-            className="bento-card group flex flex-col transition-all hover:-translate-y-2 overflow-hidden"
+            data-project-card
+            className={`bento-card group flex flex-col overflow-hidden ${isHidden ? "hidden" : ""}`}
           >
             <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
               {project.image ? (
@@ -1116,21 +1205,23 @@ function Work({ data }: { data: PortfolioData }) {
               </div>
             </div>
           </article>
-        ))}
+          );
+        })}
       </div>
-      {filteredProjects.length === 0 && (
+      {visibleCount === 0 && (
         <p className="mt-8 text-sm text-muted-foreground">
           No projects in this category yet.
         </p>
       )}
       {selectedProject && (
         <div
+          data-project-modal
           className="fixed inset-0 z-[70] flex items-center justify-center bg-background/80 p-5 backdrop-blur-md"
           role="dialog"
           aria-modal="true"
           aria-label={`${selectedProject.title} details`}
         >
-          <div className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-9 lg:p-8 lg:pb-10">
+          <div data-modal-card className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-9 lg:p-8 lg:pb-10">
             <button
               type="button"
               onClick={() => setSelectedProject(null)}
@@ -1206,6 +1297,7 @@ function Work({ data }: { data: PortfolioData }) {
 
 function Testimonials({ data }: { data: PortfolioData }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const quoteRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!data.testimonials || data.testimonials.length <= 1) return;
@@ -1214,6 +1306,16 @@ function Testimonials({ data }: { data: PortfolioData }) {
     }, 5000);
     return () => clearInterval(interval);
   }, [data.testimonials]);
+
+  useEffect(() => {
+    if (!quoteRef.current) return;
+    const { gsap } = registerGsap();
+    gsap.fromTo(
+      quoteRef.current,
+      { y: 22, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.7, ease: "folio" },
+    );
+  }, [currentIndex]);
 
   if (!data.testimonials || data.testimonials.length === 0) return null;
   const item = data.testimonials[currentIndex];
@@ -1236,39 +1338,42 @@ function Testimonials({ data }: { data: PortfolioData }) {
       <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
         <div className="relative z-10 flex min-h-[250px] flex-col items-center justify-center text-center">
           <div
-            key={currentIndex}
-            className="flex w-full max-w-5xl flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-700 ease-in-out"
+            data-gsap-testimonial
+            className="flex w-full max-w-5xl cursor-grab flex-col items-center active:cursor-grabbing"
           >
-            <div
-              className="mb-6 flex items-center gap-1 text-primary"
-              aria-label="5 out of 5 stars"
-            >
-              {Array.from({ length: 5 }, (_, index) => (
-                <Star
-                  key={index}
-                  size={18}
-                  fill="currentColor"
-                  strokeWidth={1.5}
-                />
-              ))}
-            </div>
-            <p className="max-w-5xl text-center text-2xl font-bold leading-[1.4] tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-              {item?.quote ||
-                "The best work makes the difficult feel possible."}
-            </p>
-            <div className="mt-8 text-center">
-              <p className="font-mono text-[12px] font-bold uppercase tracking-[.1em] text-foreground">
-                {item?.name}
+            <div ref={quoteRef} className="flex w-full flex-col items-center">
+              <div
+                className="mb-6 flex items-center gap-1 text-primary"
+                aria-label="5 out of 5 stars"
+              >
+                {Array.from({ length: 5 }, (_, index) => (
+                  <Star
+                    key={index}
+                    size={18}
+                    fill="currentColor"
+                    strokeWidth={1.5}
+                  />
+                ))}
+              </div>
+              <p className="max-w-5xl text-center text-2xl font-bold leading-[1.4] tracking-tight text-foreground sm:text-3xl lg:text-4xl">
+                {item?.quote ||
+                  "The best work makes the difficult feel possible."}
               </p>
-              <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                {item?.role}
-              </p>
+              <div className="mt-8 text-center">
+                <p className="font-mono text-[12px] font-bold uppercase tracking-[.1em] text-foreground">
+                  {item?.name}
+                </p>
+                <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {item?.role}
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="mt-12 flex items-center justify-center gap-3">
             {data.testimonials.length > 1 && (
               <button
+                data-testimonial-prev
                 type="button"
                 onClick={() => changeTestimonial(-1)}
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
@@ -1292,6 +1397,7 @@ function Testimonials({ data }: { data: PortfolioData }) {
             ))}
             {data.testimonials.length > 1 && (
               <button
+                data-testimonial-next
                 type="button"
                 onClick={() => changeTestimonial(1)}
                 className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-secondary text-foreground transition-colors hover:border-primary hover:text-primary"
@@ -1397,7 +1503,8 @@ function ContactForm() {
         <button
           type="submit"
           disabled={status === "sending"}
-          className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all hover:scale-105 glow-border disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+          className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all glow-border disabled:cursor-not-allowed disabled:opacity-60"
+          data-magnetic
           data-testid="button-send-message"
         >
           {status === "sending" ? "Sending…" : "Send message"}
@@ -1419,8 +1526,11 @@ function Contact({ profile }: { profile: Profile }) {
         CONTACT
       </SectionLabel>
       <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
-        <div data-mf-animation="fade-up">
-          <h2 className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
+        <div data-gsap-reveal="up">
+          <h2
+            data-gsap-split-scroll
+            className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl"
+          >
             {titleLines.map((line, index) => (
               <span key={index}>
                 {line}
@@ -1435,7 +1545,7 @@ function Contact({ profile }: { profile: Profile }) {
           )}
           <ContactLinks profile={profile} variant="contact" />
         </div>
-        <div data-mf-animation="fade-left">
+        <div data-gsap-reveal="left">
           <ContactForm />
         </div>
       </div>
@@ -1494,6 +1604,7 @@ function ContactLinks({
             }
             target="_blank"
             rel="noreferrer"
+            data-magnetic
             className={linkClass}
             aria-label={`Open ${link.label}`}
           >
@@ -1502,7 +1613,7 @@ function ContactLinks({
               icon={link.icon}
               iconImage={link.iconImage}
               size={16}
-              className="shrink-0 text-primary"
+              className="shrink-0 text-primary pointer-events-none"
             />
             {link.label}
           </a>
@@ -1580,7 +1691,10 @@ function Footer({ profile }: { profile: Profile }) {
 function ThankYouSection({ profile }: { profile: Profile }) {
   return (
     <section className="border-y border-border/70 px-4 py-20 sm:px-5 sm:py-28 md:px-8 lg:px-10">
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center text-center">
+      <div
+        data-gsap-thanks
+        className="mx-auto flex w-full max-w-7xl flex-col items-center text-center"
+      >
         <div>
           <p className="w-full text-center font-mono text-[11px] font-semibold uppercase tracking-[.2em] text-primary">
             End note
@@ -1594,7 +1708,7 @@ function ThankYouSection({ profile }: { profile: Profile }) {
             />
           </h2>
         </div>
-        <p className="mt-7 w-full max-w-2xl text-center text-base leading-7 text-muted-foreground sm:text-lg">
+        <p data-gsap-typewriter className="mt-7 w-full max-w-2xl text-center text-base leading-7 text-muted-foreground sm:text-lg">
           Thanks for taking the time to look through {profile.name}&apos;s work.
         </p>
       </div>
@@ -1650,10 +1764,9 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
 
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
-  useMotionFlow([data]);
+  const shellRef = useRef<HTMLDivElement>(null);
+  usePublicGsap(shellRef, Boolean(data) && !isLoading && !isError);
   const [themeOverride, setThemeOverride] = useState<"dark" | "light">("light");
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     fetch("/api/site-settings", { cache: "no-store" })
@@ -1674,28 +1787,6 @@ export function PublicPortfolio() {
         }
       })
       .catch(() => undefined);
-  }, []);
-
-  useEffect(() => {
-    let frame = 0;
-    const updateProgress = () => {
-      frame = 0;
-      const maxScroll =
-        document.documentElement.scrollHeight - window.innerHeight;
-      setScrollProgress(maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0);
-      setShowBackToTop(window.scrollY > window.innerHeight * 0.75);
-    };
-    const scheduleProgress = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateProgress);
-    };
-    updateProgress();
-    window.addEventListener("scroll", scheduleProgress, { passive: true });
-    window.addEventListener("resize", scheduleProgress);
-    return () => {
-      window.removeEventListener("scroll", scheduleProgress);
-      window.removeEventListener("resize", scheduleProgress);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
   }, []);
 
   useEffect(() => {
@@ -1777,8 +1868,12 @@ export function PublicPortfolio() {
   return (
     <div
       id="top"
+      ref={shellRef}
       className={`${activeMode === "light" ? "light" : "dark"} public-shell min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary`}
-      style={customStyle}
+      style={{
+        ...customStyle,
+        ["--scroll-progress" as string]: "0%",
+      }}
     >
       <ToastContainer
         position="top-left"
@@ -1795,8 +1890,8 @@ export function PublicPortfolio() {
         aria-hidden="true"
       >
         <div
-          className="h-full bg-primary transition-[width] duration-150"
-          style={{ width: `${scrollProgress}%` }}
+          data-gsap-progress
+          className="h-full origin-left scale-x-0 bg-primary"
         />
       </div>
       <PublicNav
@@ -1811,7 +1906,7 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.services && (
           <Marquee services={data.services} />
         )}
-        {data.sectionVisibility?.about && <About profile={data.profile} />}~
+        {data.sectionVisibility?.about && <About profile={data.profile} />}
         {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
         {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && (
@@ -1823,20 +1918,20 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
       </main>
       <ThankYouSection profile={data.profile} />
-      {showBackToTop && (
-        <a
-          href="#top"
-          className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg transition-all hover:-translate-y-1 sm:bottom-6 sm:right-6"
-          style={{
-            background: `conic-gradient(hsl(var(--primary)) ${scrollProgress}%, hsl(var(--border)) ${scrollProgress}% 100%)`,
-          }}
-          aria-label="Back to top"
-        >
-          <span className="flex h-full w-full items-center justify-center rounded-full bg-secondary hover:bg-primary hover:text-background">
-            ↑
-          </span>
-        </a>
-      )}
+      <a
+        href="#top"
+        data-gsap-backtop
+        className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg sm:bottom-6 sm:right-6"
+        style={{
+          background:
+            "conic-gradient(hsl(var(--primary)) var(--scroll-progress), hsl(var(--border)) var(--scroll-progress) 100%)",
+        }}
+        aria-label="Back to top"
+      >
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-secondary hover:bg-primary hover:text-background">
+          ↑
+        </span>
+      </a>
       <Footer profile={data.profile} />
     </div>
   );

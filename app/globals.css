@@ -484,7 +484,10 @@
   .reveal-delay-3 { animation-delay: 0.24s; }
 
   .terminal-caret::after { content: '▋'; color: hsl(var(--primary)); margin-left: 0.15em; animation: blink 1.1s steps(2, jump-none) infinite; }
-  .heartbeat { transform-origin: center; animation: heartbeat 1.25s ease-in-out infinite; }
+  .gsap-line { overflow: hidden; display: block; }
+  .gsap-char { display: inline-block; will-change: transform, opacity; }
+  [data-gsap-backtop] { visibility: hidden; opacity: 0; }
+  .heartbeat { transform-origin: center; }
 
 }
 
