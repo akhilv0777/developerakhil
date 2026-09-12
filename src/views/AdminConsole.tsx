@@ -1367,9 +1367,13 @@ function HeroImageCropModal({
     });
     if (!canvas) return;
 
-    canvas.toBlob((blob) => {
-      if (blob) onConfirm(blob);
-    }, "image/jpeg", 0.9);
+    canvas.toBlob(
+      (blob) => {
+        if (blob) onConfirm(blob);
+      },
+      "image/jpeg",
+      0.9,
+    );
   };
 
   return (
@@ -1574,8 +1578,7 @@ function HeroImageControls({
               className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
             />
             <span className="text-right font-mono text-[10px] text-foreground">
-              {current.overlayOpacity}
-              %
+              {current.overlayOpacity}%
             </span>
           </label>
         </div>
@@ -1757,21 +1760,22 @@ function ProfileEditor({
           onRemoveBackground: async () => {
             const sourceUrl = form.heroImage;
             if (!sourceUrl) return;
-            const currentSettings = form.heroDesktopSettings || defaultHeroImageSettings;
+            const currentSettings =
+              form.heroDesktopSettings || defaultHeroImageSettings;
             const originalSource = currentSettings.backgroundRemoved
               ? currentSettings.backupUrl || sourceUrl
               : sourceUrl;
             setRemovingBackgroundField("heroImage");
             try {
-              const response = await fetch('/api/remove-bg', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
+              const response = await fetch("/api/remove-bg", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ imageUrl: originalSource }),
               });
               const body = await response.json().catch(() => ({}));
               if (!response.ok) {
-                throw new Error(body.error || 'Background removal failed.');
+                throw new Error(body.error || "Background removal failed.");
               }
               const nextUrl = body.url || originalSource;
               setForm((current) => ({
@@ -1781,21 +1785,27 @@ function ProfileEditor({
                   ...defaultHeroImageSettings,
                   ...(current.heroDesktopSettings || {}),
                   backgroundRemoved: true,
-                  backupUrl: currentSettings.backgroundRemoved ? currentSettings.backupUrl || originalSource : originalSource,
+                  backupUrl: currentSettings.backgroundRemoved
+                    ? currentSettings.backupUrl || originalSource
+                    : originalSource,
                 },
               }));
             } catch (error) {
               toast({
-                variant: 'destructive',
-                title: 'Background removal failed',
-                description: error instanceof Error ? error.message : 'Could not remove background.',
+                variant: "destructive",
+                title: "Background removal failed",
+                description:
+                  error instanceof Error
+                    ? error.message
+                    : "Could not remove background.",
               });
             } finally {
               setRemovingBackgroundField(null);
             }
           },
           onUndoBackgroundRemoval: () => {
-            const backupUrl = form.heroDesktopSettings?.backupUrl || form.heroImage;
+            const backupUrl =
+              form.heroDesktopSettings?.backupUrl || form.heroImage;
             setForm((current) => ({
               ...current,
               heroImage: backupUrl,
@@ -1818,60 +1828,67 @@ function ProfileEditor({
               setForm((current) => ({ ...current, heroMobileSettings })),
             onUpload: (event: React.ChangeEvent<HTMLInputElement>) =>
               void handleImage(event, "heroMobileImage"),
-          onRemoveBackground: async () => {
-            const sourceUrl = form.heroMobileImage;
-            if (!sourceUrl) return;
-            const currentSettings = form.heroMobileSettings || defaultHeroImageSettings;
-            const originalSource = currentSettings.backgroundRemoved
-              ? currentSettings.backupUrl || sourceUrl
-              : sourceUrl;
-            setRemovingBackgroundField("heroMobileImage");
-            try {
-              const response = await fetch('/api/remove-bg', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imageUrl: originalSource }),
-              });
-              const body = await response.json().catch(() => ({}));
-              if (!response.ok) {
-                throw new Error(body.error || 'Background removal failed.');
+            onRemoveBackground: async () => {
+              const sourceUrl = form.heroMobileImage;
+              if (!sourceUrl) return;
+              const currentSettings =
+                form.heroMobileSettings || defaultHeroImageSettings;
+              const originalSource = currentSettings.backgroundRemoved
+                ? currentSettings.backupUrl || sourceUrl
+                : sourceUrl;
+              setRemovingBackgroundField("heroMobileImage");
+              try {
+                const response = await fetch("/api/remove-bg", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ imageUrl: originalSource }),
+                });
+                const body = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                  throw new Error(body.error || "Background removal failed.");
+                }
+                const nextUrl = body.url || originalSource;
+                setForm((current) => ({
+                  ...current,
+                  heroMobileImage: nextUrl,
+                  heroMobileSettings: {
+                    ...defaultHeroImageSettings,
+                    ...(current.heroMobileSettings || {}),
+                    backgroundRemoved: true,
+                    backupUrl: currentSettings.backgroundRemoved
+                      ? currentSettings.backupUrl || originalSource
+                      : originalSource,
+                  },
+                }));
+              } catch (error) {
+                toast({
+                  variant: "destructive",
+                  title: "Background removal failed",
+                  description:
+                    error instanceof Error
+                      ? error.message
+                      : "Could not remove background.",
+                });
+              } finally {
+                setRemovingBackgroundField(null);
               }
-              const nextUrl = body.url || originalSource;
+            },
+            onUndoBackgroundRemoval: () => {
+              const backupUrl =
+                form.heroMobileSettings?.backupUrl || form.heroMobileImage;
               setForm((current) => ({
                 ...current,
-                heroMobileImage: nextUrl,
+                heroMobileImage: backupUrl,
                 heroMobileSettings: {
                   ...defaultHeroImageSettings,
                   ...(current.heroMobileSettings || {}),
-                  backgroundRemoved: true,
-                  backupUrl: currentSettings.backgroundRemoved ? currentSettings.backupUrl || originalSource : originalSource,
+                  backgroundRemoved: false,
+                  backupUrl: backupUrl,
                 },
               }));
-            } catch (error) {
-              toast({
-                variant: 'destructive',
-                title: 'Background removal failed',
-                description: error instanceof Error ? error.message : 'Could not remove background.',
-              });
-            } finally {
-              setRemovingBackgroundField(null);
-            }
-          },
-          onUndoBackgroundRemoval: () => {
-            const backupUrl = form.heroMobileSettings?.backupUrl || form.heroMobileImage;
-            setForm((current) => ({
-              ...current,
-              heroMobileImage: backupUrl,
-              heroMobileSettings: {
-                ...defaultHeroImageSettings,
-                ...(current.heroMobileSettings || {}),
-                backgroundRemoved: false,
-                backupUrl: backupUrl,
-              },
-            }));
-          },
-        }
+            },
+          }
         : null;
 
   const presetOptions: Array<[string, string]> = [
@@ -1889,97 +1906,137 @@ function ProfileEditor({
 
   return (
     <>
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        onSave({
-          ...form,
-          bio1: aboutEditor.split(/\n\s*\n/)[0]?.trim() || "",
-          bio2: aboutEditor.split(/\n\s*\n/)[1]?.trim() || "",
-          bio3: aboutEditor.split(/\n\s*\n/)[2]?.trim() || "",
-          whatsapp: (form.whatsapp ?? "").trim(),
-          roles: rolesRaw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          skills: skillsRaw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          languages: languagesRaw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean),
-          socialLinks: socialLinks
-            .map((link) => ({
-              ...link,
-              label: link.label.trim(),
-              url: link.url.trim(),
-              locations: link.locations?.length
-                ? link.locations
-                : (["nav", "contact", "footer"] as SocialLinkLocation[]),
-            }))
-            .filter((link) => link.label && link.url),
-          heroDesktopSettings: {
-            ...defaultHeroImageSettings,
-            ...(form.heroDesktopSettings || {}),
-          },
-          heroMobileSettings: {
-            ...defaultHeroImageSettings,
-            ...(form.heroMobileSettings || {}),
-          },
-        });
-      }}
-      className="bento-card p-5 md:p-6"
-    >
-      <div className="mb-8 grid gap-6 md:grid-cols-2">
-        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/30 p-3">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-5 rounded-lg border border-border/70 bg-background/30 p-3">
-              <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
-                <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
-                  {form.image ? (
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave({
+            ...form,
+            bio1: aboutEditor.split(/\n\s*\n/)[0]?.trim() || "",
+            bio2: aboutEditor.split(/\n\s*\n/)[1]?.trim() || "",
+            bio3: aboutEditor.split(/\n\s*\n/)[2]?.trim() || "",
+            whatsapp: (form.whatsapp ?? "").trim(),
+            roles: rolesRaw
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            skills: skillsRaw
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            languages: languagesRaw
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            socialLinks: socialLinks
+              .map((link) => ({
+                ...link,
+                label: link.label.trim(),
+                url: link.url.trim(),
+                locations: link.locations?.length
+                  ? link.locations
+                  : (["nav", "contact", "footer"] as SocialLinkLocation[]),
+              }))
+              .filter((link) => link.label && link.url),
+            heroDesktopSettings: {
+              ...defaultHeroImageSettings,
+              ...(form.heroDesktopSettings || {}),
+            },
+            heroMobileSettings: {
+              ...defaultHeroImageSettings,
+              ...(form.heroMobileSettings || {}),
+            },
+          });
+        }}
+        className="bento-card p-5 md:p-6"
+      >
+        <div className="mb-8 grid gap-6 md:grid-cols-2">
+          <div className="md:col-span-2 rounded-lg border border-border bg-secondary/30 p-3">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center gap-5 rounded-lg border border-border/70 bg-background/30 p-3">
+                <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
+                  <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
+                    {form.image ? (
+                      <NextImage
+                        src={form.image}
+                        alt="Profile icon"
+                        width={80}
+                        height={80}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <User size={22} className="text-muted-foreground" />
+                    )}
+                  </div>
+                  <label
+                    className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background"
+                    title="Change profile icon"
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => handleImage(event, "image")}
+                      className="hidden"
+                    />
+                    <Pencil size={12} />
+                  </label>
+                </div>
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                    Profile icon
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used in the public navigation.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 rounded-lg border border-border/70 bg-background/30 p-3">
+                <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
+                  {form.aboutImage ? (
                     <NextImage
-                      src={form.image}
-                      alt="Profile icon"
-                      width={80}
-                      height={80}
+                      src={form.aboutImage}
+                      alt="About"
+                      width={96}
+                      height={64}
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <User size={22} className="text-muted-foreground" />
+                    <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                      No image
+                    </span>
                   )}
+                  <label
+                    className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
+                    title="Change about image"
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => handleImage(event, "aboutImage")}
+                      className="hidden"
+                    />
+                    <Pencil size={11} />
+                  </label>
                 </div>
-                <label
-                  className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background"
-                  title="Change profile icon"
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImage(event, "image")}
-                    className="hidden"
-                  />
-                  <Pencil size={12} />
-                </label>
-              </div>
-              <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-                  Profile icon
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Used in the public navigation.
-                </p>
+                <div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
+                    About image
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used in the About section.
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-lg border border-border/70 bg-background/30 p-3">
-              <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
-                {form.aboutImage ? (
+          </div>
+          <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
+            <div className="flex items-center gap-4">
+              <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
+                {form.heroImage ? (
                   <NextImage
-                    src={form.aboutImage}
-                    alt="About"
-                    width={96}
-                    height={64}
+                    src={form.heroImage}
+                    alt="Desktop hero"
+                    width={128}
+                    height={96}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -1987,687 +2044,659 @@ function ProfileEditor({
                     No image
                   </span>
                 )}
-                <label
-                  className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
-                  title="Change about image"
-                >
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleImage(event, "aboutImage")}
-                    className="hidden"
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
+                  Hero desktop
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setHeroAdjustmentsOpen("desktop")}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                  >
+                    <Sparkles size={10} /> Magic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCropEditorField("heroImage")}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                  >
+                    <Pencil size={10} /> Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
+            <div className="flex items-center gap-4">
+              <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
+                {form.heroMobileImage ? (
+                  <NextImage
+                    src={form.heroMobileImage}
+                    alt="Mobile hero"
+                    width={128}
+                    height={160}
+                    className="h-full w-full object-cover"
                   />
-                  <Pencil size={11} />
-                </label>
+                ) : (
+                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
+                    Desktop fallback
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground">
-                  About image
+              <div className="min-w-0 flex-1">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
+                  Hero mobile
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Used in the About section.
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setHeroAdjustmentsOpen("mobile")}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                  >
+                    <Sparkles size={10} /> Magic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCropEditorField("heroMobileImage")}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
+                  >
+                    <Pencil size={10} /> Edit
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+          {imageError && (
+            <p className="font-mono text-[11px] text-red-400 md:col-span-2">
+              {imageError}
+            </p>
+          )}
         </div>
-        <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
-          <div className="flex items-center gap-4">
-            <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
-              {form.heroImage ? (
-                <NextImage
-                  src={form.heroImage}
-                  alt="Desktop hero"
-                  width={128}
-                  height={96}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                  No image
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
-                Hero desktop
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setHeroAdjustmentsOpen("desktop")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                >
-                  <Sparkles size={10} /> Magic
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCropEditorField("heroImage")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                >
-                  <Pencil size={10} /> Edit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
-          <div className="flex items-center gap-4">
-            <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
-              {form.heroMobileImage ? (
-                <NextImage
-                  src={form.heroMobileImage}
-                  alt="Mobile hero"
-                  width={128}
-                  height={160}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                  Desktop fallback
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
-                Hero mobile
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setHeroAdjustmentsOpen("mobile")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                >
-                  <Sparkles size={10} /> Magic
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCropEditorField("heroMobileImage")}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                >
-                  <Pencil size={10} /> Edit
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        {imageError && (
-          <p className="font-mono text-[11px] text-red-400 md:col-span-2">
-            {imageError}
-          </p>
-        )}
-      </div>
 
-      <div className="mb-10 rounded-lg bg-secondary/30 p-5 md:p-6 border border-border min-w-0">
-        <span className="mb-4 block font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
-          Resume Document
-        </span>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx"
-              onChange={handleResume}
-              className="hidden"
+        <div className="mb-10 rounded-lg bg-secondary/30 p-5 md:p-6 border border-border min-w-0">
+          <span className="mb-4 block font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
+            Resume Document
+          </span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <label className="inline-flex w-full sm:w-auto cursor-pointer items-center justify-center rounded-md border border-primary/50 bg-primary/10 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-wider text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                onChange={handleResume}
+                className="hidden"
+              />
+              {form.resume ? "Replace file" : "Upload file"}
+            </label>
+            {form.resume && (
+              <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
+                <span className="font-mono text-[12px] font-medium text-foreground truncate">
+                  {form.resumeName || "resume.pdf"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      resume: "",
+                      resumeName: "",
+                    }))
+                  }
+                  className="shrink-0 font-mono text-[11px] font-bold uppercase text-red-500 hover:underline"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </div>
+          {resumeError && (
+            <p className="mt-3 font-mono text-[11px] text-red-400">
+              {resumeError}
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <label className="md:col-span-2">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              About editor
+            </span>
+            <textarea
+              required
+              value={aboutEditor}
+              rows={10}
+              onChange={(event) => setAboutEditor(event.target.value)}
+              placeholder="Headline bio\n\nAbout paragraph 1\n\nAbout paragraph 2"
+              className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm leading-7 outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
             />
-            {form.resume ? "Replace file" : "Upload file"}
+            <span className="mt-2 block text-xs text-muted-foreground">
+              Separate the headline and two paragraphs with a blank line.
+            </span>
           </label>
-          {form.resume && (
-            <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
-              <span className="font-mono text-[12px] font-medium text-foreground truncate">
-                {form.resumeName || "resume.pdf"}
+          {fields.map(({ key, label, long }) => (
+            <label key={key} className={long ? "md:col-span-2" : ""}>
+              <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {label}
               </span>
+              {long ? (
+                <textarea
+                  required
+                  value={String(form[key] ?? "")}
+                  rows={3}
+                  onChange={(event) =>
+                    setForm({ ...form, [key]: event.target.value })
+                  }
+                  className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+                />
+              ) : (
+                <input
+                  required
+                  value={String(form[key] ?? "")}
+                  onChange={(event) =>
+                    setForm({ ...form, [key]: event.target.value })
+                  }
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+                />
+              )}
+            </label>
+          ))}
+          <label className="md:col-span-2">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Roles (comma separated)
+            </span>
+            <textarea
+              value={rolesRaw}
+              rows={2}
+              onChange={(event) => setRolesRaw(event.target.value)}
+              className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+            />
+          </label>
+          <div className="md:col-span-2 rounded-lg border border-border bg-secondary/20 p-4">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Additional social links
+                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Add any platform without changing the code.
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={() =>
-                  setForm((current) => ({
+                  setSocialLinks((current) => [
                     ...current,
-                    resume: "",
-                    resumeName: "",
-                  }))
+                    {
+                      id: `social-${Date.now()}`,
+                      label: "",
+                      url: "",
+                      locations: ["nav", "contact", "footer"],
+                    },
+                  ])
                 }
-                className="shrink-0 font-mono text-[11px] font-bold uppercase text-red-500 hover:underline"
+                className="inline-flex shrink-0 items-center gap-2 rounded-md border border-primary/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
               >
-                Remove
+                <Plus size={13} /> Add link
               </button>
             </div>
-          )}
-        </div>
-        {resumeError && (
-          <p className="mt-3 font-mono text-[11px] text-red-400">
-            {resumeError}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <label className="md:col-span-2">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            About editor
-          </span>
-          <textarea
-            required
-            value={aboutEditor}
-            rows={10}
-            onChange={(event) => setAboutEditor(event.target.value)}
-            placeholder="Headline bio\n\nAbout paragraph 1\n\nAbout paragraph 2"
-            className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm leading-7 outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-          <span className="mt-2 block text-xs text-muted-foreground">
-            Separate the headline and two paragraphs with a blank line.
-          </span>
-        </label>
-        {fields.map(({ key, label, long }) => (
-          <label key={key} className={long ? "md:col-span-2" : ""}>
-            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {label}
-            </span>
-            {long ? (
-              <textarea
-                required
-                value={String(form[key] ?? "")}
-                rows={3}
-                onChange={(event) =>
-                  setForm({ ...form, [key]: event.target.value })
-                }
-                className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-              />
-            ) : (
-              <input
-                required
-                value={String(form[key] ?? "")}
-                onChange={(event) =>
-                  setForm({ ...form, [key]: event.target.value })
-                }
-                className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-              />
-            )}
-          </label>
-        ))}
-        <label className="md:col-span-2">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Roles (comma separated)
-          </span>
-          <textarea
-            value={rolesRaw}
-            rows={2}
-            onChange={(event) => setRolesRaw(event.target.value)}
-            className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-        </label>
-        <div className="md:col-span-2 rounded-lg border border-border bg-secondary/20 p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <span className="block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Additional social links
-              </span>
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Add any platform without changing the code.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                setSocialLinks((current) => [
-                  ...current,
-                  {
-                    id: `social-${Date.now()}`,
-                    label: "",
-                    url: "",
-                    locations: ["nav", "contact", "footer"],
-                  },
-                ])
-              }
-              className="inline-flex shrink-0 items-center gap-2 rounded-md border border-primary/40 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
-            >
-              <Plus size={13} /> Add link
-            </button>
-          </div>
-          <div className="grid gap-3">
-            {socialLinks.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No additional links yet.
-              </p>
-            ) : (
-              socialLinks.map((link, index) => (
-                <div
-                  key={link.id}
-                  className="rounded-lg border border-border/70 bg-background/30 p-4"
-                >
-                  <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,280px)_auto] sm:items-end">
-                    <label className="grid gap-1.5">
-                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Platform name
-                      </span>
-                      <input
-                        value={link.label}
-                        onChange={(event) =>
-                          setSocialLinks((current) =>
-                            current.map((item, itemIndex) =>
-                              itemIndex === index
-                                ? { ...item, label: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                        placeholder="e.g. Facebook"
-                        aria-label={`Social platform ${index + 1}`}
-                        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-                      />
-                    </label>
-                    <label className="grid gap-1.5">
-                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                        Icon
-                      </span>
-                      <SocialIconPicker
-                        value={link.icon}
-                        label={link.label}
-                        iconImage={link.iconImage}
-                        onChange={(icon) =>
-                          setSocialLinks((current) =>
-                            current.map((item) =>
-                              item.id === link.id
-                                ? { ...item, icon, iconImage: "" }
-                                : item,
-                            ),
-                          )
-                        }
-                        onUpload={(event) =>
-                          void handleSocialIconUpload(event, link.id)
-                        }
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSocialLinks((current) =>
-                          current.filter((item) => item.id !== link.id),
-                        )
-                      }
-                      aria-label={`Remove ${link.label || "social link"}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/15 hover:text-red-400 sm:mb-0.5"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                  <label className="mt-3 grid max-w-3xl gap-1.5">
-                    <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Profile URL
-                    </span>
-                    <input
-                      value={link.url}
-                      onChange={(event) =>
-                        setSocialLinks((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index
-                              ? { ...item, url: event.target.value }
-                              : item,
-                          ),
-                        )
-                      }
-                      placeholder="https://example.com/your-profile"
-                      aria-label={`Social URL ${index + 1}`}
-                      className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
-                    />
-                  </label>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border/50 pt-3">
-                    <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/30 p-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
-                      <span className="px-2 text-[9px]">Show in</span>
-                      {(
-                        ["nav", "contact", "footer"] as SocialLinkLocation[]
-                      ).map((location) => (
-                        <button
-                          key={location}
-                          type="button"
-                          aria-pressed={(
-                            link.locations || ["nav", "contact", "footer"]
-                          ).includes(location)}
-                          onClick={() =>
+            <div className="grid gap-3">
+              {socialLinks.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No additional links yet.
+                </p>
+              ) : (
+                socialLinks.map((link, index) => (
+                  <div
+                    key={link.id}
+                    className="rounded-lg border border-border/70 bg-background/30 p-4"
+                  >
+                    <div className="grid gap-3 sm:grid-cols-[minmax(180px,1fr)_minmax(220px,280px)_auto] sm:items-end">
+                      <label className="grid gap-1.5">
+                        <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Platform name
+                        </span>
+                        <input
+                          value={link.label}
+                          onChange={(event) =>
                             setSocialLinks((current) =>
-                              current.map((item) => {
-                                if (item.id !== link.id) return item;
-                                const currentLocations = item.locations || [
-                                  "nav",
-                                  "contact",
-                                  "footer",
-                                ];
-                                return {
-                                  ...item,
-                                  locations: currentLocations.includes(location)
-                                    ? currentLocations.filter(
-                                        (itemLocation) =>
-                                          itemLocation !== location,
-                                      )
-                                    : [...currentLocations, location],
-                                };
-                              }),
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? { ...item, label: event.target.value }
+                                  : item,
+                              ),
                             )
                           }
-                          className={`rounded-md px-2.5 py-1.5 normal-case tracking-normal transition-colors ${(link.locations || ["nav", "contact", "footer"]).includes(location) ? "bg-primary text-background" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
-                        >
-                          {location === "nav"
-                            ? "Navigation"
-                            : location === "contact"
-                              ? "Contact"
-                              : "Footer"}
-                        </button>
-                      ))}
-                    </div>
-                    {link.iconImage && (
+                          placeholder="e.g. Facebook"
+                          aria-label={`Social platform ${index + 1}`}
+                          className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                        />
+                      </label>
+                      <label className="grid gap-1.5">
+                        <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Icon
+                        </span>
+                        <SocialIconPicker
+                          value={link.icon}
+                          label={link.label}
+                          iconImage={link.iconImage}
+                          onChange={(icon) =>
+                            setSocialLinks((current) =>
+                              current.map((item) =>
+                                item.id === link.id
+                                  ? { ...item, icon, iconImage: "" }
+                                  : item,
+                              ),
+                            )
+                          }
+                          onUpload={(event) =>
+                            void handleSocialIconUpload(event, link.id)
+                          }
+                        />
+                      </label>
                       <button
                         type="button"
                         onClick={() =>
                           setSocialLinks((current) =>
-                            current.map((item) =>
-                              item.id === link.id
-                                ? { ...item, iconImage: "" }
+                            current.filter((item) => item.id !== link.id),
+                          )
+                        }
+                        aria-label={`Remove ${link.label || "social link"}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-red-500/15 hover:text-red-400 sm:mb-0.5"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                    <label className="mt-3 grid max-w-3xl gap-1.5">
+                      <span className="px-1 font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Profile URL
+                      </span>
+                      <input
+                        value={link.url}
+                        onChange={(event) =>
+                          setSocialLinks((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, url: event.target.value }
                                 : item,
                             ),
                           )
                         }
-                        className="font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:underline"
-                      >
-                        Remove custom icon
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        <label className="md:col-span-2">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Skills (comma separated)
-          </span>
-          <textarea
-            value={skillsRaw}
-            rows={3}
-            onChange={(event) => setSkillsRaw(event.target.value)}
-            className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-        </label>
-        <label className="md:col-span-2">
-          <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Languages (comma separated)
-          </span>
-          <textarea
-            value={languagesRaw}
-            rows={3}
-            onChange={(event) => setLanguagesRaw(event.target.value)}
-            className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
-          />
-        </label>
-      </div>
-      <div className="mt-8 flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)] transition-all disabled:opacity-50 whitespace-nowrap"
-        >
-          <Save size={16} /> Save profile
-        </button>
-      </div>
-    </form>
-    {cropEditorField && createPortal(
-      <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
-        <button
-          aria-label="Close crop editor"
-          onClick={() => setCropEditorField(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        />
-        <div className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
-          <HeroImageCropModal
-            file={
-              cropRequest?.field === cropEditorField ? cropRequest.file : undefined
-            }
-            src={
-              cropEditorField === "heroImage"
-                ? form.heroImage
-                : form.heroMobileImage
-            }
-            aspectRatio={
-              cropEditorField === "heroImage" ? 16 / 9 : 9 / 16
-            }
-            settings={
-              cropEditorField === "heroImage"
-                ? form.heroDesktopSettings
-                : form.heroMobileSettings
-            }
-            onCancel={() => {
-              setCropRequest(null);
-              setCropEditorField(null);
-            }}
-            onConfirm={(blob) => {
-              setCropEditorField(null);
-              void handleCroppedHeroImage(blob, cropEditorField);
-            }}
-            onChangeImage={
-              cropEditorField === "heroImage"
-                ? (event) => void handleImage(event, "heroImage")
-                : (event) => void handleImage(event, "heroMobileImage")
-            }
-            onRemoveBackground={
-              cropEditorField === "heroImage"
-                ? activeHeroModal?.onRemoveBackground
-                : activeHeroModal?.onRemoveBackground
-            }
-            onUndoBackgroundRemoval={
-              cropEditorField === "heroImage"
-                ? activeHeroModal?.onUndoBackgroundRemoval
-                : activeHeroModal?.onUndoBackgroundRemoval
-            }
-            isRemovingBackground={
-              removingBackgroundField === cropEditorField
-            }
-          />
-        </div>
-      </div>,
-      document.body,
-    )}
-    {activeHeroModal && createPortal(
-      <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
-        <button
-          aria-label="Close hero adjustments"
-          onClick={() => setHeroAdjustmentsOpen(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        />
-        <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
-              {heroAdjustmentsOpen === "desktop"
-                ? "Desktop hero adjustments"
-                : "Mobile hero adjustments"}
-            </h3>
-            <button
-              type="button"
-              onClick={() => setHeroAdjustmentsOpen(null)}
-              aria-label="Close"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
-            >
-              <X size={16} />
-            </button>
-          </div>
-          <div className="p-4 md:p-6">
-            <div className="grid gap-6 md:grid-cols-[minmax(270px,0.9fr)_minmax(360px,1.1fr)]">
-              <div className="contents">
-                {(() => {
-                  const isDesktopPreview = heroAdjustmentsOpen === "desktop";
-                  const previewImage = isDesktopPreview
-                    ? form.heroImage
-                    : form.heroMobileImage;
-                  const activeSettings =
-                    (isDesktopPreview
-                      ? form.heroDesktopSettings
-                      : form.heroMobileSettings) || defaultHeroImageSettings;
-                  const activePreset = activeSettings.preset || "none";
-
-                  return (
-                    <>
-                      <div className="order-1 flex flex-col gap-3 md:col-start-1 md:row-start-1">
-                        <div className="flex items-center justify-center">
-                          <div
-                              className={`relative overflow-hidden rounded-xl border border-border bg-secondary/20 ${isDesktopPreview ? "w-full max-w-[480px] aspect-[16/9]" : "w-full max-w-[240px] aspect-[9/16]"}`}
+                        placeholder="https://example.com/your-profile"
+                        aria-label={`Social URL ${index + 1}`}
+                        className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/20"
+                      />
+                    </label>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border/50 pt-3">
+                      <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/70 bg-secondary/30 p-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                        <span className="px-2 text-[9px]">Show in</span>
+                        {(
+                          ["nav", "contact", "footer"] as SocialLinkLocation[]
+                        ).map((location) => (
+                          <button
+                            key={location}
+                            type="button"
+                            aria-pressed={(
+                              link.locations || ["nav", "contact", "footer"]
+                            ).includes(location)}
+                            onClick={() =>
+                              setSocialLinks((current) =>
+                                current.map((item) => {
+                                  if (item.id !== link.id) return item;
+                                  const currentLocations = item.locations || [
+                                    "nav",
+                                    "contact",
+                                    "footer",
+                                  ];
+                                  return {
+                                    ...item,
+                                    locations: currentLocations.includes(
+                                      location,
+                                    )
+                                      ? currentLocations.filter(
+                                          (itemLocation) =>
+                                            itemLocation !== location,
+                                        )
+                                      : [...currentLocations, location],
+                                  };
+                                }),
+                              )
+                            }
+                            className={`rounded-md px-2.5 py-1.5 normal-case tracking-normal transition-colors ${(link.locations || ["nav", "contact", "footer"]).includes(location) ? "bg-primary text-background" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
                           >
-                            {previewImage ? (
-                              <>
-                                <NextImage
-                                  src={previewImage}
-                                  alt={
-                                    isDesktopPreview
-                                      ? "Desktop hero preview"
-                                      : "Mobile hero preview"
-                                  }
-                                  fill
-                                  className="object-cover"
-                                  style={{
-                                    filter: getHeroFilterValue(activeSettings),
-                                    objectPosition: getHeroImageObjectPosition(
-                                      activeSettings,
-                                    ),
-                                    opacity:
-                                      (activeSettings.opacity ?? 100) / 100,
-                                  }}
-                                />
-                                <div
-                                  className="absolute inset-0 pointer-events-none"
-                                  style={{
-                                    backgroundColor:
-                                      activeSettings.overlayColor || "#ffffff",
-                                    opacity:
-                                      (activeSettings.overlayOpacity ?? 0) / 100,
-                                  }}
-                                />
-                              </>
-                            ) : (
-                              <div className="flex h-full items-center justify-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                                No image
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
+                            {location === "nav"
+                              ? "Navigation"
+                              : location === "contact"
+                                ? "Contact"
+                                : "Footer"}
+                          </button>
+                        ))}
                       </div>
+                      {link.iconImage && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSocialLinks((current) =>
+                              current.map((item) =>
+                                item.id === link.id
+                                  ? { ...item, iconImage: "" }
+                                  : item,
+                              ),
+                            )
+                          }
+                          className="font-mono text-[10px] font-bold uppercase tracking-wider text-red-400 hover:underline"
+                        >
+                          Remove custom icon
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          <label className="md:col-span-2">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Skills (comma separated)
+            </span>
+            <textarea
+              value={skillsRaw}
+              rows={3}
+              onChange={(event) => setSkillsRaw(event.target.value)}
+              className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+            />
+          </label>
+          <label className="md:col-span-2">
+            <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Languages (comma separated)
+            </span>
+            <textarea
+              value={languagesRaw}
+              rows={3}
+              onChange={(event) => setLanguagesRaw(event.target.value)}
+              className="w-full resize-y rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20 text-foreground"
+            />
+          </label>
+        </div>
+        <div className="mt-8 flex gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background hover:bg-primary/90 hover:shadow-[0_0_10px_rgba(0,255,136,0.3)] transition-all disabled:opacity-50 whitespace-nowrap"
+          >
+            <Save size={16} /> Save profile
+          </button>
+        </div>
+      </form>
+      {cropEditorField &&
+        createPortal(
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+            <button
+              aria-label="Close crop editor"
+              onClick={() => setCropEditorField(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <div className="relative z-10 max-h-[calc(100vh-2rem)] w-full max-w-5xl overflow-y-auto rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
+              <HeroImageCropModal
+                file={
+                  cropRequest?.field === cropEditorField
+                    ? cropRequest.file
+                    : undefined
+                }
+                src={
+                  cropEditorField === "heroImage"
+                    ? form.heroImage
+                    : form.heroMobileImage
+                }
+                aspectRatio={cropEditorField === "heroImage" ? 16 / 9 : 9 / 16}
+                settings={
+                  cropEditorField === "heroImage"
+                    ? form.heroDesktopSettings
+                    : form.heroMobileSettings
+                }
+                onCancel={() => {
+                  setCropRequest(null);
+                  setCropEditorField(null);
+                }}
+                onConfirm={(blob) => {
+                  setCropEditorField(null);
+                  void handleCroppedHeroImage(blob, cropEditorField);
+                }}
+                onChangeImage={
+                  cropEditorField === "heroImage"
+                    ? (event) => void handleImage(event, "heroImage")
+                    : (event) => void handleImage(event, "heroMobileImage")
+                }
+                onRemoveBackground={
+                  cropEditorField === "heroImage"
+                    ? activeHeroModal?.onRemoveBackground
+                    : activeHeroModal?.onRemoveBackground
+                }
+                onUndoBackgroundRemoval={
+                  cropEditorField === "heroImage"
+                    ? activeHeroModal?.onUndoBackgroundRemoval
+                    : activeHeroModal?.onUndoBackgroundRemoval
+                }
+                isRemovingBackground={
+                  removingBackgroundField === cropEditorField
+                }
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
+      {activeHeroModal &&
+        createPortal(
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+            <button
+              aria-label="Close hero adjustments"
+              onClick={() => setHeroAdjustmentsOpen(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                  {heroAdjustmentsOpen === "desktop"
+                    ? "Desktop hero adjustments"
+                    : "Mobile hero adjustments"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setHeroAdjustmentsOpen(null)}
+                  aria-label="Close"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="p-4 md:p-6">
+                <div className="grid gap-6 md:grid-cols-[minmax(270px,0.9fr)_minmax(360px,1.1fr)]">
+                  <div className="contents">
+                    {(() => {
+                      const isDesktopPreview =
+                        heroAdjustmentsOpen === "desktop";
+                      const previewImage = isDesktopPreview
+                        ? form.heroImage
+                        : form.heroMobileImage;
+                      const activeSettings =
+                        (isDesktopPreview
+                          ? form.heroDesktopSettings
+                          : form.heroMobileSettings) ||
+                        defaultHeroImageSettings;
+                      const activePreset = activeSettings.preset || "none";
 
-                      <div className="order-3 rounded-xl border border-border bg-[#0d1117] p-3 md:col-span-2 md:row-start-2">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
-                            Filter Type
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-[repeat(auto-fit,minmax(76px,1fr))] gap-2">
-                          {presetOptions.map(([value, label]) => {
-                            const isSelected = activePreset === value;
-                            const applyPreset = () => {
-                              if (isDesktopPreview) {
-                                setForm((current) => ({
-                                  ...current,
-                                  heroDesktopSettings: {
-                                    ...defaultHeroImageSettings,
-                                    ...(current.heroDesktopSettings || {}),
-                                    preset: value,
-                                  },
-                                }));
-                                return;
-                              }
-
-                              setForm((current) => ({
-                                ...current,
-                                heroMobileSettings: {
-                                  ...defaultHeroImageSettings,
-                                  ...(current.heroMobileSettings || {}),
-                                  preset: value,
-                                },
-                              }));
-                            };
-
-                            return (
-                              <button
-                                key={value}
-                                type="button"
-                                onClick={applyPreset}
-                                className={`rounded-lg border px-2 py-2 text-center transition-all ${
-                                  isSelected
-                                    ? "border-[#f97316] bg-[#f97316]/10 shadow-[0_0_0_1px_rgba(249,115,22,0.4)]"
-                                    : "border-border bg-secondary/30 hover:border-[#f97316]/60"
-                                }`}
+                      return (
+                        <>
+                          <div className="order-1 flex flex-col gap-3 md:col-start-1 md:row-start-1">
+                            <div className="flex items-center justify-center">
+                              <div
+                                className={`relative overflow-hidden rounded-xl border border-border bg-secondary/20 ${isDesktopPreview ? "w-full max-w-[480px] aspect-[16/9]" : "w-full max-w-[240px] aspect-[9/16]"}`}
                               >
-                                <span className="relative mb-1.5 flex h-10 items-center justify-center overflow-hidden rounded-md border border-border bg-secondary/50">
-                                  {previewImage ? (
+                                {previewImage ? (
+                                  <>
                                     <NextImage
                                       src={previewImage}
-                                      alt={`${label} filter preview`}
+                                      alt={
+                                        isDesktopPreview
+                                          ? "Desktop hero preview"
+                                          : "Mobile hero preview"
+                                      }
                                       fill
-                                      sizes="100px"
                                       className="object-cover"
                                       style={{
-                                        filter: getHeroFilterValue({
-                                          ...defaultHeroImageSettings,
-                                          ...(isDesktopPreview
-                                            ? form.heroDesktopSettings
-                                            : form.heroMobileSettings),
-                                          preset: value,
-                                        }),
-                                        objectPosition: getHeroImageObjectPosition(
-                                          isDesktopPreview
-                                            ? form.heroDesktopSettings
-                                            : form.heroMobileSettings,
-                                        ),
+                                        filter:
+                                          getHeroFilterValue(activeSettings),
+                                        objectPosition:
+                                          getHeroImageObjectPosition(
+                                            activeSettings,
+                                          ),
+                                        opacity:
+                                          (activeSettings.opacity ?? 100) / 100,
                                       }}
                                     />
-                                  ) : (
-                                    <span className="block h-full w-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.38),rgba(15,23,42,0.7)_50%,rgba(15,23,42,0.9))]" />
-                                  )}
-                                </span>
-                                <span className="flex min-h-6 items-start justify-center font-mono text-[8px] font-bold uppercase leading-3 tracking-[0.08em] text-foreground [overflow-wrap:anywhere]">
-                                  {label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-              <div className="order-2 md:col-start-2 md:row-start-1">
-                <HeroImageControls
-                  label={activeHeroModal.label}
-                  settings={activeHeroModal.settings}
-                  onChange={activeHeroModal.onChange}
-                  onUpload={activeHeroModal.onUpload}
-                  onRemoveBackground={activeHeroModal.onRemoveBackground}
-                  onUndoBackgroundRemoval={activeHeroModal.onUndoBackgroundRemoval}
-                  isRemovingBackground={
-                    removingBackgroundField === activeHeroModal.field
-                  }
-                />
+                                    <div
+                                      className="absolute inset-0 pointer-events-none"
+                                      style={{
+                                        backgroundColor:
+                                          activeSettings.overlayColor ||
+                                          "#ffffff",
+                                        opacity:
+                                          (activeSettings.overlayOpacity ?? 0) /
+                                          100,
+                                      }}
+                                    />
+                                  </>
+                                ) : (
+                                  <div className="flex h-full items-center justify-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                                    No image
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="order-3 rounded-xl border border-border bg-[#0d1117] p-3 md:col-span-2 md:row-start-2">
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
+                                Filter Type
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-[repeat(auto-fit,minmax(76px,1fr))] gap-2">
+                              {presetOptions.map(([value, label]) => {
+                                const isSelected = activePreset === value;
+                                const applyPreset = () => {
+                                  if (isDesktopPreview) {
+                                    setForm((current) => ({
+                                      ...current,
+                                      heroDesktopSettings: {
+                                        ...defaultHeroImageSettings,
+                                        ...(current.heroDesktopSettings || {}),
+                                        preset: value,
+                                      },
+                                    }));
+                                    return;
+                                  }
+
+                                  setForm((current) => ({
+                                    ...current,
+                                    heroMobileSettings: {
+                                      ...defaultHeroImageSettings,
+                                      ...(current.heroMobileSettings || {}),
+                                      preset: value,
+                                    },
+                                  }));
+                                };
+
+                                return (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={applyPreset}
+                                    className={`rounded-lg border px-2 py-2 text-center transition-all ${
+                                      isSelected
+                                        ? "border-[#f97316] bg-[#f97316]/10 shadow-[0_0_0_1px_rgba(249,115,22,0.4)]"
+                                        : "border-border bg-secondary/30 hover:border-[#f97316]/60"
+                                    }`}
+                                  >
+                                    <span className="relative mb-1.5 flex h-10 items-center justify-center overflow-hidden rounded-md border border-border bg-secondary/50">
+                                      {previewImage ? (
+                                        <NextImage
+                                          src={previewImage}
+                                          alt={`${label} filter preview`}
+                                          fill
+                                          sizes="100px"
+                                          className="object-cover"
+                                          style={{
+                                            filter: getHeroFilterValue({
+                                              ...defaultHeroImageSettings,
+                                              ...(isDesktopPreview
+                                                ? form.heroDesktopSettings
+                                                : form.heroMobileSettings),
+                                              preset: value,
+                                            }),
+                                            objectPosition:
+                                              getHeroImageObjectPosition(
+                                                isDesktopPreview
+                                                  ? form.heroDesktopSettings
+                                                  : form.heroMobileSettings,
+                                              ),
+                                          }}
+                                        />
+                                      ) : (
+                                        <span className="block h-full w-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.38),rgba(15,23,42,0.7)_50%,rgba(15,23,42,0.9))]" />
+                                      )}
+                                    </span>
+                                    <span className="flex min-h-6 items-start justify-center font-mono text-[8px] font-bold uppercase leading-3 tracking-[0.08em] text-foreground [overflow-wrap:anywhere]">
+                                      {label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  <div className="order-2 md:col-start-2 md:row-start-1">
+                    <HeroImageControls
+                      label={activeHeroModal.label}
+                      settings={activeHeroModal.settings}
+                      onChange={activeHeroModal.onChange}
+                      onUpload={activeHeroModal.onUpload}
+                      onRemoveBackground={activeHeroModal.onRemoveBackground}
+                      onUndoBackgroundRemoval={
+                        activeHeroModal.onUndoBackgroundRemoval
+                      }
+                      isRemovingBackground={
+                        removingBackgroundField === activeHeroModal.field
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end gap-2 border-t border-border/70 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setHeroAdjustmentsOpen(null)}
+                    className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setHeroAdjustmentsOpen(null)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#f97316] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-white hover:bg-[#ea580c]"
+                  >
+                    <Save size={13} /> Save adjustments
+                  </button>
+                </div>
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-2 border-t border-border/70 pt-4">
-              <button
-                type="button"
-                onClick={() => setHeroAdjustmentsOpen(null)}
-                className="rounded-lg border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground hover:bg-secondary hover:text-foreground"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => setHeroAdjustmentsOpen(null)}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#f97316] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-white hover:bg-[#ea580c]"
-              >
-                <Save size={13} /> Save adjustments
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>,
-      document.body,
-    )}
-  </>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
@@ -5648,9 +5677,7 @@ function AdminArea({
                       <button
                         key={mode}
                         type="button"
-                        aria-pressed={
-                          (themeDraft.mode || "light") === mode
-                        }
+                        aria-pressed={(themeDraft.mode || "light") === mode}
                         onClick={() =>
                           setThemeDraft((current) => ({
                             ...current,

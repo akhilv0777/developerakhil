@@ -11,15 +11,19 @@ import {
 import {
   ArrowDownRight,
   ArrowUpRight,
+  BriefcaseBusiness,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   ChevronUp,
   Check,
+  Code2,
   Copy,
   Download,
   ExternalLink,
+  FolderKanban,
+  GraduationCap,
   Heart,
   Mail,
   MapPin,
@@ -27,7 +31,10 @@ import {
   Minus,
   Moon,
   Plus,
+  Quote,
+  Rocket,
   Share2,
+  Sparkles,
   Sun,
   Star,
   Phone,
@@ -330,17 +337,22 @@ export function LegacyNav({
 function SectionLabel({
   number,
   children,
+  icon,
 }: {
   number: string;
   children: ReactNode;
+  icon?: ReactNode;
 }) {
   return (
-    <div className="mb-12 flex items-center gap-4">
-      <span className="font-mono text-primary font-bold">{number}</span>
-      <span className="font-mono text-[12px] uppercase tracking-[.2em] text-foreground font-semibold">
-        {/* // */} {children}
+    <div className="mb-12 flex items-center gap-3">
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary/30 bg-primary/8 text-primary shadow-[0_0_18px_rgba(249,115,22,0.12)]">
+        {icon ?? (
+          <span className="font-mono text-[11px] font-bold">{number}</span>
+        )}
       </span>
-      <span className="h-px w-16 bg-border" />
+      <span className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
+        {children}
+      </span>
     </div>
   );
 }
@@ -541,10 +553,7 @@ function Hero({ profile }: { profile: Profile }) {
       )}
       <div className="relative z-10 mx-auto flex w-full max-w-7xl min-w-0 items-center">
         <div className="hero-copy flex max-w-3xl flex-col items-start">
-          <div
-            data-hero-reveal
-            className="glass-pill reveal mb-8"
-          >
+          <div data-hero-reveal className="glass-pill reveal mb-8">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
             <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
               {heroBadge}
@@ -627,7 +636,9 @@ function About({ profile }: { profile: Profile }) {
       id="about"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="01">ABOUT</SectionLabel>
+      <SectionLabel number="01" icon={<Sparkles size={14} />}>
+        ABOUT
+      </SectionLabel>
       <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
         <div>
           {profile.aboutImage ? (
@@ -736,8 +747,11 @@ function Stats({ stats }: { stats: Stat[] }) {
         {stats.map((stat) => (
           <div
             key={stat.id}
-            className="bento-card flex flex-col items-center justify-center p-6 text-center transition-transform hover:-translate-y-1"
+            className="bento-card group flex flex-col items-center justify-center overflow-hidden p-6 text-center"
           >
+            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/8 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary transition-transform group-hover:scale-110">
+              {stat.label.slice(0, 2)}
+            </div>
             <p data-testid={`stat-${stat.id}`}>
               <StatValue value={stat.value} />
             </p>
@@ -788,7 +802,9 @@ function Timeline({ data }: { data: PortfolioData }) {
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
-          <SectionLabel number="02">EDUCATION</SectionLabel>
+          <SectionLabel number="02" icon={<GraduationCap size={14} />}>
+            EDUCATION
+          </SectionLabel>
           <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
             Academic <br />
             <span>Timeline.</span>
@@ -802,24 +818,33 @@ function Timeline({ data }: { data: PortfolioData }) {
         >
           {data.education.map((item) => (
             <div
-              className="bento-card group flex flex-col sm:flex-row gap-5 p-6 transition-all hover:-translate-y-1"
+              className="bento-card group relative overflow-hidden p-5 sm:p-6"
               key={item.id}
             >
-              <div className="sm:w-32 shrink-0">
-                <span className="font-mono text-[12px] font-bold text-primary tracking-wider">
-                  {item.period}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">
-                  {item.degree}
-                </h3>
-                <p className="mt-2 font-mono text-[12px] text-muted-foreground">
-                  {item.institution}
-                </p>
-                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                  {item.detail}
-                </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                    <GraduationCap size={16} />
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    {item.period}
+                  </span>
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-xl font-bold text-foreground">
+                      {item.degree}
+                    </h3>
+                    <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                  </div>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                    {item.institution}
+                  </p>
+                  <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                    {item.detail}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
@@ -837,7 +862,9 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up">
-          <SectionLabel number="03">EXPERIENCE</SectionLabel>
+          <SectionLabel number="03" icon={<BriefcaseBusiness size={14} />}>
+            EXPERIENCE
+          </SectionLabel>
           <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
             Professional <br />
             <span>Timeline.</span>
@@ -851,24 +878,33 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
         >
           {data.experience.map((item) => (
             <div
-              className="bento-card group flex flex-col sm:flex-row gap-5 p-6 transition-all hover:-translate-y-1"
+              className="bento-card group relative overflow-hidden p-5 sm:p-6"
               key={item.id}
             >
-              <div className="sm:w-32 shrink-0">
-                <span className="font-mono text-[12px] font-bold text-primary tracking-wider">
-                  {item.period}
-                </span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">
-                  {item.role}
-                </h3>
-                <p className="mt-2 font-mono text-[12px] text-muted-foreground">
-                  {item.company}
-                </p>
-                <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                  {item.detail}
-                </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                    <BriefcaseBusiness size={16} />
+                  </span>
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    {item.period}
+                  </span>
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-xl font-bold text-foreground">
+                      {item.role}
+                    </h3>
+                    <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                  </div>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                    {item.company}
+                  </p>
+                  <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                    {item.detail}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
@@ -884,7 +920,9 @@ function Services({ data }: { data: PortfolioData }) {
       id="services"
       className="mx-auto max-w-7xl border-y border-border/60 bg-secondary/10 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="04">SERVICES</SectionLabel>
+      <SectionLabel number="04" icon={<Code2 size={14} />}>
+        SERVICES
+      </SectionLabel>
 
       <div
         data-mf-stagger-animation="zoom-in"
@@ -894,17 +932,22 @@ function Services({ data }: { data: PortfolioData }) {
         {data.services.map((service) => (
           <article
             key={service.id}
-            className="bento-card group p-7 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full"
+            className="bento-card group flex h-full flex-col p-7 transition-all duration-300"
           >
-            <div className="font-mono text-[2rem] font-bold text-primary mb-6">
-              {service.number}
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <div className="font-mono text-[2rem] font-bold text-primary">
+                {service.number}
+              </div>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/8 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                {service.title.slice(0, 2)}
+              </span>
             </div>
 
-            <h3 className="text-2xl font-bold leading-tight text-foreground mb-4">
+            <h3 className="mb-4 text-2xl font-bold leading-tight text-foreground">
               {service.title}
             </h3>
 
-            <p className="text-sm leading-[1.8] text-muted-foreground flex-grow">
+            <p className="flex-grow text-sm leading-[1.8] text-muted-foreground">
               {service.description}
             </p>
           </article>
@@ -968,7 +1011,9 @@ function Work({ data }: { data: PortfolioData }) {
       className="mx-auto max-w-[1400px] border-b border-border/60 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end mb-12">
-        <SectionLabel number="05">PROJECTS</SectionLabel>
+        <SectionLabel number="05" icon={<FolderKanban size={14} />}>
+          PROJECTS
+        </SectionLabel>
         <div
           className="flex flex-wrap gap-2"
           role="tablist"
@@ -1185,7 +1230,9 @@ function Testimonials({ data }: { data: PortfolioData }) {
       id="testimonials"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="06">TESTIMONIALS</SectionLabel>
+      <SectionLabel number="06" icon={<Quote size={14} />}>
+        TESTIMONIALS
+      </SectionLabel>
       <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
         <div className="relative z-10 flex min-h-[250px] flex-col items-center justify-center text-center">
           <div
@@ -1368,7 +1415,9 @@ function Contact({ profile }: { profile: Profile }) {
       id="contact"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="07">CONTACT</SectionLabel>
+      <SectionLabel number="07" icon={<Mail size={14} />}>
+        CONTACT
+      </SectionLabel>
       <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
         <div data-mf-animation="fade-up">
           <h2 className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
@@ -1762,7 +1811,7 @@ export function PublicPortfolio() {
         {data.sectionVisibility?.services && (
           <Marquee services={data.services} />
         )}
-        {data.sectionVisibility?.about && <About profile={data.profile} />}
+        {data.sectionVisibility?.about && <About profile={data.profile} />}~
         {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
         {data.sectionVisibility?.education && <Timeline data={data} />}
         {data.sectionVisibility?.experience && (
