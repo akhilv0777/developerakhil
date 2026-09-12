@@ -3135,6 +3135,7 @@ type ContactMessage = {
 };
 
 type ContactSettings = {
+  googleAdsenseAccount: string;
   geminiApiKey: string;
   geminiModel: string;
   gmailAppPassword: string;
@@ -3355,6 +3356,7 @@ type SettingsSubtab = "site" | "security" | "sessions" | "email";
 
 function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [form, setForm] = useState<ContactSettings>({
+    googleAdsenseAccount: "",
     geminiApiKey: "",
     geminiModel: "gemini-3.6-flash",
     gmailAppPassword: "",
@@ -3412,6 +3414,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
         if (!cancelled)
           setForm(
             body.settings ?? {
+              googleAdsenseAccount: "",
               gmailAppPassword: "",
               contactToEmail: "",
               contactFromEmail: "",
@@ -3495,6 +3498,20 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
               Site settings
             </p>
             <div className="grid gap-5">
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Google AdSense account ID
+                </span>
+                <input
+                  value={form.googleAdsenseAccount}
+                  onChange={(event) => setForm({ ...form, googleAdsenseAccount: event.target.value })}
+                  placeholder="ca-pub-xxxxxxxxxxxxxxxx"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                <span className="mt-2 block text-xs text-muted-foreground">
+                  Enter the complete ID from Google AdSense. The verification tag is added to the public site automatically.
+                </span>
+              </label>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Site name

@@ -15,6 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       siteName: settings.siteName,
       faviconUrl: settings.faviconUrl,
+      googleAdsenseAccount: settings.googleAdsenseAccount,
       twoFactorEnabled: Boolean(settings.twoFactorEnabled),
       turnstileSiteKey: turnstileSiteKey && turnstileSecret && turnstileHostnames ? turnstileSiteKey : "",
     });
@@ -23,6 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({
       siteName: "Akhilesh Vishwakarma",
       faviconUrl: "",
+      googleAdsenseAccount: "",
       twoFactorEnabled: false,
       turnstileSiteKey: hasEnvTurnstile ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY : "",
     });

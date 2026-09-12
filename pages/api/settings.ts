@@ -7,6 +7,7 @@ import {
 import { getSessionUser } from "@/lib/api-server/auth";
 
 let inMemorySettings: ContactSettings = {
+  googleAdsenseAccount: "",
   geminiApiKey: "",
   geminiModel: "gemini-3.6-flash",
   gmailAppPassword: "",
@@ -44,6 +45,7 @@ function isValidSettings(value: unknown): value is ContactSettings {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return (
+    typeof record.googleAdsenseAccount === "string" &&
     typeof record.geminiApiKey === "string" &&
     typeof record.geminiModel === "string" &&
     typeof record.gmailAppPassword === "string" &&
@@ -89,6 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         current = inMemorySettings;
       }
       const next: ContactSettings = {
+        googleAdsenseAccount: typeof req.body.googleAdsenseAccount === "string" ? req.body.googleAdsenseAccount.trim() : current.googleAdsenseAccount,
         geminiApiKey: typeof req.body.geminiApiKey === "string" && req.body.geminiApiKey.trim() && req.body.geminiApiKey.trim() !== "********" ? req.body.geminiApiKey.trim() : current.geminiApiKey,
         geminiModel: typeof req.body.geminiModel === "string" && req.body.geminiModel.trim() ? req.body.geminiModel.trim() : current.geminiModel,
         gmailAppPassword: req.body.gmailAppPassword.trim(),

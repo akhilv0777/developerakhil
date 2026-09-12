@@ -1842,8 +1842,18 @@ export function PublicPortfolio() {
     const loadSiteSettings = () => {
       fetch("/api/site-settings", { cache: "no-store" })
         .then((response) => response.json())
-        .then((settings: { siteName?: string; faviconUrl?: string }) => {
+        .then((settings: { siteName?: string; faviconUrl?: string; googleAdsenseAccount?: string }) => {
           if (settings.siteName) document.title = settings.siteName;
+          document
+            .querySelectorAll<HTMLMetaElement>('meta[name="google-adsense-account"]')
+            .forEach((meta) => meta.remove());
+          const adsenseAccount = settings.googleAdsenseAccount?.trim();
+          if (adsenseAccount && /^ca-pub-\d{10,32}$/.test(adsenseAccount)) {
+            const meta = document.createElement("meta");
+            meta.name = "google-adsense-account";
+            meta.content = adsenseAccount;
+            document.head.appendChild(meta);
+          }
           if (settings.faviconUrl) {
             document
               .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')

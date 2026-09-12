@@ -366,6 +366,7 @@ export const seedPortfolioData = {
 };
 
 export type ContactSettings = {
+  googleAdsenseAccount: string;
   geminiApiKey: string;
   geminiModel: string;
   gmailAppPassword: string;
@@ -382,6 +383,7 @@ export type ContactSettings = {
 };
 
 const defaultContactSettings: ContactSettings = {
+  googleAdsenseAccount: "",
   geminiApiKey: "",
   geminiModel: "gemini-3.6-flash",
   gmailAppPassword: "",
