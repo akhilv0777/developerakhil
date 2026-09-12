@@ -7,6 +7,8 @@ import {
 import { getSessionUser } from "@/lib/api-server/auth";
 
 let inMemorySettings: ContactSettings = {
+  geminiApiKey: "",
+  geminiModel: "gemini-3.6-flash",
   gmailAppPassword: "",
   contactToEmail: "",
   contactFromEmail: "",
@@ -42,6 +44,8 @@ function isValidSettings(value: unknown): value is ContactSettings {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   return (
+    typeof record.geminiApiKey === "string" &&
+    typeof record.geminiModel === "string" &&
     typeof record.gmailAppPassword === "string" &&
     typeof record.contactToEmail === "string" &&
     typeof record.contactFromEmail === "string" &&
@@ -64,10 +68,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         const settings = await getContactSettings();
         inMemorySettings = settings;
-        return res.status(200).json({ settings: { ...settings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(settings.turnstileSecretKey) });
+        return res.status(200).json({ settings: { ...settings, geminiApiKey: "", removeBgApiKey: "", turnstileSecretKey: "" }, geminiConfigured: Boolean(settings.geminiApiKey), turnstileSecretConfigured: Boolean(settings.turnstileSecretKey) });
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
-          return res.status(200).json({ settings: { ...inMemorySettings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
+          return res.status(200).json({ settings: { ...inMemorySettings, geminiApiKey: "", removeBgApiKey: "", turnstileSecretKey: "" }, geminiConfigured: Boolean(inMemorySettings.geminiApiKey), turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
@@ -85,6 +89,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         current = inMemorySettings;
       }
       const next: ContactSettings = {
+        geminiApiKey: typeof req.body.geminiApiKey === "string" && req.body.geminiApiKey.trim() && req.body.geminiApiKey.trim() !== "********" ? req.body.geminiApiKey.trim() : current.geminiApiKey,
+        geminiModel: typeof req.body.geminiModel === "string" && req.body.geminiModel.trim() ? req.body.geminiModel.trim() : current.geminiModel,
         gmailAppPassword: req.body.gmailAppPassword.trim(),
         contactToEmail: req.body.contactToEmail.trim(),
         contactFromEmail: req.body.contactFromEmail.trim(),
@@ -103,13 +109,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } catch (error) {
         if (isDatabaseUnavailableError(error)) {
           inMemorySettings = next;
-          return res.status(200).json({ settings: { ...inMemorySettings, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
+          return res.status(200).json({ settings: { ...inMemorySettings, geminiApiKey: "", removeBgApiKey: "", turnstileSecretKey: "" }, geminiConfigured: Boolean(inMemorySettings.geminiApiKey), turnstileSecretConfigured: Boolean(inMemorySettings.turnstileSecretKey) });
         }
         throw error;
       }
 
       inMemorySettings = next;
-      return res.status(200).json({ settings: { ...next, removeBgApiKey: "", turnstileSecretKey: "" }, turnstileSecretConfigured: Boolean(next.turnstileSecretKey) });
+      return res.status(200).json({ settings: { ...next, geminiApiKey: "", removeBgApiKey: "", turnstileSecretKey: "" }, geminiConfigured: Boolean(next.geminiApiKey), turnstileSecretConfigured: Boolean(next.turnstileSecretKey) });
     }
 
     res.setHeader("Allow", "GET, PUT");

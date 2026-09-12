@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -28,13 +27,14 @@ import {
   Heart,
   Mail,
   MapPin,
+  MessageCircle,
   Menu,
   Minus,
   Moon,
   Plus,
   Quote,
-  Rocket,
   Share2,
+  Send,
   Sparkles,
   Sun,
   Star,
@@ -42,11 +42,9 @@ import {
   X,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import Link from "next/link";
-import { registerGsap } from "@/lib/gsap-client";
-import { usePublicGsap } from "@/hooks/usePublicGsap";
-import { Flip } from "gsap/Flip";
+import { useMotionFlow } from "@/lib/motionflow";
 import type {
   HeroImageSettings,
   PortfolioData,
@@ -353,7 +351,7 @@ function SectionLabel({
           <span className="font-mono text-[11px] font-bold">{number}</span>
         )}
       </span>
-      <span data-gsap-scramble-scroll className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
+      <span data-mf-animation="fade-up" data-mf-animation-once="true" className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
         {children}
       </span>
     </div>
@@ -362,41 +360,6 @@ function SectionLabel({
 
 function TypingRoles({ roles }: { roles: string[] }) {
   const safeRoles = roles.filter(Boolean);
-  const rolesKey = safeRoles.join("|");
-  const textRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const effectRoles = rolesKey ? rolesKey.split("|") : [];
-    if (!effectRoles.length || !textRef.current) return;
-    const { gsap } = registerGsap();
-    const el = textRef.current;
-    let index = 0;
-    let active = true;
-    const cycle = () => {
-      if (!active) return;
-      const text = effectRoles[index % effectRoles.length];
-      gsap.to(el, {
-        duration: 1.05,
-        scrambleText: {
-          text,
-          chars: "upperCase",
-          speed: 0.45,
-        },
-        onComplete: () => {
-          gsap.delayedCall(1.35, () => {
-            index += 1;
-            cycle();
-          });
-        },
-      });
-    };
-    el.textContent = effectRoles[0];
-    gsap.delayedCall(0.4, cycle);
-    return () => {
-      active = false;
-      gsap.killTweensOf(el);
-    };
-  }, [rolesKey]);
 
   if (!safeRoles.length) {
     return (
@@ -410,11 +373,13 @@ function TypingRoles({ roles }: { roles: string[] }) {
     <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[.18em] text-foreground font-semibold">
       <span>a</span>
       <span
-        ref={textRef}
+        data-mf-text-type="loop"
+        data-mf-text-loop-animation="fade-up"
+        data-mf-text-loop-interval="2600"
         className="terminal-caret inline-flex min-w-[10ch] items-center text-primary"
         aria-live="polite"
       >
-        {safeRoles[0]}
+        {safeRoles.map((role) => <span key={role}>{role}</span>)}
       </span>
       <span>.</span>
     </span>
@@ -466,7 +431,8 @@ function Hero({ profile }: { profile: Profile }) {
 
   return (
     <section
-      data-gsap-hero
+      data-mf-animation="fade-up"
+      data-mf-animation-once="true"
       className="relative flex min-h-dvh items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
     >
       {(profile.heroImage || profile.image) && (
@@ -540,7 +506,8 @@ function Hero({ profile }: { profile: Profile }) {
           </p>
 
           <h1
-            data-gsap-split
+            data-mf-animation="fade-up"
+            data-mf-animation-once="true"
             className="display-title max-w-4xl text-5xl font-bold leading-[1.02] text-foreground tracking-tight sm:text-6xl lg:text-8xl"
           >
             {profile.name}
@@ -552,7 +519,6 @@ function Hero({ profile }: { profile: Profile }) {
             aria-hidden="true"
           >
             <path
-              data-gsap-draw
               d="M4 16 C 70 6, 140 22, 210 12 S 330 4, 396 14"
               stroke="currentColor"
               strokeWidth="2.4"
@@ -595,18 +561,18 @@ function Hero({ profile }: { profile: Profile }) {
               <ArrowDownRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
             </a>
 
-            <a
-              href={resumeHref}
-              download={
-                profile.resume ? profile.resumeName || "resume.pdf" : undefined
-              }
-              data-magnetic
-              className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
-              data-testid="link-hero-resume"
-            >
-              <Download className="h-4 w-4" />
-              Download resume
-            </a>
+            {profile.resume && (
+              <a
+                href={resumeHref}
+                download={profile.resumeName || "resume.pdf"}
+                data-magnetic
+                className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
+                data-testid="link-hero-resume"
+              >
+                <Download className="h-4 w-4" />
+                Download resume
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -644,7 +610,10 @@ function About({ profile }: { profile: Profile }) {
                     src={profile.aboutImage}
                     alt={profile.name}
                     className="h-full w-full object-cover"
-                    data-gsap-parallax
+                    data-mf-parallax
+                    data-mf-parallax-speed="0.35"
+                    data-mf-parallax-speed-tablet="0"
+                    data-mf-parallax-speed-mobile="0"
                     width={560}
                     height={560}
                   />
@@ -663,8 +632,8 @@ function About({ profile }: { profile: Profile }) {
         </div>
         <div className="space-y-8">
             <div
-              data-gsap-stagger="up"
-              data-gsap-gap="120"
+              data-mf-stagger-animation="fade-up"
+              data-mf-stagger-once="true"
               className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
             >
             <p className="text-[clamp(1.5rem,2.7vw,2.5rem)] font-bold leading-[1.2] text-foreground">
@@ -676,14 +645,14 @@ function About({ profile }: { profile: Profile }) {
           {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
             <div
               id="skills"
-              data-gsap-reveal="up"
+              data-mf-animation="fade-up"
+              data-mf-animation-once="true"
               className="flex flex-wrap gap-2"
             >
               {profile.skills?.map((skill) => (
                 <span
                   key={skill}
                   data-scramble
-                  data-gsap-float
                   className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
                 >
                   {skill}
@@ -692,7 +661,6 @@ function About({ profile }: { profile: Profile }) {
               {profile.languages?.map((lang) => (
                 <span
                   key={lang}
-                  data-gsap-float
                   className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
                 >
                   {lang}
@@ -720,8 +688,8 @@ function StatValue({ value }: { value: string }) {
   return (
     <span className="font-mono text-4xl lg:text-5xl font-bold text-foreground">
       <span
-        data-gsap-count
-        data-count-to={target}
+        data-mf-count-to={target}
+        data-mf-count-once="true"
       >
         0
       </span>
@@ -737,8 +705,8 @@ function Stats({ stats }: { stats: Stat[] }) {
       className="mx-auto max-w-7xl px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
     >
       <div
-        data-gsap-stagger="up"
-        data-gsap-gap="100"
+        data-mf-stagger-animation="fade-up"
+        data-mf-stagger-once="true"
         className="grid grid-cols-2 gap-6 lg:grid-cols-4"
       >
         {stats.map((stat) => (
@@ -775,8 +743,9 @@ function Marquee({ services }: { services: Service[] }) {
       className="mx-auto my-10 max-w-7xl overflow-hidden rounded-xl border border-border/60 bg-secondary/55 py-6 backdrop-blur-sm [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
     >
       <div
-        data-gsap-marquee
-        data-marquee-speed="32"
+        data-mf-ticker
+        data-mf-ticker-speed="32"
+        data-mf-ticker-pause-on-hover="true"
         className="flex w-max font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
       >
         {sequence.map((word, index) => (
@@ -801,12 +770,11 @@ function Timeline({ data }: { data: PortfolioData }) {
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
-        <div data-gsap-reveal="up">
+        <div data-mf-animation="fade-up" data-mf-animation-once="true">
           <SectionLabel number="02" icon={<GraduationCap size={14} />}>
             EDUCATION
           </SectionLabel>
           <h2
-            data-gsap-split-scroll
             className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
           >
             Academic <br />
@@ -820,7 +788,6 @@ function Timeline({ data }: { data: PortfolioData }) {
             aria-hidden="true"
           >
             <line
-              data-gsap-draw-scroll
               x1="20"
               y1="0"
               x2="20"
@@ -830,8 +797,8 @@ function Timeline({ data }: { data: PortfolioData }) {
             />
           </svg>
           <div
-            data-gsap-stagger="left"
-            data-gsap-gap="100"
+            data-mf-stagger-animation="fade-left"
+            data-mf-stagger-once="true"
             className="grid gap-6"
           >
           {data.education.map((item) => (
@@ -880,12 +847,11 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
-        <div data-gsap-reveal="up">
+        <div data-mf-animation="fade-up" data-mf-animation-once="true">
           <SectionLabel number="03" icon={<BriefcaseBusiness size={14} />}>
             EXPERIENCE
           </SectionLabel>
           <h2
-            data-gsap-split-scroll
             className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
           >
             Professional <br />
@@ -899,7 +865,6 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
             aria-hidden="true"
           >
             <line
-              data-gsap-draw-scroll
               x1="20"
               y1="0"
               x2="20"
@@ -909,8 +874,8 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
             />
           </svg>
           <div
-            data-gsap-stagger="left"
-            data-gsap-gap="100"
+            data-mf-stagger-animation="fade-left"
+            data-mf-stagger-once="true"
             className="grid gap-6"
           >
           {data.experience.map((item) => (
@@ -963,8 +928,8 @@ function Services({ data }: { data: PortfolioData }) {
       </SectionLabel>
 
       <div
-        data-gsap-stagger="zoom"
-        data-gsap-gap="110"
+        data-mf-stagger-animation="zoom-in"
+        data-mf-stagger-once="true"
         className="grid gap-6 lg:grid-cols-3 mt-12"
       >
         {data.services.map((service) => (
@@ -1001,7 +966,6 @@ function Work({ data }: { data: PortfolioData }) {
     ? data.projects.findIndex((project) => project.id === selectedProject.id)
     : -1;
   const gridRef = useRef<HTMLDivElement>(null);
-  const flipState = useRef<ReturnType<typeof Flip.getState> | null>(null);
 
   const showAdjacentProject = (direction: -1 | 1) => {
     const nextIndex = selectedProjectIndex + direction;
@@ -1026,49 +990,8 @@ function Work({ data }: { data: PortfolioData }) {
         ).length;
 
   const setCategory = (category: string) => {
-    const { Flip } = registerGsap();
-    const cards = gridRef.current?.querySelectorAll("[data-project-card]");
-    if (cards?.length) flipState.current = Flip.getState(cards);
     setActiveCategory(category);
   };
-
-  useLayoutEffect(() => {
-    const state = flipState.current;
-    if (!state || !gridRef.current) return;
-    const { gsap, Flip } = registerGsap();
-    const cards = gridRef.current.querySelectorAll("[data-project-card]");
-    Flip.from(state, {
-      duration: 0.7,
-      ease: "power2.inOut",
-      absolute: true,
-      nested: true,
-      stagger: 0.04,
-      onEnter: (elements) =>
-        gsap.fromTo(
-          elements,
-          { opacity: 0, scale: 0.92 },
-          { opacity: 1, scale: 1, duration: 0.45, ease: "folio" },
-        ),
-      onLeave: (elements) =>
-        gsap.to(elements, { opacity: 0, scale: 0.94, duration: 0.3 }),
-    });
-    void cards;
-    flipState.current = null;
-  }, [activeCategory]);
-
-  useEffect(() => {
-    if (!selectedProject) return;
-    const { gsap } = registerGsap();
-    const overlay = document.querySelector("[data-project-modal]");
-    const card = overlay?.querySelector("[data-modal-card]");
-    if (!overlay || !card) return;
-    gsap.fromTo(overlay, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.25 });
-    gsap.fromTo(
-      card,
-      { y: 28, scale: 0.96, autoAlpha: 0 },
-      { y: 0, scale: 1, autoAlpha: 1, duration: 0.45, ease: "folio" },
-    );
-  }, [selectedProject]);
 
   const shareProject = async (project: Project) => {
     const shareUrl = `${window.location.origin}/projects/${encodeURIComponent(project.id)}`;
@@ -1309,12 +1232,9 @@ function Testimonials({ data }: { data: PortfolioData }) {
 
   useEffect(() => {
     if (!quoteRef.current) return;
-    const { gsap } = registerGsap();
-    gsap.fromTo(
-      quoteRef.current,
-      { y: 22, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.7, ease: "folio" },
-    );
+    quoteRef.current.classList.remove("testimonial-enter");
+    void quoteRef.current.offsetWidth;
+    quoteRef.current.classList.add("testimonial-enter");
   }, [currentIndex]);
 
   if (!data.testimonials || data.testimonials.length === 0) return null;
@@ -1338,10 +1258,9 @@ function Testimonials({ data }: { data: PortfolioData }) {
       <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
         <div className="relative z-10 flex min-h-[250px] flex-col items-center justify-center text-center">
           <div
-            data-gsap-testimonial
             className="flex w-full max-w-5xl cursor-grab flex-col items-center active:cursor-grabbing"
           >
-            <div ref={quoteRef} className="flex w-full flex-col items-center">
+            <div ref={quoteRef} className="testimonial-enter flex w-full flex-col items-center">
               <div
                 className="mb-6 flex items-center gap-1 text-primary"
                 aria-label="5 out of 5 stars"
@@ -1526,9 +1445,8 @@ function Contact({ profile }: { profile: Profile }) {
         CONTACT
       </SectionLabel>
       <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
-        <div data-gsap-reveal="up">
+        <div data-mf-animation="fade-up" data-mf-animation-once="true">
           <h2
-            data-gsap-split-scroll
             className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl"
           >
             {titleLines.map((line, index) => (
@@ -1545,7 +1463,7 @@ function Contact({ profile }: { profile: Profile }) {
           )}
           <ContactLinks profile={profile} variant="contact" />
         </div>
-        <div data-gsap-reveal="left">
+        <div data-mf-animation="fade-left" data-mf-animation-once="true">
           <ContactForm />
         </div>
       </div>
@@ -1692,7 +1610,8 @@ function ThankYouSection({ profile }: { profile: Profile }) {
   return (
     <section className="border-y border-border/70 px-4 py-20 sm:px-5 sm:py-28 md:px-8 lg:px-10">
       <div
-        data-gsap-thanks
+        data-mf-animation="fade-up"
+        data-mf-animation-once="true"
         className="mx-auto flex w-full max-w-7xl flex-col items-center text-center"
       >
         <div>
@@ -1708,7 +1627,7 @@ function ThankYouSection({ profile }: { profile: Profile }) {
             />
           </h2>
         </div>
-        <p data-gsap-typewriter className="mt-7 w-full max-w-2xl text-center text-base leading-7 text-muted-foreground sm:text-lg">
+        <p className="mt-7 w-full max-w-2xl text-center text-base leading-7 text-muted-foreground sm:text-lg">
           Thanks for taking the time to look through {profile.name}&apos;s work.
         </p>
       </div>
@@ -1731,30 +1650,12 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
           </p>
         </div>
       ) : (
-        <div className="loader-panel glass-surface w-full max-w-sm p-8">
-          <div className="loader-mark mx-auto">AV</div>
-          <div className="loader-terminal mt-7 text-left" aria-hidden="true">
-            <p>
-              <span className="text-primary">$</span> ./initialize-portfolio
-              <span className="loader-cursor" />
+        <div className="loader-minimal flex min-h-[100dvh] items-center justify-center bg-background px-5" aria-label="Loading portfolio">
+          <div className="flex flex-col items-center text-center">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[.24em] text-foreground">
+              Akhilesh Vishwakarma
             </p>
-            <p className="loader-line">
-              <span className="text-accent">[ok]</span> loading projects...
-            </p>
-            <p className="loader-line loader-line-delay">
-              <span className="text-accent">[ok]</span> loading experience...
-            </p>
-          </div>
-          <div className="mt-6 text-center">
-            <p className="font-mono text-[11px] font-bold uppercase tracking-[.2em] text-foreground">
-              Opening portfolio
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Building a sharper view of the work.
-            </p>
-          </div>
-          <div className="loader-track mt-7">
-            <span />
+            <div className="loader-minimal-dots mt-5" aria-hidden="true"><span /><span /><span /></div>
           </div>
         </div>
       )}
@@ -1762,31 +1663,206 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
   );
 }
 
+type AssistantMessage = { role: "user" | "assistant"; content: string };
+
+function cleanAssistantText(value: string): string {
+  return value
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/^\s*[*-]\s+/gm, "• ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUnavailable: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<AssistantMessage[]>([
+    {
+      role: "assistant",
+      content: "Hi. Ask me about the work, skills, or services on this portfolio.",
+    },
+  ]);
+
+  useEffect(() => {
+    if (open) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open]);
+
+  const askAssistant = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextQuestion = question.trim();
+    if (!nextQuestion || isSending) return;
+
+    const nextMessages = [...messages, { role: "user" as const, content: nextQuestion }];
+    setMessages(nextMessages);
+    setQuestion("");
+    setIsSending(true);
+
+    const portfolio = {
+      profile: {
+        name: data.profile.name,
+        tagline: data.profile.tagline,
+        roles: data.profile.roles,
+        bio1: data.profile.bio1,
+        bio2: data.profile.bio2,
+        bio3: data.profile.bio3,
+        location: data.profile.location,
+        skills: data.profile.skills,
+        languages: data.profile.languages,
+        email: data.profile.email,
+        phone: data.profile.phone,
+        github: data.profile.github,
+        linkedin: data.profile.linkedin,
+        services: data.services.map((service) => service.title),
+      },
+      experience: data.experience,
+      education: data.education,
+      projects: data.projects.map(({ title, category, year, description, tags }) => ({
+        title,
+        category,
+        year,
+        description,
+        tags,
+      })),
+      testimonials: data.testimonials,
+    };
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: nextQuestion,
+          portfolio,
+          history: nextMessages.slice(-6),
+        }),
+      });
+      const result = (await response.json()) as { answer?: string; error?: string };
+      if (!response.ok) {
+        onUnavailable();
+        return;
+      }
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content: cleanAssistantText(result.answer || result.error || "Please use the contact section for help."),
+        },
+      ]);
+    } catch {
+      onUnavailable();
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="portfolio-assistant fixed bottom-4 left-4 z-50 sm:bottom-6 sm:left-6">
+      {open && (
+        <div role="dialog" aria-label="Portfolio assistant" className="assistant-panel mb-3 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-card shadow-2xl">
+          <div className="flex items-center justify-between bg-foreground px-4 py-3 text-background">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                <Sparkles size={16} />
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-foreground" />
+              </span>
+              <div>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-[.2em] text-primary">AI / PORTFOLIO GUIDE</p>
+                <p className="mt-1 text-xs text-background/65">Ask anything about the work</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setOpen(false)} className="rounded-full p-2 text-background/65 transition-colors hover:bg-background/10 hover:text-background" aria-label="Close assistant"><X size={16} /></button>
+          </div>
+          <div className="assistant-messages flex max-h-[min(22rem,55vh)] flex-col gap-3 overflow-y-auto bg-background/60 p-4" aria-live="polite">
+            {messages.map((message, index) => (
+              <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-6 shadow-sm ${message.role === "user" ? "self-end rounded-br-md bg-primary text-primary-foreground" : "self-start rounded-bl-md border border-border/70 bg-card text-foreground"}`}>
+                {message.content}
+              </div>
+            ))}
+            {isSending && <div className="assistant-thinking self-start rounded-2xl rounded-bl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-muted-foreground"><span>Thinking</span><i /><i /><i /></div>}
+            <div ref={messagesEndRef} aria-hidden="true" />
+          </div>
+          {messages.length === 1 && (
+            <div className="assistant-prompts flex gap-2 overflow-x-auto border-t border-border/60 px-3 py-3">
+              {["Services", "Projects", "Experience"] .map((prompt) => (
+                <button key={prompt} type="button" onClick={() => setQuestion(prompt === "Services" ? "What services are available?" : prompt === "Projects" ? "Tell me about the projects" : "Tell me about the work experience")} className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">{prompt}</button>
+              ))}
+            </div>
+          )}
+          <form onSubmit={askAssistant} className="flex gap-2 border-t border-border p-3">
+            <input value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={600} placeholder="Ask a question..." className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground placeholder:opacity-100 outline-none focus:border-primary" aria-label="Ask the portfolio assistant" />
+            <button type="submit" disabled={isSending || !question.trim()} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send question"><Send size={15} /></button>
+          </form>
+        </div>
+      )}
+      <button type="button" onClick={() => setOpen((current) => !current)} className="assistant-trigger inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background shadow-xl transition-transform hover:-translate-y-1" aria-expanded={open} aria-label="Open portfolio assistant">
+        <MessageCircle size={16} />
+        <span>{open ? "Close" : "Ask AI"}</span>
+      </button>
+    </div>
+  );
+}
+
 export function PublicPortfolio() {
   const { data, isLoading, isError } = usePortfolioQuery();
   const shellRef = useRef<HTMLDivElement>(null);
-  usePublicGsap(shellRef, Boolean(data) && !isLoading && !isError);
+  useMotionFlow([Boolean(data), isLoading, isError]);
   const [themeOverride, setThemeOverride] = useState<"dark" | "light">("light");
+  const [aiAvailable, setAiAvailable] = useState(false);
 
   useEffect(() => {
-    fetch("/api/site-settings", { cache: "no-store" })
+    let frame = 0;
+    const updateScrollProgress = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = documentHeight > 0 ? (window.scrollY / documentHeight) * 100 : 0;
+        shellRef.current?.style.setProperty("--scroll-progress", `${progress}%`);
+      });
+    };
+    updateScrollProgress();
+    window.addEventListener("scroll", updateScrollProgress, { passive: true });
+    window.addEventListener("resize", updateScrollProgress);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updateScrollProgress);
+      window.removeEventListener("resize", updateScrollProgress);
+    };
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/ai/status", { cache: "no-store" })
       .then((response) => response.json())
-      .then((settings: { siteName?: string; faviconUrl?: string }) => {
-        if (settings.siteName) document.title = settings.siteName;
-        if (settings.faviconUrl) {
-          document
-            .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
-            .forEach((link) => link.remove());
-          const icon = document.createElement("link");
-          icon.id = "site-favicon";
-          icon.rel = "icon";
-          icon.href = settings.faviconUrl.startsWith("data:")
-            ? settings.faviconUrl
-            : `${settings.faviconUrl}${settings.faviconUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
-          document.head.appendChild(icon);
-        }
-      })
-      .catch(() => undefined);
+      .then((status: { available?: boolean }) => setAiAvailable(Boolean(status.available)))
+      .catch(() => setAiAvailable(false));
+  }, []);
+
+  useEffect(() => {
+    const loadSiteSettings = () => {
+      fetch("/api/site-settings", { cache: "no-store" })
+        .then((response) => response.json())
+        .then((settings: { siteName?: string; faviconUrl?: string }) => {
+          if (settings.siteName) document.title = settings.siteName;
+          if (settings.faviconUrl) {
+            document
+              .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
+              .forEach((link) => link.remove());
+            const icon = document.createElement("link");
+            icon.id = "site-favicon";
+            icon.rel = "icon";
+            icon.href = settings.faviconUrl.startsWith("data:")
+              ? settings.faviconUrl
+              : `${settings.faviconUrl}${settings.faviconUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
+            document.head.appendChild(icon);
+          }
+        })
+        .catch(() => undefined);
+    };
+    const idleId = window.requestIdleCallback?.(loadSiteSettings) ?? window.setTimeout(loadSiteSettings, 1500);
+    return () => {
+      if (typeof idleId === "number") window.clearTimeout(idleId);
+    };
   }, []);
 
   useEffect(() => {
@@ -1826,7 +1902,10 @@ export function PublicPortfolio() {
       }
     };
 
-    void recordVisit();
+    const idleId = window.requestIdleCallback?.(() => void recordVisit()) ?? window.setTimeout(() => void recordVisit(), 2000);
+    return () => {
+      if (typeof idleId === "number") window.clearTimeout(idleId);
+    };
   }, []);
 
   if (isLoading) return <PortfolioLoading />;
@@ -1875,22 +1954,11 @@ export function PublicPortfolio() {
         ["--scroll-progress" as string]: "0%",
       }}
     >
-      <ToastContainer
-        position="top-left"
-        autoClose={5000}
-        theme={activeMode}
-        newestOnTop
-        closeOnClick
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
       <div
         className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40"
         aria-hidden="true"
       >
         <div
-          data-gsap-progress
           className="h-full origin-left scale-x-0 bg-primary"
         />
       </div>
@@ -1920,7 +1988,6 @@ export function PublicPortfolio() {
       <ThankYouSection profile={data.profile} />
       <a
         href="#top"
-        data-gsap-backtop
         className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg sm:bottom-6 sm:right-6"
         style={{
           background:
@@ -1933,6 +2000,7 @@ export function PublicPortfolio() {
         </span>
       </a>
       <Footer profile={data.profile} />
+      {aiAvailable && <PortfolioAssistant data={data} onUnavailable={() => setAiAvailable(false)} />}
     </div>
   );
 }

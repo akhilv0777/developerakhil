@@ -366,6 +366,8 @@ export const seedPortfolioData = {
 };
 
 export type ContactSettings = {
+  geminiApiKey: string;
+  geminiModel: string;
   gmailAppPassword: string;
   contactToEmail: string;
   contactFromEmail: string;
@@ -380,6 +382,8 @@ export type ContactSettings = {
 };
 
 const defaultContactSettings: ContactSettings = {
+  geminiApiKey: "",
+  geminiModel: "gemini-3.6-flash",
   gmailAppPassword: "",
   contactToEmail: "",
   contactFromEmail: "",
@@ -518,6 +522,16 @@ export function ensureSchema(): Promise<void> {
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
             replied BOOLEAN NOT NULL DEFAULT false,
             replied_at TIMESTAMPTZ
+          );
+        `;
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS ai_questions (
+            id SERIAL PRIMARY KEY,
+            question TEXT NOT NULL,
+            answer TEXT,
+            status TEXT NOT NULL DEFAULT 'answered',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
         `;
 
@@ -664,6 +678,18 @@ export async function insertContactMessage(input: {
     replied: row.replied,
     repliedAt: row.replied_at,
   };
+}
+
+export async function insertAiQuestion(input: {
+  question: string;
+  answer?: string;
+  status: "answered" | "failed";
+}): Promise<void> {
+  await ensureSchema();
+  await sql`
+    INSERT INTO ai_questions (question, answer, status)
+    VALUES (${input.question}, ${input.answer || null}, ${input.status});
+  `;
 }
 
 export async function listContactMessages(): Promise<ContactMessage[]> {

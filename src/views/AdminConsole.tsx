@@ -3135,6 +3135,8 @@ type ContactMessage = {
 };
 
 type ContactSettings = {
+  geminiApiKey: string;
+  geminiModel: string;
   gmailAppPassword: string;
   contactToEmail: string;
   contactFromEmail: string;
@@ -3353,6 +3355,8 @@ type SettingsSubtab = "site" | "security" | "sessions" | "email";
 
 function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [form, setForm] = useState<ContactSettings>({
+    geminiApiKey: "",
+    geminiModel: "gemini-3.6-flash",
     gmailAppPassword: "",
     contactToEmail: "",
     contactFromEmail: "",
@@ -3368,6 +3372,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showKey, setShowKey] = useState(false);
+  const [geminiConfigured, setGeminiConfigured] = useState(false);
   const [turnstileSecretConfigured, setTurnstileSecretConfigured] =
     useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -3422,6 +3427,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
           );
         if (!cancelled)
           setTurnstileSecretConfigured(Boolean(body.turnstileSecretConfigured));
+        if (!cancelled) setGeminiConfigured(Boolean(body.geminiConfigured));
       } catch (err) {
         if (!cancelled) setError((err as Error).message);
       } finally {
@@ -3552,6 +3558,49 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   </p>
                 )}
               </label>
+
+              <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <p className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
+                  Portfolio AI assistant
+                </p>
+                <p className="mb-4 text-xs leading-5 text-muted-foreground">
+                  The Ask AI button appears publicly only while a valid Gemini key is configured.
+                </p>
+                <div className="grid gap-4">
+                  <label className="block">
+                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Gemini API key
+                    </span>
+                    <input
+                      type="password"
+                      value={form.geminiApiKey || (geminiConfigured ? "********" : "")}
+                      onFocus={() => {
+                        if (geminiConfigured && !form.geminiApiKey) setForm({ ...form, geminiApiKey: "" });
+                      }}
+                      onChange={(event) => setForm({ ...form, geminiApiKey: event.target.value })}
+                      placeholder="Enter Gemini API key"
+                      autoComplete="new-password"
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                    />
+                    {geminiConfigured && (
+                      <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                        <Check size={12} /> AI key saved successfully
+                      </span>
+                    )}
+                  </label>
+                  <label className="block">
+                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Gemini model
+                    </span>
+                    <input
+                      value={form.geminiModel}
+                      onChange={(event) => setForm({ ...form, geminiModel: event.target.value })}
+                      placeholder="gemini-3.6-flash"
+                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                    />
+                  </label>
+                </div>
+              </div>
 
               <div className="rounded-xl border border-border bg-secondary/20 p-4">
                 <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">

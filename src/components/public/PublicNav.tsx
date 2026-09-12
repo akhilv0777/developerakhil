@@ -100,7 +100,14 @@ export function PublicNav({
           ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">{initials}</span>
           )}
-          <span className="max-w-[38vw] truncate font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground sm:max-w-none">{profile.name}</span>
+          <span className="flex min-w-0 flex-col items-start leading-none">
+            <span className="max-w-[38vw] truncate font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground sm:max-w-none">
+              {profile.name}
+            </span>
+            <span className="mt-1 max-w-[38vw] truncate text-[9px] font-medium tracking-wide text-muted-foreground sm:max-w-none">
+              {profile.roles?.find(Boolean) || profile.tagline || "Software Developer"}
+            </span>
+          </span>
         </Link>
         <nav className={`${open ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl" : "hidden"} lg:static lg:flex lg:max-w-[62vw] lg:flex-row lg:items-center lg:gap-6 lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}>
           {groups.map((group) => {
