@@ -79,8 +79,12 @@ export default async function handler(
       : '';
     const uniqueFilename = `${Date.now()}-${Math.random().toString(36).slice(2)}${extension}`;
 
+    const isResume =
+      mimetype === 'application/pdf' ||
+      mimetype === 'application/msword' ||
+      mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     const blob = await put(uniqueFilename, uploadedFile, {
-      access: 'public',
+      access: isResume ? 'private' : 'public',
       contentType: mimetype,
       addRandomSuffix: false,
       ...(blobToken ? { token: blobToken } : { oidcToken, storeId: blobStoreId }),

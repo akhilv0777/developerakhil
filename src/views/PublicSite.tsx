@@ -404,7 +404,14 @@ function Hero({ profile }: { profile: Profile }) {
     event.preventDefault();
 
     try {
-      const response = await fetch(resumeHref);
+      const response = await fetch("/api/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: resumeHref,
+          filename: profile.resumeName || "resume.pdf",
+        }),
+      });
       if (!response.ok) throw new Error("Resume download failed");
 
       const blobUrl = URL.createObjectURL(await response.blob());
