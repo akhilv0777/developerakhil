@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type FormEvent,
+  type MouseEvent,
   type ReactNode,
 } from "react";
 
@@ -399,6 +400,26 @@ function Hero({ profile }: { profile: Profile }) {
   const desktopImageSettings = profile.heroDesktopSettings;
   const mobileImageSettings = profile.heroMobileSettings;
 
+  const handleResumeDownload = async (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    try {
+      const response = await fetch(resumeHref);
+      if (!response.ok) throw new Error("Resume download failed");
+
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const downloadLink = document.createElement("a");
+      downloadLink.href = blobUrl;
+      downloadLink.download = profile.resumeName || "resume.pdf";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      downloadLink.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Unable to download the resume right now.");
+    }
+  };
+
   const imageFilter = (settings?: HeroImageSettings) => {
     if (!settings) return undefined;
     const presets: Record<string, string> = {
@@ -565,6 +586,7 @@ function Hero({ profile }: { profile: Profile }) {
               <a
                 href={resumeHref}
                 download={profile.resumeName || "resume.pdf"}
+                onClick={handleResumeDownload}
                 data-magnetic
                 className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
                 data-testid="link-hero-resume"
