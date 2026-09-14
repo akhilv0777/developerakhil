@@ -1637,7 +1637,7 @@ function ThankYouSection({ profile }: { profile: Profile }) {
 
 export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
   return (
-    <div className="loader-scene flex min-h-[100dvh] flex-col items-center justify-center bg-background px-6 text-center overflow-hidden">
+    <div className="loader-scene flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-0 text-center">
       {error ? (
         <div className="loader-panel glass-surface max-w-sm p-8">
           <div className="loader-mark loader-mark-error mx-auto mb-6">!</div>
@@ -1650,7 +1650,7 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
           </p>
         </div>
       ) : (
-        <div className="loader-minimal flex min-h-[100dvh] items-center justify-center bg-background px-5" aria-label="Loading portfolio">
+        <div className="loader-minimal flex min-h-[100dvh] w-full items-center justify-center bg-background px-5" aria-label="Loading portfolio">
           <div className="flex flex-col items-center text-center">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[.24em] text-foreground">
               Akhilesh Vishwakarma
