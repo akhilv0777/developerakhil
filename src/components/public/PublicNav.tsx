@@ -94,14 +94,14 @@ export function PublicNav({
   return (
     <header className={`glass-nav fixed top-3 left-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 border px-4 py-3 backdrop-blur-md transition-all duration-300 sm:top-5 sm:px-6 sm:py-4 ${isNavVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0"}`}>
       <div className="flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group" data-testid="link-home">
+        <Link href="/" className="group flex min-w-0 flex-1 items-center gap-3" data-testid="link-home">
           {profile.image ? (
             <Image src={profile.image} alt={profile.name} className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110" width={36} height={36} />
           ) : (
             <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">{initials}</span>
           )}
           <span className="flex min-w-0 flex-col items-start leading-none">
-            <span className="max-w-[38vw] truncate font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground sm:max-w-none">
+            <span className="break-words font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground">
               {profile.name}
             </span>
             <span className="mt-1 max-w-[38vw] truncate text-[9px] font-medium tracking-wide text-muted-foreground sm:max-w-none">

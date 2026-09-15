@@ -348,11 +348,17 @@ function SectionLabel({
   return (
     <div className="mb-12 flex items-center gap-3">
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary/30 bg-primary/8 text-primary shadow-[0_0_18px_rgba(249,115,22,0.12)]">
-        {icon ? icon : (
+        {icon ? (
+          icon
+        ) : (
           <span className="font-mono text-[11px] font-bold">{number}</span>
         )}
       </span>
-      <span data-mf-animation="fade-up" data-mf-animation-once="true" className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold">
+      <span
+        data-mf-animation="fade-up"
+        data-mf-animation-once="true"
+        className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold"
+      >
         {children}
       </span>
     </div>
@@ -380,7 +386,9 @@ function TypingRoles({ roles }: { roles: string[] }) {
         className="terminal-caret inline-flex min-w-[10ch] items-center text-primary"
         aria-live="polite"
       >
-        {safeRoles.map((role) => <span key={role}>{role}</span>)}
+        {safeRoles.map((role) => (
+          <span key={role}>{role}</span>
+        ))}
       </span>
       <span>.</span>
     </span>
@@ -659,11 +667,11 @@ function About({ profile }: { profile: Profile }) {
           ) : null}
         </div>
         <div className="space-y-8">
-            <div
-              data-mf-stagger-animation="fade-up"
-              data-mf-stagger-once="true"
-              className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
-            >
+          <div
+            data-mf-stagger-animation="fade-up"
+            data-mf-stagger-once="true"
+            className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
+          >
             <p className="text-[clamp(1.5rem,2.7vw,2.5rem)] font-bold leading-[1.2] text-foreground">
               {profile.bio1}
             </p>
@@ -715,10 +723,7 @@ function StatValue({ value }: { value: string }) {
   const target = Number(digits.replace(/,/g, ""));
   return (
     <span className="font-mono text-4xl lg:text-5xl font-bold text-foreground">
-      <span
-        data-mf-count-to={target}
-        data-mf-count-once="true"
-      >
+      <span data-mf-count-to={target} data-mf-count-once="true">
         0
       </span>
       <span className="text-primary">{suffix}</span>
@@ -802,9 +807,7 @@ function Timeline({ data }: { data: PortfolioData }) {
           <SectionLabel number="02" icon={<GraduationCap size={14} />}>
             EDUCATION
           </SectionLabel>
-          <h2
-            className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
-          >
+          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
             Academic <br />
             <span>Timeline.</span>
           </h2>
@@ -829,38 +832,38 @@ function Timeline({ data }: { data: PortfolioData }) {
             data-mf-stagger-once="true"
             className="grid gap-6"
           >
-          {data.education.map((item) => (
-            <div
-              className="bento-card group relative overflow-hidden p-5 sm:p-6"
-              key={item.id}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
-                    <GraduationCap size={16} />
-                  </span>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
-                    {item.period}
-                  </span>
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-bold text-foreground">
-                      {item.degree}
-                    </h3>
-                    <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+            {data.education.map((item) => (
+              <div
+                className="bento-card group relative overflow-hidden p-5 sm:p-6"
+                key={item.id}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                  <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                      <GraduationCap size={16} />
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                      {item.period}
+                    </span>
                   </div>
-                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
-                    {item.institution}
-                  </p>
-                  <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                    {item.detail}
-                  </p>
+
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-xl font-bold text-foreground">
+                        {item.degree}
+                      </h3>
+                      <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                    </div>
+                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                      {item.institution}
+                    </p>
+                    <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                      {item.detail}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       </div>
@@ -879,9 +882,7 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
           <SectionLabel number="03" icon={<BriefcaseBusiness size={14} />}>
             EXPERIENCE
           </SectionLabel>
-          <h2
-            className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl"
-          >
+          <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
             Professional <br />
             <span>Timeline.</span>
           </h2>
@@ -906,38 +907,38 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
             data-mf-stagger-once="true"
             className="grid gap-6"
           >
-          {data.experience.map((item) => (
-            <div
-              className="bento-card group relative overflow-hidden p-5 sm:p-6"
-              key={item.id}
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
-                    <BriefcaseBusiness size={16} />
-                  </span>
-                  <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
-                    {item.period}
-                  </span>
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-bold text-foreground">
-                      {item.role}
-                    </h3>
-                    <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+            {data.experience.map((item) => (
+              <div
+                className="bento-card group relative overflow-hidden p-5 sm:p-6"
+                key={item.id}
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                  <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                      <BriefcaseBusiness size={16} />
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                      {item.period}
+                    </span>
                   </div>
-                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
-                    {item.company}
-                  </p>
-                  <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
-                    {item.detail}
-                  </p>
+
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-xl font-bold text-foreground">
+                        {item.role}
+                      </h3>
+                      <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                    </div>
+                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                      {item.company}
+                    </p>
+                    <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                      {item.detail}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       </div>
@@ -1074,88 +1075,85 @@ function Work({ data }: { data: PortfolioData }) {
         </div>
       </div>
 
-      <div
-        ref={gridRef}
-        className="grid gap-8 lg:grid-cols-2"
-      >
+      <div ref={gridRef} className="grid gap-8 lg:grid-cols-2">
         {data.projects.map((project) => {
           const category = project.category.trim() || "Uncategorized";
           const isHidden =
             activeCategory !== "All projects" && category !== activeCategory;
           return (
-          <article
-            key={project.id}
-            data-project-card
-            className={`bento-card group flex flex-col overflow-hidden ${isHidden ? "hidden" : ""}`}
-          >
-            <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
-              {project.image ? (
-                <>
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    loading="lazy"
-                    decoding="async"
-                    fill
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    quality={70}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
-                </>
-              ) : (
-                <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center bg-secondary">
-                  <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-                </div>
-              )}
-              <div className="absolute top-4 right-4 inline-flex rounded-full border border-border bg-background/80 backdrop-blur-md px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">
-                {project.category}
-              </div>
-              <div className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground backdrop-blur-md z-10">
-                <CalendarDays size={12} className="text-primary" />
-                {project.year}
-              </div>
-            </div>
-
-            <div className="flex flex-col flex-grow p-6">
-              <div className="mb-4">
-                <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
-                  {project.title}
-                </h3>
-              </div>
-
-              <p className="mb-8 line-clamp-6 text-sm leading-[1.8] text-muted-foreground">
-                {project.description}
-              </p>
-              <div className="flex w-full flex-wrap items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedProject(project)}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
-                >
-                  View project details <ArrowUpRight size={13} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void shareProject(project)}
-                  aria-label={`Share ${project.title}`}
-                  className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
-                >
-                  <Share2 size={13} /> Share
-                </button>
-                {project.liveUrl && (
-                  <a
-                    href={project.liveUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto"
-                  >
-                    View live project <ExternalLink size={13} />
-                  </a>
+            <article
+              key={project.id}
+              data-project-card
+              className={`bento-card group flex flex-col overflow-hidden ${isHidden ? "hidden" : ""}`}
+            >
+              <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
+                {project.image ? (
+                  <>
+                    <Image
+                      src={project.image}
+                      alt={project.title}
+                      loading="lazy"
+                      decoding="async"
+                      fill
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      quality={70}
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center bg-secondary">
+                    <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+                  </div>
                 )}
+                <div className="absolute top-4 right-4 inline-flex rounded-full border border-border bg-background/80 backdrop-blur-md px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">
+                  {project.category}
+                </div>
+                <div className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground backdrop-blur-md z-10">
+                  <CalendarDays size={12} className="text-primary" />
+                  {project.year}
+                </div>
               </div>
-            </div>
-          </article>
+
+              <div className="flex flex-col flex-grow p-6">
+                <div className="mb-4">
+                  <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
+                    {project.title}
+                  </h3>
+                </div>
+
+                <p className="mb-8 line-clamp-6 text-sm leading-[1.8] text-muted-foreground">
+                  {project.description}
+                </p>
+                <div className="flex w-full flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProject(project)}
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
+                  >
+                    View project details <ArrowUpRight size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void shareProject(project)}
+                    aria-label={`Share ${project.title}`}
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
+                  >
+                    <Share2 size={13} /> Share
+                  </button>
+                  {project.liveUrl && (
+                    <a
+                      href={project.liveUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto"
+                    >
+                      View live project <ExternalLink size={13} />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </article>
           );
         })}
       </div>
@@ -1172,7 +1170,10 @@ function Work({ data }: { data: PortfolioData }) {
           aria-modal="true"
           aria-label={`${selectedProject.title} details`}
         >
-          <div data-modal-card className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-9 lg:p-8 lg:pb-10">
+          <div
+            data-modal-card
+            className="bento-card relative max-h-[85vh] w-full max-w-2xl overflow-y-auto p-5 pb-8 sm:p-6 sm:pb-9 lg:p-8 lg:pb-10"
+          >
             <button
               type="button"
               onClick={() => setSelectedProject(null)}
@@ -1285,10 +1286,11 @@ function Testimonials({ data }: { data: PortfolioData }) {
       </SectionLabel>
       <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
         <div className="relative z-10 flex min-h-[250px] flex-col items-center justify-center text-center">
-          <div
-            className="flex w-full max-w-5xl cursor-grab flex-col items-center active:cursor-grabbing"
-          >
-            <div ref={quoteRef} className="testimonial-enter flex w-full flex-col items-center">
+          <div className="flex w-full max-w-5xl cursor-grab flex-col items-center active:cursor-grabbing">
+            <div
+              ref={quoteRef}
+              className="testimonial-enter flex w-full flex-col items-center"
+            >
               <div
                 className="mb-6 flex items-center gap-1 text-primary"
                 aria-label="5 out of 5 stars"
@@ -1474,9 +1476,7 @@ function Contact({ profile }: { profile: Profile }) {
       </SectionLabel>
       <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
         <div data-mf-animation="fade-up" data-mf-animation-once="true">
-          <h2
-            className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl"
-          >
+          <h2 className="display-title text-5xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             {titleLines.map((line, index) => (
               <span key={index}>
                 {line}
@@ -1678,12 +1678,19 @@ export function PortfolioLoading({ error = false }: { error?: boolean } = {}) {
           </p>
         </div>
       ) : (
-        <div className="loader-minimal flex min-h-[100dvh] w-full items-center justify-center bg-background px-5" aria-label="Loading portfolio">
+        <div
+          className="loader-minimal flex min-h-[100dvh] w-full items-center justify-center bg-background px-5"
+          aria-label="Loading portfolio"
+        >
           <div className="flex flex-col items-center text-center">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[.24em] text-foreground">
               Akhilesh Vishwakarma
             </p>
-            <div className="loader-minimal-dots mt-5" aria-hidden="true"><span /><span /><span /></div>
+            <div className="loader-minimal-dots mt-5" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
         </div>
       )}
@@ -1701,7 +1708,13 @@ function cleanAssistantText(value: string): string {
     .trim();
 }
 
-function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUnavailable: () => void }) {
+function PortfolioAssistant({
+  data,
+  onUnavailable,
+}: {
+  data: PortfolioData;
+  onUnavailable: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -1709,7 +1722,8 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       role: "assistant",
-      content: "Hi. Ask me about the work, skills, or services on this portfolio.",
+      content:
+        "Hi. Ask me about the work, skills, or services on this portfolio.",
     },
   ]);
 
@@ -1722,7 +1736,10 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
     const nextQuestion = question.trim();
     if (!nextQuestion || isSending) return;
 
-    const nextMessages = [...messages, { role: "user" as const, content: nextQuestion }];
+    const nextMessages = [
+      ...messages,
+      { role: "user" as const, content: nextQuestion },
+    ];
     setMessages(nextMessages);
     setQuestion("");
     setIsSending(true);
@@ -1746,13 +1763,15 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
       },
       experience: data.experience,
       education: data.education,
-      projects: data.projects.map(({ title, category, year, description, tags }) => ({
-        title,
-        category,
-        year,
-        description,
-        tags,
-      })),
+      projects: data.projects.map(
+        ({ title, category, year, description, tags }) => ({
+          title,
+          category,
+          year,
+          description,
+          tags,
+        }),
+      ),
       testimonials: data.testimonials,
     };
 
@@ -1766,7 +1785,10 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
           history: nextMessages.slice(-6),
         }),
       });
-      const result = (await response.json()) as { answer?: string; error?: string };
+      const result = (await response.json()) as {
+        answer?: string;
+        error?: string;
+      };
       if (!response.ok) {
         onUnavailable();
         return;
@@ -1775,7 +1797,11 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
         ...current,
         {
           role: "assistant",
-          content: cleanAssistantText(result.answer || result.error || "Please use the contact section for help."),
+          content: cleanAssistantText(
+            result.answer ||
+              result.error ||
+              "Please use the contact section for help.",
+          ),
         },
       ]);
     } catch {
@@ -1788,7 +1814,11 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
   return (
     <div className="portfolio-assistant fixed bottom-4 left-4 z-50 sm:bottom-6 sm:left-6">
       {open && (
-        <div role="dialog" aria-label="Portfolio assistant" className="assistant-panel mb-3 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-card shadow-2xl">
+        <div
+          role="dialog"
+          aria-label="Portfolio assistant"
+          className="assistant-panel mb-3 flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[1.25rem] border border-border bg-card shadow-2xl"
+        >
           <div className="flex items-center justify-between bg-foreground px-4 py-3 text-background">
             <div className="flex items-center gap-3">
               <span className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
@@ -1796,35 +1826,97 @@ function PortfolioAssistant({ data, onUnavailable }: { data: PortfolioData; onUn
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-foreground" />
               </span>
               <div>
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[.2em] text-primary">AI / PORTFOLIO GUIDE</p>
-                <p className="mt-1 text-xs text-background/65">Ask anything about the work</p>
+                <p className="font-mono text-[9px] font-bold uppercase tracking-[.2em] text-primary">
+                  AI / PORTFOLIO GUIDE
+                </p>
+                <p className="mt-1 text-xs text-background/65">
+                  Ask anything about the work
+                </p>
               </div>
             </div>
-            <button type="button" onClick={() => setOpen(false)} className="rounded-full p-2 text-background/65 transition-colors hover:bg-background/10 hover:text-background" aria-label="Close assistant"><X size={16} /></button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-full p-2 text-background/65 transition-colors hover:bg-background/10 hover:text-background"
+              aria-label="Close assistant"
+            >
+              <X size={16} />
+            </button>
           </div>
-          <div className="assistant-messages flex max-h-[min(22rem,55vh)] flex-col gap-3 overflow-y-auto bg-background/60 p-4" aria-live="polite">
+          <div
+            className="assistant-messages flex max-h-[min(22rem,55vh)] flex-col gap-3 overflow-y-auto bg-background/60 p-4"
+            aria-live="polite"
+          >
             {messages.map((message, index) => (
-              <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-6 shadow-sm ${message.role === "user" ? "self-end rounded-br-md bg-primary text-primary-foreground" : "self-start rounded-bl-md border border-border/70 bg-card text-foreground"}`}>
+              <div
+                key={`${message.role}-${index}`}
+                className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-6 shadow-sm ${message.role === "user" ? "self-end rounded-br-md bg-primary text-primary-foreground" : "self-start rounded-bl-md border border-border/70 bg-card text-foreground"}`}
+              >
                 {message.content}
               </div>
             ))}
-            {isSending && <div className="assistant-thinking self-start rounded-2xl rounded-bl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-muted-foreground"><span>Thinking</span><i /><i /><i /></div>}
+            {isSending && (
+              <div className="assistant-thinking self-start rounded-2xl rounded-bl-md border border-border/70 bg-card px-3.5 py-2.5 text-sm text-muted-foreground">
+                <span>Thinking</span>
+                <i />
+                <i />
+                <i />
+              </div>
+            )}
             <div ref={messagesEndRef} aria-hidden="true" />
           </div>
           {messages.length === 1 && (
             <div className="assistant-prompts flex gap-2 overflow-x-auto border-t border-border/60 px-3 py-3">
-              {["Services", "Projects", "Experience"] .map((prompt) => (
-                <button key={prompt} type="button" onClick={() => setQuestion(prompt === "Services" ? "What services are available?" : prompt === "Projects" ? "Tell me about the projects" : "Tell me about the work experience")} className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary">{prompt}</button>
+              {["Services", "Projects", "Experience"].map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  onClick={() =>
+                    setQuestion(
+                      prompt === "Services"
+                        ? "What services are available?"
+                        : prompt === "Projects"
+                          ? "Tell me about the projects"
+                          : "Tell me about the work experience",
+                    )
+                  }
+                  className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-left text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  {prompt}
+                </button>
               ))}
             </div>
           )}
-          <form onSubmit={askAssistant} className="flex gap-2 border-t border-border p-3">
-            <input value={question} onChange={(event) => setQuestion(event.target.value)} maxLength={600} placeholder="Ask a question..." className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground placeholder:opacity-100 outline-none focus:border-primary" aria-label="Ask the portfolio assistant" />
-            <button type="submit" disabled={isSending || !question.trim()} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send question"><Send size={15} /></button>
+          <form
+            onSubmit={askAssistant}
+            className="flex gap-2 border-t border-border p-3"
+          >
+            <input
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              maxLength={600}
+              placeholder="Ask a question..."
+              className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground placeholder:opacity-100 outline-none focus:border-primary"
+              aria-label="Ask the portfolio assistant"
+            />
+            <button
+              type="submit"
+              disabled={isSending || !question.trim()}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Send question"
+            >
+              <Send size={15} />
+            </button>
           </form>
         </div>
       )}
-      <button type="button" onClick={() => setOpen((current) => !current)} className="assistant-trigger inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background shadow-xl transition-transform hover:-translate-y-1" aria-expanded={open} aria-label="Open portfolio assistant">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="assistant-trigger inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-background shadow-xl transition-transform hover:-translate-y-1"
+        aria-expanded={open}
+        aria-label="Open portfolio assistant"
+      >
         <MessageCircle size={16} />
         <span>{open ? "Close" : "Ask AI"}</span>
       </button>
@@ -1844,9 +1936,14 @@ export function PublicPortfolio() {
     const updateScrollProgress = () => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = documentHeight > 0 ? (window.scrollY / documentHeight) * 100 : 0;
-        shellRef.current?.style.setProperty("--scroll-progress", `${progress}%`);
+        const documentHeight =
+          document.documentElement.scrollHeight - window.innerHeight;
+        const progress =
+          documentHeight > 0 ? (window.scrollY / documentHeight) * 100 : 0;
+        shellRef.current?.style.setProperty(
+          "--scroll-progress",
+          `${progress}%`,
+        );
       });
     };
     updateScrollProgress();
@@ -1862,7 +1959,9 @@ export function PublicPortfolio() {
   useEffect(() => {
     fetch("/api/ai/status", { cache: "no-store" })
       .then((response) => response.json())
-      .then((status: { available?: boolean }) => setAiAvailable(Boolean(status.available)))
+      .then((status: { available?: boolean }) =>
+        setAiAvailable(Boolean(status.available)),
+      )
       .catch(() => setAiAvailable(false));
   }, []);
 
@@ -1870,34 +1969,44 @@ export function PublicPortfolio() {
     const loadSiteSettings = () => {
       fetch("/api/site-settings", { cache: "no-store" })
         .then((response) => response.json())
-        .then((settings: { siteName?: string; faviconUrl?: string; googleAdsenseAccount?: string }) => {
-          if (settings.siteName) document.title = settings.siteName;
-          document
-            .querySelectorAll<HTMLMetaElement>('meta[name="google-adsense-account"]')
-            .forEach((meta) => meta.remove());
-          const adsenseAccount = settings.googleAdsenseAccount?.trim();
-          if (adsenseAccount && /^ca-pub-\d{10,32}$/.test(adsenseAccount)) {
-            const meta = document.createElement("meta");
-            meta.name = "google-adsense-account";
-            meta.content = adsenseAccount;
-            document.head.appendChild(meta);
-          }
-          if (settings.faviconUrl) {
+        .then(
+          (settings: {
+            siteName?: string;
+            faviconUrl?: string;
+            googleAdsenseAccount?: string;
+          }) => {
+            if (settings.siteName) document.title = settings.siteName;
             document
-              .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
-              .forEach((link) => link.remove());
-            const icon = document.createElement("link");
-            icon.id = "site-favicon";
-            icon.rel = "icon";
-            icon.href = settings.faviconUrl.startsWith("data:")
-              ? settings.faviconUrl
-              : `${settings.faviconUrl}${settings.faviconUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
-            document.head.appendChild(icon);
-          }
-        })
+              .querySelectorAll<HTMLMetaElement>(
+                'meta[name="google-adsense-account"]',
+              )
+              .forEach((meta) => meta.remove());
+            const adsenseAccount = settings.googleAdsenseAccount?.trim();
+            if (adsenseAccount && /^ca-pub-\d{10,32}$/.test(adsenseAccount)) {
+              const meta = document.createElement("meta");
+              meta.name = "google-adsense-account";
+              meta.content = adsenseAccount;
+              document.head.appendChild(meta);
+            }
+            if (settings.faviconUrl) {
+              document
+                .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
+                .forEach((link) => link.remove());
+              const icon = document.createElement("link");
+              icon.id = "site-favicon";
+              icon.rel = "icon";
+              icon.href = settings.faviconUrl.startsWith("data:")
+                ? settings.faviconUrl
+                : `${settings.faviconUrl}${settings.faviconUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
+              document.head.appendChild(icon);
+            }
+          },
+        )
         .catch(() => undefined);
     };
-    const idleId = window.requestIdleCallback?.(loadSiteSettings) ?? window.setTimeout(loadSiteSettings, 1500);
+    const idleId =
+      window.requestIdleCallback?.(loadSiteSettings) ??
+      window.setTimeout(loadSiteSettings, 1500);
     return () => {
       if (typeof idleId === "number") window.clearTimeout(idleId);
     };
@@ -1940,7 +2049,9 @@ export function PublicPortfolio() {
       }
     };
 
-    const idleId = window.requestIdleCallback?.(() => void recordVisit()) ?? window.setTimeout(() => void recordVisit(), 2000);
+    const idleId =
+      window.requestIdleCallback?.(() => void recordVisit()) ??
+      window.setTimeout(() => void recordVisit(), 2000);
     return () => {
       if (typeof idleId === "number") window.clearTimeout(idleId);
     };
@@ -1996,9 +2107,7 @@ export function PublicPortfolio() {
         className="fixed left-0 right-0 top-0 z-[60] h-1 bg-border/40"
         aria-hidden="true"
       >
-        <div
-          className="h-full origin-left scale-x-0 bg-primary"
-        />
+        <div className="h-full origin-left scale-x-0 bg-primary" />
       </div>
       <PublicNav
         data={data}
@@ -2038,7 +2147,12 @@ export function PublicPortfolio() {
         </span>
       </a>
       <Footer profile={data.profile} />
-      {aiAvailable && <PortfolioAssistant data={data} onUnavailable={() => setAiAvailable(false)} />}
+      {aiAvailable && (
+        <PortfolioAssistant
+          data={data}
+          onUnavailable={() => setAiAvailable(false)}
+        />
+      )}
     </div>
   );
 }
