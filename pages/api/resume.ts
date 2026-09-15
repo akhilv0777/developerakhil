@@ -39,7 +39,7 @@ export default async function handler(
   }
 
   try {
-    const result = await get(body.url, { access: "private" });
+    const result = await get(body.url, { access: "public" });
     if (!result) return res.status(404).json({ error: "Resume not found" });
 
     const filename = safeFilename(body.filename);
