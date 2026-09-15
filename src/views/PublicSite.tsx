@@ -400,7 +400,7 @@ function Hero({ profile }: { profile: Profile }) {
   const desktopImageSettings = profile.heroDesktopSettings;
   const mobileImageSettings = profile.heroMobileSettings;
 
-  const handleResumeDownload = async (event: MouseEvent<HTMLAnchorElement>) => {
+  const handleResumeDownload = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
 
     try {
@@ -590,9 +590,8 @@ function Hero({ profile }: { profile: Profile }) {
             </a>
 
             {profile.resume && (
-              <a
-                href={resumeHref}
-                download={profile.resumeName || "resume.pdf"}
+              <button
+                type="button"
                 onClick={handleResumeDownload}
                 data-magnetic
                 className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
@@ -600,7 +599,7 @@ function Hero({ profile }: { profile: Profile }) {
               >
                 <Download className="h-4 w-4" />
                 Download resume
-              </a>
+              </button>
             )}
           </div>
         </div>
