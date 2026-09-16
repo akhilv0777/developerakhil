@@ -1097,7 +1097,7 @@ function Work({ data }: { data: PortfolioData }) {
                       fill
                       sizes="(min-width: 1024px) 50vw, 100vw"
                       quality={70}
-                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      className="absolute inset-0 h-full w-full object-fill transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
                   </>
