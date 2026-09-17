@@ -109,7 +109,7 @@ export function PublicNav({
             </span>
           </span>
         </Link>
-        <nav className={`${open ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl" : "hidden"} lg:static lg:flex lg:max-w-[62vw] lg:flex-row lg:items-center lg:gap-6 lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}>
+        <nav className={`${open ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl" : "hidden"} lg:mr-4 lg:static lg:flex lg:max-w-[62vw] lg:flex-row lg:items-center lg:gap-6 lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}>
           {groups.map((group) => {
             const isSingle = group.items.length === 1 && group.label === "Hire me";
             const groupActive = group.items.some(([href]) => activeHash === href);
