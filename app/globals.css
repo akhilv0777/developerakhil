@@ -437,7 +437,7 @@
   .dark .hero-copy { text-shadow: 0 2px 22px hsl(0 0% 0% / .58); }
   .light .hero-background-image { opacity: .9; }
   .light .hero-background-image::after { background: linear-gradient(90deg, hsl(0 0% 100% / .72) 0%, hsl(0 0% 100% / .48) 28%, hsl(0 0% 100% / .12) 62%, transparent 100%), linear-gradient(180deg, transparent, hsl(0 0% 100% / .12)); }
-  .available-for-btn { display: inline-flex; align-items: center; column-gap: .15rem; color: hsl(var(--primary)); background: transparent; border: 1px solid hsl(var(--primary) / .7); border-radius: 999px; padding: .5rem .8rem .5rem .8rem; font-family: var(--app-font-mono); font-size: 9px; font-weight: 700; letter-spacing: .08em; line-height: 1; text-transform: uppercase; transition: background-color .2s ease, transform .2s ease; }
+  .available-for-btn { display: inline-flex; align-items: center; column-gap: .15rem; color: hsl(var(--primary)); background: transparent; border: 1px solid hsl(var(--primary) / .7); margin-left: 10px; border-radius: 999px; padding: .5rem .8rem .5rem .8rem; font-family: var(--app-font-mono); font-size: 9px; font-weight: 700; letter-spacing: .08em; line-height: 1; text-transform: uppercase; transition: background-color .2s ease, transform .2s ease; }
   .available-for-btn:hover { background: hsl(var(--primary) / .12); transform: translateY(-1px); }
 
   @media (min-width: 62rem) {
