@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import {
   ChevronDown,
   Menu,
@@ -15,6 +15,7 @@ import Link from "next/link";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import type { PortfolioData } from "@/lib/portfolio-types";
 import { SocialIcon } from "./SocialIcon";
+import { SiteTranslator } from "./SiteTranslator";
 
 export function PublicNav({
   data,
@@ -80,10 +81,27 @@ export function PublicNav({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
+  const handleSectionClick = (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault();
+    setOpen(false);
+    setOpenGroup(null);
+    setActiveHash(href);
+
+    const target = document.getElementById(href);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (typeof window.history?.replaceState === "function") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  };
+
   useEffect(() => {
     const updateActiveHash = () => {
       const nextHash = window.location.hash.replace("#", "");
-      setActiveHash(nextHash || "about");
+      if (nextHash) setActiveHash(nextHash);
     };
     updateActiveHash();
     window.addEventListener("hashchange", updateActiveHash);
@@ -91,13 +109,7 @@ export function PublicNav({
     if (!sections.length) return () => window.removeEventListener("hashchange", updateActiveHash);
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (visible) {
-        setActiveHash(visible.target.id);
-        if (typeof window.history?.replaceState === "function") {
-          const nextHash = `#${visible.target.id}`;
-          if (window.location.hash !== nextHash) window.history.replaceState(null, "", nextHash);
-        }
-      }
+      if (visible) setActiveHash(visible.target.id);
     }, { threshold: [0.2, 0.5, 0.8], rootMargin: "-15% 0px -35% 0px" });
     sections.forEach((section) => observer.observe(section));
     return () => {
@@ -134,7 +146,7 @@ export function PublicNav({
             const groupActive = group.items.some(([href]) => activeHash === href);
             if (isSingle) {
               const [href, label] = group.items[0];
-              return <a key={href} href={`#${href}`} onClick={() => setOpen(false)} className="available-for-btn shrink-0" data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>
+              return <a key={href} href={`#${href}`} onClick={(event) => handleSectionClick(event, href)} className="available-for-btn shrink-0" data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>
                 <span>{label}</span>
               </a>;
             }
@@ -145,13 +157,14 @@ export function PublicNav({
               <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-48 flex-col gap-1 rounded-lg border border-border/80 bg-card/95 p-2 shadow-2xl backdrop-blur-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}>
                 {group.items.map(([href, label]) => {
                   const isActive = activeHash === href || (!activeHash && href === "about");
-                  return <a key={href} href={`#${href}`} onClick={() => { setOpen(false); setOpenGroup(null); }} className={`rounded-md border-l-2 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-primary/40 hover:bg-secondary hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
+                  return <a key={href} href={`#${href}`} onClick={(event) => handleSectionClick(event, href)} className={`rounded-md border-l-2 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-primary/40 hover:bg-secondary hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
                 })}
               </div>
             </div>;
           })}
         </nav>
         <div className="flex items-center gap-2">
+          <SiteTranslator />
           {profile.github && (
             <a
               href={profile.github}

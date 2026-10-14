@@ -1,6 +1,41 @@
 // ---------------------------------------------------------------------
 // Shared data shapes for the portfolio site (public frontend + admin console).
 // ---------------------------------------------------------------------
+import translationConfig from "./translation-config.json";
+
+export const TRANSLATION_LANGUAGE_OPTIONS = translationConfig.languages as {
+  code: TranslationLanguageCode;
+  label: string;
+}[];
+
+export type TranslationLanguageCode =
+  | "en"
+  | "ar"
+  | "bn"
+  | "de"
+  | "es"
+  | "fr"
+  | "ja";
+
+export const DEFAULT_TRANSLATION_LANGUAGES: TranslationLanguageCode[] =
+  TRANSLATION_LANGUAGE_OPTIONS.map(({ code }) => code);
+
+export function normalizeTranslationLanguages(
+  value: unknown,
+): TranslationLanguageCode[] {
+  const supportedCodes = new Set(
+    TRANSLATION_LANGUAGE_OPTIONS.map(({ code }) => code),
+  );
+  const selectedCodes = Array.isArray(value)
+    ? value.filter(
+        (code): code is TranslationLanguageCode =>
+          typeof code === "string" &&
+          supportedCodes.has(code as TranslationLanguageCode),
+      )
+    : DEFAULT_TRANSLATION_LANGUAGES;
+
+  return Array.from(new Set<TranslationLanguageCode>(["en", ...selectedCodes]));
+}
 
 export type Service = {
   id: string;

@@ -374,6 +374,11 @@ export type ContactSettings = {
   contactFromEmail: string;
   twoFactorEnabled: boolean;
   siteName: string;
+  siteDescription: string;
+  siteKeywords: string;
+  translationLanguages: string[];
+  siteUrl: string;
+  openGraphImage: string;
   faviconUrl: string;
   removeBgApiUrl: string;
   removeBgApiKey: string;
@@ -391,6 +396,13 @@ const defaultContactSettings: ContactSettings = {
   contactFromEmail: "",
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
+  siteDescription:
+    "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+  siteKeywords:
+    "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+  translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
+  siteUrl: "https://www.akhilesh-vishwakarma.com",
+  openGraphImage: "/og-image.svg",
   faviconUrl: "",
   removeBgApiUrl: "",
   removeBgApiKey: "",

@@ -5,6 +5,11 @@ import {
   type ContactSettings,
 } from "@/lib/api-server/db";
 import { getSessionUser } from "@/lib/api-server/auth";
+import {
+  DEFAULT_TRANSLATION_LANGUAGES,
+  normalizeTranslationLanguages,
+  TRANSLATION_LANGUAGE_OPTIONS,
+} from "@/lib/portfolio-types";
 
 let inMemorySettings: ContactSettings = {
   googleAdsenseAccount: "",
@@ -15,6 +20,13 @@ let inMemorySettings: ContactSettings = {
   contactFromEmail: "",
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
+  siteDescription:
+    "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+  siteKeywords:
+    "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+  translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
+  siteUrl: "https://www.akhilesh-vishwakarma.com",
+  openGraphImage: "/og-image.svg",
   faviconUrl: "",
   removeBgApiUrl: "",
   removeBgApiKey: "",
@@ -53,6 +65,16 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.contactFromEmail === "string" &&
     typeof record.twoFactorEnabled === "boolean" &&
     typeof record.siteName === "string" &&
+    typeof record.siteDescription === "string" &&
+    typeof record.siteKeywords === "string" &&
+    Array.isArray(record.translationLanguages) &&
+    record.translationLanguages.every(
+      (code) =>
+        typeof code === "string" &&
+        TRANSLATION_LANGUAGE_OPTIONS.some((language) => language.code === code),
+    ) &&
+    typeof record.siteUrl === "string" &&
+    typeof record.openGraphImage === "string" &&
     typeof record.faviconUrl === "string" &&
     typeof record.removeBgApiUrl === "string" &&
     typeof record.removeBgApiKey === "string"
@@ -99,6 +121,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         contactFromEmail: req.body.contactFromEmail.trim(),
         twoFactorEnabled: req.body.twoFactorEnabled,
         siteName: req.body.siteName.trim(),
+        siteDescription: typeof req.body.siteDescription === "string" ? req.body.siteDescription.trim() : current.siteDescription,
+        siteKeywords: typeof req.body.siteKeywords === "string" ? req.body.siteKeywords.trim() : current.siteKeywords,
+        translationLanguages: normalizeTranslationLanguages(req.body.translationLanguages),
+        siteUrl: typeof req.body.siteUrl === "string" ? req.body.siteUrl.trim() : current.siteUrl,
+        openGraphImage: typeof req.body.openGraphImage === "string" ? req.body.openGraphImage.trim() : current.openGraphImage,
         faviconUrl: req.body.faviconUrl.trim(),
         removeBgApiUrl: typeof req.body.removeBgApiUrl === "string" ? req.body.removeBgApiUrl.trim() : current.removeBgApiUrl,
         removeBgApiKey: typeof req.body.removeBgApiKey === "string" ? req.body.removeBgApiKey.trim() : current.removeBgApiKey,

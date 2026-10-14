@@ -57,6 +57,7 @@ import type {
 } from "@/lib/portfolio-types";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
 import { useTurnstile } from "@/components/Turnstile";
+import { CookieConsent } from "@/components/CookieConsent";
 import { PublicNav } from "@/components/public/PublicNav";
 import { SocialIcon } from "@/components/public/SocialIcon";
 import Image from "next/image";
@@ -154,10 +155,30 @@ export function LegacyNav({
       .join("")
       .toUpperCase() || "AV";
 
+  const handleSectionClick = (
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
+    event.preventDefault();
+    setOpen(false);
+    setOpenGroup(null);
+    setActiveHash(href);
+
+    const target = document.getElementById(href);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    if (typeof window.history?.replaceState === "function") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  };
+
   useEffect(() => {
     const updateActiveHash = () => {
       const nextHash = window.location.hash.replace("#", "");
-      setActiveHash(nextHash || "about");
+      if (nextHash) setActiveHash(nextHash);
     };
 
     updateActiveHash();
@@ -177,12 +198,6 @@ export function LegacyNav({
 
         if (visible) {
           setActiveHash(visible.target.id);
-          if (typeof window.history?.replaceState === "function") {
-            const nextHash = `#${visible.target.id}`;
-            if (window.location.hash !== nextHash) {
-              window.history.replaceState(null, "", nextHash);
-            }
-          }
         }
       },
       { threshold: [0.2, 0.5, 0.8], rootMargin: "-15% 0px -35% 0px" },
@@ -197,7 +212,7 @@ export function LegacyNav({
   }, [links]);
 
   return (
-    <header className="glass-nav fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-full border px-6 py-4 backdrop-blur-md transition-all">
+    <header className="glass-nav fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-[1.2rem] border px-6 py-4 shadow-[0_12px_36px_rgba(15,23,42,0.18)] backdrop-blur-md transition-all">
       <div className="flex items-center justify-between">
         <Link
           href="/"
@@ -241,7 +256,7 @@ export function LegacyNav({
                 <a
                   key={href}
                   href={`#${href}`}
-                  onClick={() => setOpen(false)}
+                  onClick={(event) => handleSectionClick(event, href)}
                   className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                   data-testid={`link-nav-${href}`}
                   aria-current={groupActive ? "page" : undefined}
@@ -368,6 +383,35 @@ function SectionLabel({
 
 function TypingRoles({ roles }: { roles: string[] }) {
   const safeRoles = roles.filter(Boolean);
+  const [displayedText, setDisplayedText] = useState("");
+  const [activeRoleIndex, setActiveRoleIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!safeRoles.length) return;
+
+    const currentRole = safeRoles[activeRoleIndex];
+    const timeout = window.setTimeout(() => {
+      if (!isDeleting) {
+        const nextText = currentRole.slice(0, displayedText.length + 1);
+        setDisplayedText(nextText);
+
+        if (nextText === currentRole) {
+          setIsDeleting(true);
+        }
+      } else {
+        const nextText = currentRole.slice(0, displayedText.length - 1);
+        setDisplayedText(nextText);
+
+        if (nextText === "") {
+          setIsDeleting(false);
+          setActiveRoleIndex((previous) => (previous + 1) % safeRoles.length);
+        }
+      }
+    }, isDeleting ? 120 : 180);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeRoleIndex, displayedText, isDeleting, safeRoles]);
 
   if (!safeRoles.length) {
     return (
@@ -380,16 +424,8 @@ function TypingRoles({ roles }: { roles: string[] }) {
   return (
     <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[.18em] text-foreground font-semibold">
       <span>a</span>
-      <span
-        data-mf-text-type="loop"
-        data-mf-text-loop-animation="fade-up"
-        data-mf-text-loop-interval="2600"
-        className="terminal-caret inline-flex min-w-[10ch] items-center text-primary"
-        aria-live="polite"
-      >
-        {safeRoles.map((role) => (
-          <span key={role}>{role}</span>
-        ))}
+      <span className="terminal-caret inline-flex min-w-[10ch] items-center text-primary" aria-live="polite">
+        {displayedText}
       </span>
       <span>.</span>
     </span>
@@ -470,7 +506,7 @@ function Hero({ profile }: { profile: Profile }) {
     <section
       data-mf-animation="fade-up"
       data-mf-animation-once="true"
-      className="relative flex min-h-dvh items-center overflow-hidden bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
+      className="relative flex min-h-dvh items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.15),transparent_28%)] bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
     >
       {(profile.heroImage || profile.image) && (
         <div
@@ -637,43 +673,43 @@ function About({ profile }: { profile: Profile }) {
       <SectionLabel number="01" icon={<Sparkles size={14} />}>
         ABOUT
       </SectionLabel>
-      <div className="grid min-w-0 items-start gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-        <div>
+      <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-[1.05fr_1.35fr] lg:items-center lg:gap-10">
+        <div className="w-full lg:w-auto">
           {profile.aboutImage ? (
-            <div className="about-image-stage mx-auto aspect-square w-full max-w-none lg:mx-0 lg:max-w-[560px]">
-              <div className="about-image-frame h-full w-full">
-                <div className="relative h-full w-full overflow-hidden rounded-[2.7rem_.1rem_.1rem_.1rem]">
-                  <Image
-                    src={profile.aboutImage}
-                    alt={profile.name}
-                    className="h-full w-full object-cover"
-                    data-mf-parallax
-                    data-mf-parallax-speed="0.35"
-                    data-mf-parallax-speed-tablet="0"
-                    data-mf-parallax-speed-mobile="0"
-                    width={560}
-                    height={560}
-                  />
-                  <div className="absolute bottom-5 left-5 z-10 sm:bottom-7 sm:left-7">
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
-                      Behind the work
-                    </p>
-                    <p className="mt-1 text-[clamp(.72rem,1.1vw,.875rem)] font-semibold text-white">
-                      Developer · Creator · Problem solver
-                    </p>
-                  </div>
+            <div className="w-full overflow-hidden rounded-[1.5rem] border border-border/70 bg-card p-1.5 shadow-[0_22px_60px_rgba(15,23,42,0.12)] lg:max-w-[520px] lg:mx-0">
+              <div className="relative overflow-hidden rounded-[1.1rem] bg-secondary">
+                <Image
+                  src={profile.aboutImage}
+                  alt={profile.name}
+                  className="h-[300px] w-full object-cover object-center transition-transform duration-700 ease-out hover:scale-[1.02] sm:h-[420px] lg:h-[560px]"
+                  data-mf-parallax
+                  data-mf-parallax-speed="0.35"
+                  data-mf-parallax-speed-tablet="0"
+                  data-mf-parallax-speed-mobile="0"
+                  width={1400}
+                  height={900}
+                  sizes="(max-width: 767px) 100vw, 520px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-[#020817]/15 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-7">
+                  <p className="font-mono text-[9px] font-bold uppercase tracking-[.18em] text-primary sm:text-[10px]">
+                    Behind the work
+                  </p>
+                  <p className="mt-2 max-w-[24rem] text-xs font-medium text-white sm:text-sm lg:text-base">
+                    Developer · Creator · Problem solver
+                  </p>
                 </div>
               </div>
             </div>
           ) : null}
         </div>
-        <div className="space-y-8">
+        <div className="w-full max-w-[820px] mx-auto lg:mx-0 lg:max-w-none">
           <div
             data-mf-stagger-animation="fade-up"
             data-mf-stagger-once="true"
-            className="grid gap-6 text-[clamp(.9rem,1.1vw,1rem)] leading-[1.75] text-muted-foreground sm:gap-8"
+            className="grid gap-3 text-[clamp(.9rem,1.08vw,1rem)] leading-[1.7] text-muted-foreground sm:gap-5"
           >
-            <p className="text-[clamp(1.5rem,2.7vw,2.5rem)] font-bold leading-[1.2] text-foreground">
+            <p className="text-[clamp(1.8rem,3vw,2.6rem)] font-bold leading-[1.1] text-foreground">
               {profile.bio1}
             </p>
             <p>{profile.bio2}</p>
@@ -684,13 +720,13 @@ function About({ profile }: { profile: Profile }) {
               id="skills"
               data-mf-animation="fade-up"
               data-mf-animation-once="true"
-              className="flex flex-wrap gap-2"
+              className="mt-2 flex flex-wrap gap-2.5 pt-2"
             >
               {profile.skills?.map((skill) => (
                 <span
                   key={skill}
                   data-scramble
-                  className="inline-flex rounded-full border border-border bg-secondary px-3 py-1 font-mono text-[10px] font-bold uppercase text-foreground"
+                  className="inline-flex rounded-full border border-border bg-secondary px-3 py-1.5 font-mono text-[10px] font-bold uppercase text-foreground"
                 >
                   {skill}
                 </span>
@@ -698,7 +734,7 @@ function About({ profile }: { profile: Profile }) {
               {profile.languages?.map((lang) => (
                 <span
                   key={lang}
-                  className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary"
+                  className="inline-flex rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 font-mono text-[10px] font-bold uppercase text-primary"
                 >
                   {lang}
                 </span>
@@ -1974,21 +2010,8 @@ export function PublicPortfolio() {
           (settings: {
             siteName?: string;
             faviconUrl?: string;
-            googleAdsenseAccount?: string;
           }) => {
             if (settings.siteName) document.title = settings.siteName;
-            document
-              .querySelectorAll<HTMLMetaElement>(
-                'meta[name="google-adsense-account"]',
-              )
-              .forEach((meta) => meta.remove());
-            const adsenseAccount = settings.googleAdsenseAccount?.trim();
-            if (adsenseAccount && /^ca-pub-\d{10,32}$/.test(adsenseAccount)) {
-              const meta = document.createElement("meta");
-              meta.name = "google-adsense-account";
-              meta.content = adsenseAccount;
-              document.head.appendChild(meta);
-            }
             if (settings.faviconUrl) {
               document
                 .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
@@ -2158,6 +2181,7 @@ export function PublicPortfolio() {
           onUnavailable={() => setAiAvailable(false)}
         />
       )}
+      <CookieConsent />
     </div>
   );
 }

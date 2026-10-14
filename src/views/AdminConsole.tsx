@@ -66,6 +66,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMotionFlow } from "@/lib/motionflow";
 import {
+  DEFAULT_TRANSLATION_LANGUAGES,
+  TRANSLATION_LANGUAGE_OPTIONS,
+} from "@/lib/portfolio-types";
+import {
   resizeAndUploadImage,
   uploadFileToCDN,
   uploadImageToCDN,
@@ -1494,19 +1498,6 @@ function HeroImageControls({
       </div>
 
       <div className="space-y-4 p-4">
-        <label className="grid grid-cols-[1fr_auto] items-center gap-3">
-          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
-            Overlay color
-          </span>
-          <input
-            type="color"
-            value={current.overlayColor}
-            onChange={(event) => update("overlayColor", event.target.value)}
-            className="h-9 w-14 cursor-pointer rounded border border-border bg-secondary"
-            aria-label={`${label} overlay color`}
-          />
-        </label>
-
         <div className="rounded-xl border border-border bg-secondary/20 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
@@ -1540,6 +1531,36 @@ function HeroImageControls({
           </div>
         </div>
 
+        <div className="rounded-xl border border-border bg-secondary/20 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+              Overlay
+            </span>
+            <input
+              type="color"
+              value={current.overlayColor}
+              onChange={(event) => update("overlayColor", event.target.value)}
+              className="h-7 w-12 cursor-pointer rounded border border-border bg-secondary"
+              aria-label={`${label} overlay color`}
+            />
+          </div>
+          <label className="grid grid-cols-[minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Number(current.overlayOpacity)}
+              onChange={(event) =>
+                update("overlayOpacity", Number(event.target.value))
+              }
+              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
+            />
+            <span className="text-right font-mono text-[10px] text-foreground">
+              {current.overlayOpacity}%
+            </span>
+          </label>
+        </div>
+
         <div className="grid gap-3 pt-1">
           {sliders.map(([key, sliderLabel, min, max, suffix]) => (
             <label
@@ -1563,24 +1584,6 @@ function HeroImageControls({
           ))}
         </div>
 
-        <div className="rounded-xl border border-border bg-secondary/20 p-3">
-          <label className="grid grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 text-xs text-muted-foreground">
-            <span>Overlay</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Number(current.overlayOpacity)}
-              onChange={(event) =>
-                update("overlayOpacity", Number(event.target.value))
-              }
-              className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-secondary accent-[#f97316]"
-            />
-            <span className="text-right font-mono text-[10px] text-foreground">
-              {current.overlayOpacity}%
-            </span>
-          </label>
-        </div>
       </div>
     </div>
   );
@@ -2031,13 +2034,32 @@ function ProfileEditor({
             <div className="flex items-center gap-4">
               <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
                 {form.heroImage ? (
-                  <NextImage
-                    src={form.heroImage}
-                    alt="Desktop hero"
-                    width={128}
-                    height={96}
-                    className="h-full w-full object-cover"
-                  />
+                  <>
+                    <NextImage
+                      src={form.heroImage}
+                      alt="Desktop hero"
+                      width={128}
+                      height={96}
+                      className="h-full w-full object-cover"
+                      style={{
+                        filter: getHeroFilterValue(form.heroDesktopSettings),
+                        objectPosition: getHeroImageObjectPosition(
+                          form.heroDesktopSettings,
+                        ),
+                        opacity:
+                          (form.heroDesktopSettings?.opacity ?? 100) / 100,
+                      }}
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        backgroundColor:
+                          form.heroDesktopSettings?.overlayColor || "#ffffff",
+                        opacity:
+                          (form.heroDesktopSettings?.overlayOpacity ?? 0) / 100,
+                      }}
+                    />
+                  </>
                 ) : (
                   <span className="font-mono text-[9px] uppercase text-muted-foreground">
                     No image
@@ -2071,13 +2093,32 @@ function ProfileEditor({
             <div className="flex items-center gap-4">
               <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
                 {form.heroMobileImage ? (
-                  <NextImage
-                    src={form.heroMobileImage}
-                    alt="Mobile hero"
-                    width={128}
-                    height={160}
-                    className="h-full w-full object-cover"
-                  />
+                  <>
+                    <NextImage
+                      src={form.heroMobileImage}
+                      alt="Mobile hero"
+                      width={128}
+                      height={160}
+                      className="h-full w-full object-cover"
+                      style={{
+                        filter: getHeroFilterValue(form.heroMobileSettings),
+                        objectPosition: getHeroImageObjectPosition(
+                          form.heroMobileSettings,
+                        ),
+                        opacity:
+                          (form.heroMobileSettings?.opacity ?? 100) / 100,
+                      }}
+                    />
+                    <div
+                      className="pointer-events-none absolute inset-0"
+                      style={{
+                        backgroundColor:
+                          form.heroMobileSettings?.overlayColor || "#ffffff",
+                        opacity:
+                          (form.heroMobileSettings?.overlayOpacity ?? 0) / 100,
+                      }}
+                    />
+                  </>
                 ) : (
                   <span className="font-mono text-[9px] uppercase text-muted-foreground">
                     Desktop fallback
@@ -2486,13 +2527,13 @@ function ProfileEditor({
         )}
       {activeHeroModal &&
         createPortal(
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
             <button
               aria-label="Close hero adjustments"
               onClick={() => setHeroAdjustmentsOpen(null)}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             />
-            <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
+            <div className="relative z-10 my-auto max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-orange-500/60 bg-[#0d1117] shadow-2xl">
               <div className="flex items-center justify-between border-b border-border px-5 py-4">
                 <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/80">
                   {heroAdjustmentsOpen === "desktop"
@@ -2790,7 +2831,7 @@ function ChangePasswordModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
       <button
         aria-label="Close"
         onClick={onClose}
@@ -2906,7 +2947,7 @@ function ChangeUsernameModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-60 flex items-center justify-center overflow-y-auto p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
       <button
         aria-label="Close"
         onClick={onClose}
@@ -3142,6 +3183,11 @@ type ContactSettings = {
   contactFromEmail: string;
   twoFactorEnabled: boolean;
   siteName: string;
+  siteDescription: string;
+  siteKeywords: string;
+  translationLanguages: string[];
+  siteUrl: string;
+  openGraphImage: string;
   faviconUrl: string;
   removeBgApiUrl: string;
   removeBgApiKey: string;
@@ -3363,6 +3409,13 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     contactFromEmail: "",
     twoFactorEnabled: false,
     siteName: "Akhilesh Vishwakarma",
+    siteDescription:
+      "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+    siteKeywords:
+      "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+    translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
+    siteUrl: "https://www.akhilesh-vishwakarma.com",
+    openGraphImage: "/og-image.svg",
     faviconUrl: "",
     removeBgApiUrl: "",
     removeBgApiKey: "",
@@ -3414,11 +3467,20 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
           setForm(
             body.settings ?? {
               googleAdsenseAccount: "",
+              geminiApiKey: "",
+              geminiModel: "gemini-3.6-flash",
               gmailAppPassword: "",
               contactToEmail: "",
               contactFromEmail: "",
               twoFactorEnabled: false,
               siteName: "Akhilesh Vishwakarma",
+              siteDescription:
+                "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+              siteKeywords:
+                "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+              translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
+              siteUrl: "https://www.akhilesh-vishwakarma.com",
+              openGraphImage: "/og-image.svg",
               faviconUrl: "",
               removeBgApiUrl: "",
               removeBgApiKey: "",
@@ -3499,20 +3561,6 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
             <div className="grid gap-5">
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Google AdSense account ID
-                </span>
-                <input
-                  value={form.googleAdsenseAccount}
-                  onChange={(event) => setForm({ ...form, googleAdsenseAccount: event.target.value })}
-                  placeholder="ca-pub-xxxxxxxxxxxxxxxx"
-                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-                />
-                <span className="mt-2 block text-xs text-muted-foreground">
-                  Enter the complete ID from Google AdSense. The verification tag is added to the public site automatically.
-                </span>
-              </label>
-              <label className="block">
-                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Site name
                 </span>
                 <input
@@ -3521,6 +3569,107 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                     setForm({ ...form, siteName: event.target.value })
                   }
                   placeholder="Akhilesh Vishwakarma"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  SEO description
+                </span>
+                <textarea
+                  value={form.siteDescription}
+                  onChange={(event) =>
+                    setForm({ ...form, siteDescription: event.target.value })
+                  }
+                  rows={3}
+                  placeholder="Full-stack developer and UI engineer building modern web products..."
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  SEO keywords
+                </span>
+                <input
+                  value={form.siteKeywords}
+                  onChange={(event) =>
+                    setForm({ ...form, siteKeywords: event.target.value })
+                  }
+                  placeholder="Akhilesh Vishwakarma, full stack developer, React developer"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <fieldset className="grid gap-3">
+                <legend className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Public translation languages
+                </legend>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Choose which languages visitors can select. English is the original language and always stays available.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {TRANSLATION_LANGUAGE_OPTIONS.map(({ code, label }) => {
+                    const isOriginalLanguage = code === "en";
+                    return (
+                      <label
+                        key={code}
+                        className="flex min-h-10 items-center gap-3 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={
+                            isOriginalLanguage ||
+                            form.translationLanguages.includes(code)
+                          }
+                          disabled={isOriginalLanguage}
+                          onChange={(event) =>
+                            setForm((current) => ({
+                              ...current,
+                              translationLanguages: event.target.checked
+                                ? Array.from(
+                                    new Set([
+                                      ...current.translationLanguages,
+                                      code,
+                                    ]),
+                                  )
+                                : current.translationLanguages.filter(
+                                    (language) => language !== code,
+                                  ),
+                            }))
+                          }
+                          className="h-4 w-4 accent-primary disabled:opacity-60"
+                        />
+                        <span>
+                          {label}
+                          {isOriginalLanguage ? " (original)" : ""}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Canonical URL
+                </span>
+                <input
+                  value={form.siteUrl}
+                  onChange={(event) =>
+                    setForm({ ...form, siteUrl: event.target.value })
+                  }
+                  placeholder="https://example.com"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Open Graph image URL
+                </span>
+                <input
+                  value={form.openGraphImage}
+                  onChange={(event) =>
+                    setForm({ ...form, openGraphImage: event.target.value })
+                  }
+                  placeholder="https://example.com/og-image.jpg"
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                 />
               </label>
@@ -4681,11 +4830,9 @@ function AdminArea({
     setSection(next);
     setEditing(null);
     setMobileNavOpen(false);
-    window.history.replaceState(
-      null,
-      "",
-      next === "dashboard" ? window.location.pathname : `#${next}`,
-    );
+    if (typeof window.history?.replaceState === "function") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   };
 
   const persist = (
