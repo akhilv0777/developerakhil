@@ -1572,16 +1572,4 @@ body {
   .public-shell #hero #stats > div:nth-child(odd) {
     border-right: 1px solid hsl(var(--border) / 0.82);
   }
-
-}
-
-@media (min-width: 64rem) and (max-height: 62rem) {
-  .public-shell .portfolio-profile-panel {
-    position: relative;
-    align-self: start;
-    height: auto;
-    min-height: 100dvh;
-    align-items: flex-start;
-    overflow: visible;
-  }
 }
