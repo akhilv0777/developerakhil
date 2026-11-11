@@ -1188,12 +1188,25 @@ function ContactForm() {
         <button
           type="submit"
           disabled={status === "sending"}
+          aria-busy={status === "sending"}
           className="inline-flex w-full sm:w-auto justify-center items-center gap-3 rounded-full bg-primary px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background transition-all glow-border disabled:cursor-not-allowed disabled:opacity-60"
           data-magnetic
           data-testid="button-send-message"
         >
-          {status === "sending" ? "Sending…" : "Send message"}
-          <ArrowUpRight className="h-4 w-4" />
+          {status === "sending" ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+              />
+              Sending…
+            </>
+          ) : (
+            <>
+              Send message
+              <ArrowUpRight className="h-4 w-4" />
+            </>
+          )}
         </button>
       </div>
     </form>
