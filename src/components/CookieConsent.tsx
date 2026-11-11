@@ -120,18 +120,18 @@ export function CookieConsent() {
                 </p>
               </div>
 
-              <div className="flex gap-2 sm:flex-col">
+              <div className="cookie-consent-actions flex flex-col gap-2">
                 <button
                   type="button"
                   onClick={handleReject}
-                  className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-100 transition-colors hover:border-orange-300/60 hover:text-orange-200"
+                  className="cookie-consent-button inline-flex w-full shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-100 transition-colors hover:border-orange-300/60 hover:text-orange-200"
                 >
                   Only essential
                 </button>
                 <button
                   type="button"
                   onClick={handleAcceptAll}
-                  className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-slate-950 shadow-lg transition-transform hover:-translate-y-0.5"
+                  className="cookie-consent-button inline-flex w-full shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-orange-400 via-orange-500 to-amber-400 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-slate-950 shadow-lg transition-transform hover:-translate-y-0.5"
                 >
                   Accept all
                 </button>

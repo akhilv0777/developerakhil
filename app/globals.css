@@ -271,6 +271,18 @@ body {
   white-space: normal;
 }
 
+.public-shell .cookie-consent-actions {
+  min-width: 9rem;
+}
+
+.public-shell .cookie-consent-button,
+.public-shell .cookie-consent-button * {
+  max-width: none;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
 .public-shell .portfolio-layout {
   grid-template-columns: minmax(19rem, 0.78fr) minmax(0, 1.22fr);
 }
