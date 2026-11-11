@@ -4,7 +4,7 @@ import { getContactSettings } from "@/lib/api-server/db";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const settings = await getContactSettings().catch(() => null);
   const baseUrl =
-    settings?.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.akhilesh-vishwakarma.com";
+    settings?.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
   const root = baseUrl.replace(/\/$/, "");
 
   return [

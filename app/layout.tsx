@@ -42,7 +42,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "portfolio website",
       ];
     const siteUrl =
-      settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.akhilesh-vishwakarma.com";
+      settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
     const ogImage = settings.openGraphImage || "/og-image.svg";
     const faviconUrl = settings.faviconUrl || "/favicon.svg";
     const canonicalUrl = siteUrl.replace(/\/$/, "");
@@ -105,7 +105,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const defaultTitle = "Akhilesh Vishwakarma | Full-Stack Developer & UI Engineer";
     const defaultDescription =
       "Akhilesh Vishwakarma is a full-stack developer, UI engineer, and digital craftsman building fast, scalable web products with React, Next.js, and modern design systems.";
-    const fallbackUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.akhilesh-vishwakarma.com";
+    const fallbackUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
     const fallbackOgImage = new URL("/og-image.svg", fallbackUrl).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
@@ -181,7 +181,7 @@ export default async function RootLayout({
     settings?.siteDescription ||
     "Akhilesh Vishwakarma is a full-stack developer, UI engineer, and digital craftsman building fast, scalable web products with React, Next.js, and modern design systems.";
   const siteUrl =
-    settings?.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.akhilesh-vishwakarma.com";
+    settings?.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
   const ogImage = settings?.openGraphImage || "/og-image.svg";
   const ogImageUrl = new URL(ogImage, siteUrl).toString();
   const structuredData = [

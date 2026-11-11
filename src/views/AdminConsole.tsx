@@ -3469,7 +3469,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     siteKeywords:
       "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
     translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
-    siteUrl: "https://www.akhilesh-vishwakarma.com",
+    siteUrl: "https://www.developerakhil.site/",
     openGraphImage: "/og-image.svg",
     faviconUrl: "",
     removeBgApiUrl: "",
@@ -3534,7 +3534,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
               siteKeywords:
                 "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
               translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
-              siteUrl: "https://www.akhilesh-vishwakarma.com",
+              siteUrl: "https://www.developerakhil.site/",
               openGraphImage: "/og-image.svg",
               faviconUrl: "",
               removeBgApiUrl: "",

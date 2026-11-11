@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       siteKeywords: "",
       translationLanguages,
       preferredLanguage: getPreferredLanguage(req, translationLanguages),
-      siteUrl: "https://www.akhilesh-vishwakarma.com",
+      siteUrl: "https://www.developerakhil.site/",
       openGraphImage: "/og-image.svg",
       faviconUrl: "",
       googleAdsenseAccount: "",

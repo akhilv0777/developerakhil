@@ -415,7 +415,7 @@ const defaultContactSettings: ContactSettings = {
   siteKeywords:
     "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
   translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
-  siteUrl: "https://www.akhilesh-vishwakarma.com",
+  siteUrl: "https://www.developerakhil.site/",
   openGraphImage: "/og-image.svg",
   faviconUrl: "",
   removeBgApiUrl: "",
