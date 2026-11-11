@@ -210,7 +210,7 @@ function Hero({
       <div className="portfolio-profile-content mx-auto w-full max-w-[28rem] text-center lg:text-left">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-left lg:justify-start">
           <div
-            className="relative h-24 w-24 shrink-0 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-sky-400 p-[3px] shadow-lg shadow-primary/10"
+            className="relative h-28 w-28 shrink-0 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-sky-400 p-[3px] shadow-lg shadow-primary/10"
           >
             <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-background bg-secondary">
               <Image
@@ -218,7 +218,7 @@ function Hero({
                 alt={profile.name}
                 fill
                 priority
-                sizes="96px"
+                sizes="112px"
                 className="object-cover"
               />
             </div>
@@ -726,10 +726,57 @@ function Services({ data }: { data: PortfolioData }) {
 
 function Work({ data }: { data: PortfolioData }) {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const isProjectModalOpen = selectedProject !== null;
   const selectedProjectIndex = selectedProject
     ? data.projects.findIndex((project) => project.id === selectedProject.id)
     : -1;
   const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isProjectModalOpen) return;
+
+    const body = document.body;
+    const root = document.documentElement;
+    const scrollY = window.scrollY;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.getPropertyValue("top");
+    const previousBodyTopPriority = body.style.getPropertyPriority("top");
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
+    const previousBodyOverflow = body.style.overflow;
+    const previousRootOverflow = root.style.overflow;
+    const previousRootScrollBehavior = root.style.scrollBehavior;
+
+    body.style.position = "fixed";
+    body.style.setProperty("top", `-${scrollY}px`, "important");
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    root.style.overflow = "hidden";
+
+    return () => {
+      body.style.position = previousBodyPosition;
+      if (previousBodyTop) {
+        body.style.setProperty(
+          "top",
+          previousBodyTop,
+          previousBodyTopPriority,
+        );
+      } else {
+        body.style.removeProperty("top");
+      }
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      body.style.overflow = previousBodyOverflow;
+      root.style.overflow = previousRootOverflow;
+      root.style.scrollBehavior = "auto";
+      window.scrollTo(0, scrollY);
+      root.style.scrollBehavior = previousRootScrollBehavior;
+    };
+  }, [isProjectModalOpen]);
 
   const showAdjacentProject = (direction: -1 | 1) => {
     const nextIndex = selectedProjectIndex + direction;
@@ -839,7 +886,7 @@ function Work({ data }: { data: PortfolioData }) {
                   alt={project.title}
                   loading="lazy"
                   fill
-                  sizes="64px"
+                  sizes="(max-width: 40rem) calc(100vw - 4rem), (max-width: 63.99rem) calc((100vw - 5rem) / 2), 27.5rem"
                   quality={75}
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -1809,19 +1856,19 @@ export function PublicPortfolio() {
     "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
     ...(activeMode === "light"
       ? {
-          "--background": "0 0% 100%",
-          "--foreground": "222 18% 12%",
-          "--border": "220 13% 90%",
-          "--input": "220 13% 90%",
-          "--card": "0 0% 100%",
-          "--card-foreground": "222 18% 12%",
-          "--card-border": "220 13% 90%",
+          "--background": "38 38% 96%",
+          "--foreground": "222 24% 12%",
+          "--border": "32 16% 85%",
+          "--input": "32 16% 85%",
+          "--card": "40 33% 99%",
+          "--card-foreground": "222 24% 12%",
+          "--card-border": "32 16% 87%",
           "--primary-foreground": "0 0% 100%",
-          "--secondary": "220 14% 96%",
-          "--secondary-foreground": "222 18% 12%",
-          "--muted": "220 14% 96%",
-          "--muted-foreground": "220 9% 44%",
-          "--accent": "160 65% 35%",
+          "--secondary": "34 24% 92%",
+          "--secondary-foreground": "222 24% 12%",
+          "--muted": "34 24% 92%",
+          "--muted-foreground": "222 9% 42%",
+          "--accent": "154 52% 31%",
           "--accent-foreground": "0 0% 100%",
           "--destructive": "0 84% 60%",
           "--destructive-foreground": "0 0% 100%",

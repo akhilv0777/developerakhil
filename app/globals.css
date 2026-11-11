@@ -307,6 +307,7 @@ body {
 
 .public-shell .portfolio-profile-content {
   width: min(100% - 3rem, 30rem);
+  margin-block: auto;
 }
 
 .public-shell #hero .portfolio-profile-content > div:first-child > div:first-child {
@@ -1468,5 +1469,111 @@ body {
   }
   .portfolio-profile-content > div:first-child {
     align-items: center;
+  }
+}
+
+.public-shell main > #hero {
+  background:
+    radial-gradient(ellipse at 80% 10%, hsl(var(--primary) / 0.12), transparent 28rem),
+    linear-gradient(155deg, hsl(var(--card)), hsl(var(--background)) 74%);
+}
+
+.public-shell.light main > #hero {
+  --background: 240 15% 7%;
+  --foreground: 36 30% 96%;
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --card: 240 12% 12%;
+  --card-foreground: 36 30% 96%;
+  --card-border: 240 8% 23%;
+  --secondary: 240 9% 17%;
+  --secondary-foreground: 36 30% 96%;
+  --muted: 240 9% 15%;
+  --muted-foreground: 225 10% 72%;
+  background:
+    radial-gradient(ellipse at 80% 10%, hsl(var(--primary) / 0.18), transparent 28rem),
+    linear-gradient(155deg, hsl(240 13% 11%), hsl(240 15% 6%) 74%);
+  border-right-color: hsl(0 0% 100% / 0.12);
+}
+
+.public-shell.light .portfolio-profile-panel::before {
+  border-color: hsl(0 0% 100% / 0.08);
+}
+
+.public-shell.light .portfolio-section-links {
+  border-color: hsl(0 0% 100% / 0.12);
+  background: hsl(0 0% 100% / 0.035);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+}
+
+.public-shell.light .portfolio-section-link {
+  border-color: transparent;
+  color: hsl(var(--muted-foreground));
+}
+
+.public-shell.light .portfolio-section-link:hover,
+.public-shell.light .portfolio-section-link.is-active {
+  border-color: hsl(var(--primary) / 0.38);
+  background: hsl(var(--primary) / 0.16);
+  color: hsl(var(--foreground));
+}
+
+.public-shell.light #hero #stats {
+  border-color: hsl(0 0% 100% / 0.12);
+  background: hsl(0 0% 100% / 0.045);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+}
+
+.public-shell.light #hero #stats > div + div {
+  border-color: hsl(0 0% 100% / 0.12);
+}
+
+.public-shell.light #hero .portfolio-profile-content > div:first-child p:first-child {
+  color: hsl(36 30% 96%);
+  background: hsl(var(--primary) / 0.14);
+}
+
+.public-shell #work [data-project-card] {
+  border-radius: 1.4rem;
+  background: hsl(var(--card));
+  box-shadow: 0 14px 34px hsl(var(--foreground) / 0.07);
+}
+
+.public-shell #work [data-project-card] > div:first-child {
+  height: auto;
+  flex-basis: auto;
+  aspect-ratio: 16 / 9;
+  background: hsl(var(--muted));
+}
+
+.public-shell #work [data-project-card] > div:first-child img {
+  transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.public-shell #work [data-project-card]:hover > div:first-child img {
+  transform: scale(1.035);
+}
+
+.public-shell #work [data-project-card] > div:last-child {
+  padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.public-shell #work [data-project-card] h3 {
+  letter-spacing: -0.025em;
+}
+
+@media (max-width: 35.99rem), (min-width: 62rem) {
+  .public-shell #hero #stats > div {
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .public-shell #hero #stats > div:nth-child(odd) {
+    border-right: 1px solid hsl(var(--border) / 0.82);
+  }
+
+  .public-shell #hero #stats > div:nth-child(-n + 2) {
+    border-bottom: 1px solid hsl(var(--border) / 0.82);
   }
 }
