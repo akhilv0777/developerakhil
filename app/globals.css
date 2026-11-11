@@ -1573,7 +1573,4 @@ body {
     border-right: 1px solid hsl(var(--border) / 0.82);
   }
 
-  .public-shell #hero #stats > div:nth-child(-n + 2) {
-    border-bottom: 1px solid hsl(var(--border) / 0.82);
-  }
 }
