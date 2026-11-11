@@ -10,9 +10,11 @@ import {
   normalizeTranslationLanguages,
   TRANSLATION_LANGUAGE_OPTIONS,
 } from "@/lib/portfolio-types";
+import { normalizeGoogleAnalyticsMeasurementId } from "@/lib/google-analytics";
 
 let inMemorySettings: ContactSettings = {
   googleAdsenseAccount: "",
+  googleAnalyticsMeasurementId: "",
   geminiApiKey: "",
   geminiModel: "gemini-3.6-flash",
   gmailAppPassword: "",
@@ -58,6 +60,7 @@ function isValidSettings(value: unknown): value is ContactSettings {
   const record = value as Record<string, unknown>;
   return (
     typeof record.googleAdsenseAccount === "string" &&
+    typeof record.googleAnalyticsMeasurementId === "string" &&
     typeof record.geminiApiKey === "string" &&
     typeof record.geminiModel === "string" &&
     typeof record.gmailAppPassword === "string" &&
@@ -105,6 +108,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!isValidSettings(req.body)) {
         return res.status(400).json({ error: "Invalid settings payload." });
       }
+      const googleAnalyticsMeasurementId = normalizeGoogleAnalyticsMeasurementId(
+        req.body.googleAnalyticsMeasurementId,
+      );
+      if (req.body.googleAnalyticsMeasurementId.trim() && !googleAnalyticsMeasurementId) {
+        return res.status(400).json({
+          error: "Enter a valid Google Analytics 4 measurement ID, such as G-XXXXXXXXXX.",
+        });
+      }
       let current: ContactSettings;
       try {
         current = await getContactSettings();
@@ -114,6 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       const next: ContactSettings = {
         googleAdsenseAccount: typeof req.body.googleAdsenseAccount === "string" ? req.body.googleAdsenseAccount.trim() : current.googleAdsenseAccount,
+        googleAnalyticsMeasurementId,
         geminiApiKey: typeof req.body.geminiApiKey === "string" && req.body.geminiApiKey.trim() && req.body.geminiApiKey.trim() !== "********" ? req.body.geminiApiKey.trim() : current.geminiApiKey,
         geminiModel: typeof req.body.geminiModel === "string" && req.body.geminiModel.trim() ? req.body.geminiModel.trim() : current.geminiModel,
         gmailAppPassword: req.body.gmailAppPassword.trim(),

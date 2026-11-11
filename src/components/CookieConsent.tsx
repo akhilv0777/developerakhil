@@ -2,7 +2,9 @@
 
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { useState } from "react";
+import Script from "next/script";
+import { useEffect, useState } from "react";
+import { normalizeGoogleAnalyticsMeasurementId } from "@/lib/google-analytics";
 
 type ConsentState = {
   essential: true;
@@ -72,6 +74,41 @@ export function CookieConsent() {
     const existingFromCookie = parseConsent(readCookie(COOKIE_NAME));
     return existingFromStorage ?? existingFromCookie ?? getDefaultConsent();
   });
+  const [googleAnalyticsMeasurementId, setGoogleAnalyticsMeasurementId] =
+    useState("");
+
+  useEffect(() => {
+    if (!consent?.analytics) return;
+
+    let cancelled = false;
+    const loadAnalyticsSettings = async () => {
+      const response = await fetch("/api/site-settings", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Could not load analytics settings.");
+      }
+
+      const settings: { googleAnalyticsMeasurementId?: unknown } =
+        await response.json();
+      if (!cancelled) {
+        setGoogleAnalyticsMeasurementId(
+          normalizeGoogleAnalyticsMeasurementId(
+            settings.googleAnalyticsMeasurementId,
+          ),
+        );
+      }
+    };
+
+    loadAnalyticsSettings().catch((error: unknown) => {
+      if (!cancelled) {
+        console.error("Could not load Google Analytics settings:", error);
+        setGoogleAnalyticsMeasurementId("");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [consent?.analytics]);
 
   const updateConsent = (nextConsent: ConsentState) => {
     try {
@@ -145,6 +182,24 @@ export function CookieConsent() {
         <>
           <Analytics />
           <SpeedInsights />
+          {googleAnalyticsMeasurementId && (
+            <>
+              <Script id="google-analytics-init" strategy="afterInteractive">
+                {`window.dataLayer = window.dataLayer || [];
+function gtag(){window.dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', ${JSON.stringify(googleAnalyticsMeasurementId)});`}
+              </Script>
+              <Script
+                id="google-analytics"
+                src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsMeasurementId}`}
+                strategy="afterInteractive"
+                onError={(error) =>
+                  console.error("Google Analytics script failed to load:", error)
+                }
+              />
+            </>
+          )}
         </>
       ) : null}
     </>

@@ -3019,6 +3019,7 @@ type ContactMessage = {
 
 type ContactSettings = {
   googleAdsenseAccount: string;
+  googleAnalyticsMeasurementId: string;
   geminiApiKey: string;
   geminiModel: string;
   gmailAppPassword: string;
@@ -3457,6 +3458,7 @@ function TranslationLanguageMultiSelect({
 function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [form, setForm] = useState<ContactSettings>({
     googleAdsenseAccount: "",
+    googleAnalyticsMeasurementId: "",
     geminiApiKey: "",
     geminiModel: "gemini-3.6-flash",
     gmailAppPassword: "",
@@ -3522,6 +3524,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
           setForm(
             body.settings ?? {
               googleAdsenseAccount: "",
+              googleAnalyticsMeasurementId: "",
               geminiApiKey: "",
               geminiModel: "gemini-3.6-flash",
               gmailAppPassword: "",
@@ -3653,6 +3656,31 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   placeholder="Akhilesh Vishwakarma, full stack developer, React developer"
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                 />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Google Analytics 4 measurement ID
+                </span>
+                <input
+                  value={form.googleAnalyticsMeasurementId}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      googleAnalyticsMeasurementId:
+                        event.target.value.toUpperCase(),
+                    })
+                  }
+                  placeholder="G-XXXXXXXXXX"
+                  maxLength={22}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                <span className="mt-2 block text-xs leading-5 text-muted-foreground">
+                  Enter only the GA4 measurement ID. Analytics loads after
+                  visitors accept analytics cookies; custom scripts are not
+                  accepted here.
+                </span>
               </label>
               <fieldset className="grid gap-3">
                 <legend className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

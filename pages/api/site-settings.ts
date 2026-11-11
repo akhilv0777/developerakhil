@@ -5,6 +5,7 @@ import {
   normalizeTranslationLanguages,
   type TranslationLanguageCode,
 } from "@/lib/portfolio-types";
+import { normalizeGoogleAnalyticsMeasurementId } from "@/lib/google-analytics";
 import translationConfig from "@/lib/translation-config.json";
 
 function getFirstHeaderValue(value: string | string[] | undefined): string {
@@ -74,6 +75,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       openGraphImage: settings.openGraphImage,
       faviconUrl: settings.faviconUrl,
       googleAdsenseAccount: settings.googleAdsenseAccount,
+      googleAnalyticsMeasurementId: normalizeGoogleAnalyticsMeasurementId(
+        settings.googleAnalyticsMeasurementId,
+      ),
       twoFactorEnabled: Boolean(settings.twoFactorEnabled),
       turnstileSiteKey: turnstileSiteKey && turnstileSecret && turnstileHostnames ? turnstileSiteKey : "",
     });
@@ -92,6 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       openGraphImage: "/og-image.svg",
       faviconUrl: "",
       googleAdsenseAccount: "",
+      googleAnalyticsMeasurementId: "",
       twoFactorEnabled: false,
       turnstileSiteKey: hasEnvTurnstile ? process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY : "",
     });
