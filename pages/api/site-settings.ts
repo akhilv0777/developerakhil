@@ -25,16 +25,29 @@ function getPreferredLanguage(
   >;
   const countryLanguage = countryMap[country];
   if (countryLanguage && enabled.has(countryLanguage)) {
-    return countryLanguage as TranslationLanguageCode;
+    return countryLanguage;
   }
 
   const acceptLanguage = getFirstHeaderValue(req.headers["accept-language"]);
-  const browserLanguage = acceptLanguage
+  const browserLanguages = acceptLanguage
     .split(",")
-    .map((value) => value.split(";")[0].trim().split("-")[0].toLowerCase())
-    .find((code) => enabled.has(code));
+    .map((value) => value.split(";")[0].trim())
+    .filter(Boolean);
+  const browserLanguage = browserLanguages
+    .map((locale) => {
+      const exactMatch = enabledLanguages.find(
+        (code) => code.toLowerCase() === locale.toLowerCase(),
+      );
+      if (exactMatch) return exactMatch;
 
-  return (browserLanguage || "en") as TranslationLanguageCode;
+      const baseLanguage = locale.split("-")[0].toLowerCase();
+      return enabledLanguages.find(
+        (code) => code.split("-")[0].toLowerCase() === baseLanguage,
+      );
+    })
+    .find((code): code is TranslationLanguageCode => Boolean(code));
+
+  return browserLanguage || "en";
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

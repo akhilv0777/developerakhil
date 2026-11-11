@@ -10,35 +10,23 @@ import {
 } from "react";
 
 import {
-  ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
   BriefcaseBusiness,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ChevronUp,
   Check,
-  Code2,
   Copy,
   Download,
   ExternalLink,
-  FolderKanban,
   GraduationCap,
   Heart,
   Mail,
   MapPin,
   MessageCircle,
-  Menu,
-  Minus,
-  Moon,
-  Plus,
-  Quote,
   Share2,
   Send,
   Sparkles,
-  Sun,
   Star,
   Phone,
   X,
@@ -47,12 +35,15 @@ import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { toast } from "react-toastify";
 import Link from "next/link";
 import { useMotionFlow } from "@/lib/motionflow";
+import {
+  DEFAULT_ABOUT_IMAGE,
+  DEFAULT_PROFILE_IMAGE,
+  DEFAULT_PROJECT_IMAGES,
+} from "@/lib/portfolio-types";
 import type {
-  HeroImageSettings,
   PortfolioData,
   Profile,
   Project,
-  Service,
   Stat,
 } from "@/lib/portfolio-types";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
@@ -100,280 +91,22 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
-export function LegacyNav({
-  data,
-  isLight,
-  onToggleTheme,
-}: {
-  data: PortfolioData;
-  isLight: boolean;
-  onToggleTheme: () => void;
-}) {
-  const profile = data.profile;
-  const [open, setOpen] = useState(false);
-  const [activeHash, setActiveHash] = useState("");
-  const [openGroup, setOpenGroup] = useState<string | null>(null);
-  const profileLinks: Array<[string, string]> = [];
-  if (data.sectionVisibility?.about) profileLinks.push(["about", "About"]);
-  if (data.sectionVisibility?.skills ?? true)
-    profileLinks.push(["skills", "Skills"]);
-  if (data.sectionVisibility?.education)
-    profileLinks.push(["education", "Education"]);
-  if (data.sectionVisibility?.experience)
-    profileLinks.push(["experience", "Experience"]);
-  const workLinks: Array<[string, string]> = [];
-  if (data.sectionVisibility?.services)
-    workLinks.push(["services", "Services"]);
-  if (data.sectionVisibility?.projects) workLinks.push(["work", "Projects"]);
-  if (data.sectionVisibility?.testimonials)
-    workLinks.push(["testimonials", "Testimonials"]);
-  const groups: Array<{ label: string; items: Array<[string, string]> }> = [
-    {
-      label: "Profile",
-      items: profileLinks,
-    },
-    {
-      label: "Work",
-      items: workLinks,
-    },
-    ...(data.sectionVisibility?.contact
-      ? [
-          {
-            label: "Hire me",
-            items: [["contact", "Hire me"] as [string, string]],
-          },
-        ]
-      : []),
-  ];
-  const links = groups.flatMap((group) => group.items);
-  const initials =
-    profile.name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "AV";
-
-  const handleSectionClick = (
-    event: MouseEvent<HTMLAnchorElement>,
-    href: string,
-  ) => {
-    event.preventDefault();
-    setOpen(false);
-    setOpenGroup(null);
-    setActiveHash(href);
-
-    const target = document.getElementById(href);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-
-    if (typeof window.history?.replaceState === "function") {
-      window.history.replaceState(null, "", window.location.pathname);
-    }
-  };
-
-  useEffect(() => {
-    const updateActiveHash = () => {
-      const nextHash = window.location.hash.replace("#", "");
-      if (nextHash) setActiveHash(nextHash);
-    };
-
-    updateActiveHash();
-    window.addEventListener("hashchange", updateActiveHash);
-
-    const sections = links
-      .map(([href]) => document.getElementById(href))
-      .filter(Boolean) as HTMLElement[];
-
-    if (!sections.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (visible) {
-          setActiveHash(visible.target.id);
-        }
-      },
-      { threshold: [0.2, 0.5, 0.8], rootMargin: "-15% 0px -35% 0px" },
-    );
-
-    sections.forEach((section) => observer.observe(section));
-
-    return () => {
-      window.removeEventListener("hashchange", updateActiveHash);
-      observer.disconnect();
-    };
-  }, [links]);
-
-  return (
-    <header className="glass-nav fixed top-4 left-1/2 z-50 w-[95%] max-w-[1000px] -translate-x-1/2 rounded-[1.2rem] border px-6 py-4 shadow-[0_12px_36px_rgba(15,23,42,0.18)] backdrop-blur-md transition-all">
-      <div className="flex items-center justify-between">
-        <Link
-          href="/"
-          className="flex items-center gap-3 group"
-          data-testid="link-home"
-        >
-          {profile.heroImage || profile.image ? (
-            <Image
-              src={profile.heroImage || profile.image}
-              alt={profile.name}
-              className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110"
-              width={36}
-              height={36}
-            />
-          ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">
-              {initials}
-            </span>
-          )}
-          <span className="font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground">
-            {profile.name}
-          </span>
-        </Link>
-
-        <nav
-          className={`${
-            open
-              ? "absolute left-0 top-[70px] flex w-full flex-col items-center gap-4 rounded-3xl border border-border bg-background p-6 shadow-xl"
-              : "hidden"
-          } lg:static lg:flex lg:max-w-[62vw] lg:flex-row lg:items-center lg:gap-6 lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
-        >
-          {groups.map((group) => {
-            const isSingle =
-              group.items.length === 1 && group.label === "Hire me";
-            const groupActive = group.items.some(
-              ([href]) => activeHash === href,
-            );
-            if (isSingle) {
-              const [href, label] = group.items[0];
-              return (
-                <a
-                  key={href}
-                  href={`#${href}`}
-                  onClick={(event) => handleSectionClick(event, href)}
-                  className={`shrink-0 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                  data-testid={`link-nav-${href}`}
-                  aria-current={groupActive ? "page" : undefined}
-                >
-                  {label}
-                </a>
-              );
-            }
-            return (
-              <div
-                key={group.label}
-                className="group relative w-full shrink-0 lg:w-auto"
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setOpenGroup((current) =>
-                      current === group.label ? null : group.label,
-                    )
-                  }
-                  className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors lg:w-auto lg:border-0 lg:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                  aria-expanded={openGroup === group.label}
-                >
-                  {group.label}
-                  <span className="lg:hidden" aria-hidden="true">
-                    {openGroup === group.label ? (
-                      <Minus size={15} />
-                    ) : (
-                      <Plus size={15} />
-                    )}
-                  </span>
-                  <ChevronDown
-                    size={13}
-                    className={`hidden transition-transform lg:block ${openGroup === group.label ? "rotate-180" : ""}`}
-                  />
-                </button>
-                <div
-                  className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-44 flex-col gap-3 rounded-xl border border-border bg-background p-3 shadow-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:border lg:bg-background lg:p-3 lg:pl-3 lg:shadow-xl lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}
-                >
-                  <span
-                    className="absolute -top-3 left-1/2 hidden -translate-x-1/2 text-muted-foreground lg:flex"
-                    aria-hidden="true"
-                  >
-                    <ChevronUp size={12} strokeWidth={2.5} />
-                  </span>
-                  {group.items.map(([href, label]) => {
-                    const isActive =
-                      activeHash === href || (!activeHash && href === "about");
-                    return (
-                      <a
-                        key={href}
-                        href={`#${href}`}
-                        onClick={() => {
-                          setOpen(false);
-                          setOpenGroup(null);
-                        }}
-                        className={`font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                        data-testid={`link-nav-${href}`}
-                        aria-current={isActive ? "page" : undefined}
-                      >
-                        {label}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="rounded-full border border-border bg-secondary p-2 text-foreground transition-colors hover:border-primary hover:text-primary"
-            aria-label={`Switch to ${isLight ? "dark" : "light"} theme`}
-            data-testid="button-toggle-theme"
-          >
-            {isLight ? <Moon size={16} /> : <Sun size={16} />}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOpen((value) => !value)}
-            className="rounded-full bg-secondary p-2 text-foreground lg:hidden hover:text-primary"
-            aria-label="Toggle navigation"
-            data-testid="button-toggle-nav"
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
 function SectionLabel({
   number,
   children,
-  icon,
 }: {
   number: string;
   children: ReactNode;
-  icon?: ReactNode;
 }) {
   return (
-    <div className="mb-12 flex items-center gap-3">
-      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-primary/30 bg-primary/8 text-primary shadow-[0_0_18px_rgba(249,115,22,0.12)]">
-        {icon ? (
-          icon
-        ) : (
-          <span className="font-mono text-[11px] font-bold">{number}</span>
-        )}
+    <div className="mb-6 flex items-baseline gap-3">
+      <span className="font-mono text-xs font-medium text-muted-foreground">
+        {number}
       </span>
       <span
         data-mf-animation="fade-up"
         data-mf-animation-once="true"
-        className="font-mono text-[11px] uppercase tracking-[.22em] text-foreground font-semibold"
+        className="font-sans text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
       >
         {children}
       </span>
@@ -381,58 +114,19 @@ function SectionLabel({
   );
 }
 
-function TypingRoles({ roles }: { roles: string[] }) {
-  const safeRoles = roles.filter(Boolean);
-  const [displayedText, setDisplayedText] = useState("");
-  const [activeRoleIndex, setActiveRoleIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    if (!safeRoles.length) return;
-
-    const currentRole = safeRoles[activeRoleIndex];
-    const timeout = window.setTimeout(() => {
-      if (!isDeleting) {
-        const nextText = currentRole.slice(0, displayedText.length + 1);
-        setDisplayedText(nextText);
-
-        if (nextText === currentRole) {
-          setIsDeleting(true);
-        }
-      } else {
-        const nextText = currentRole.slice(0, displayedText.length - 1);
-        setDisplayedText(nextText);
-
-        if (nextText === "") {
-          setIsDeleting(false);
-          setActiveRoleIndex((previous) => (previous + 1) % safeRoles.length);
-        }
-      }
-    }, isDeleting ? 120 : 180);
-
-    return () => window.clearTimeout(timeout);
-  }, [activeRoleIndex, displayedText, isDeleting, safeRoles]);
-
-  if (!safeRoles.length) {
-    return (
-      <span className="font-mono text-[11px] uppercase tracking-[.15em] text-primary font-semibold">
-        Developer.
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex items-center gap-1 font-mono text-[11px] uppercase tracking-[.18em] text-foreground font-semibold">
-      <span>a</span>
-      <span className="terminal-caret inline-flex min-w-[10ch] items-center text-primary" aria-live="polite">
-        {displayedText}
-      </span>
-      <span>.</span>
-    </span>
-  );
-}
-
-function Hero({ profile }: { profile: Profile }) {
+function Hero({
+  profile,
+  stats,
+  showStats,
+  navItems,
+}: {
+  profile: Profile;
+  stats: Stat[];
+  showStats: boolean;
+  navItems: Array<{ id: string; label: string }>;
+}) {
+  const [activeSection, setActiveSection] = useState(navItems[0]?.id ?? "");
+  const navItemIds = navItems.map(({ id }) => id).join(",");
   const roles = (
     profile.roles?.length ? profile.roles : [profile.tagline]
   ).filter(Boolean);
@@ -442,8 +136,7 @@ function Hero({ profile }: { profile: Profile }) {
       ? "Available for freelance work"
       : profile.tagline || "Available for freelance work";
   const resumeHref = profile.resume || "#contact";
-  const desktopImageSettings = profile.heroDesktopSettings;
-  const mobileImageSettings = profile.heroMobileSettings;
+  const heroImage = profile.image || DEFAULT_PROFILE_IMAGE;
 
   const handleResumeDownload = async (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -472,194 +165,240 @@ function Hero({ profile }: { profile: Profile }) {
     }
   };
 
-  const imageFilter = (settings?: HeroImageSettings) => {
-    if (!settings) return undefined;
-    const presets: Record<string, string> = {
-      grayscale: "grayscale(1)",
-      sepia: "sepia(.75)",
-      vintage: "sepia(.35) saturate(.8) contrast(.95)",
-      warm: "sepia(.18) saturate(1.25) hue-rotate(-8deg)",
-      cool: "saturate(.85) hue-rotate(12deg)",
-      blur: "blur(3px)",
-      invert: "invert(1)",
-      bright: "brightness(1.18) contrast(1.05)",
-      pop: "saturate(1.45) contrast(1.12)",
+  useEffect(() => {
+    const sectionIds = navItemIds.split(",").filter(Boolean);
+    if (!sectionIds.length) return;
+
+    let frameId = 0;
+    const updateActiveSection = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const anchor = window.innerHeight * 0.32;
+        const sections = sectionIds
+          .map((id) => document.getElementById(id))
+          .filter((section): section is HTMLElement => section !== null);
+        const currentSection = sections.find((section) => {
+          const bounds = section.getBoundingClientRect();
+          return bounds.top <= anchor && bounds.bottom > anchor;
+        });
+        const nextSection =
+          currentSection ||
+          sections.find((section) => section.getBoundingClientRect().top > anchor) ||
+          sections[sections.length - 1];
+
+        if (nextSection) setActiveSection(nextSection.id);
+      });
     };
-    return `${presets[settings.preset] || ""} brightness(${settings.brightness / 100}) contrast(${settings.contrast / 100}) saturate(${settings.saturation / 100}) hue-rotate(${settings.hue}deg) blur(${settings.blur}px)`.trim();
-  };
 
-  const imagePosition = (settings?: HeroImageSettings) => {
-    if (!settings) return "50% 50%";
-    const useRight = settings.left === 50 && settings.right !== 50;
-    const useBottom = settings.top === 50 && settings.bottom !== 50;
-    const horizontal = useRight
-      ? `right ${settings.right}%`
-      : `left ${settings.left}%`;
-    const vertical = useBottom
-      ? `bottom ${settings.bottom}%`
-      : `top ${settings.top}%`;
-
-    return `${horizontal} ${vertical}`;
-  };
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    window.addEventListener("resize", updateActiveSection);
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", updateActiveSection);
+      window.removeEventListener("resize", updateActiveSection);
+    };
+  }, [navItemIds]);
 
   return (
     <section
+      id="hero"
       data-mf-animation="fade-up"
       data-mf-animation-once="true"
-      className="relative flex min-h-dvh items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.15),transparent_28%)] bg-background px-4 pb-12 pt-24 sm:px-5 sm:pb-16 sm:pt-32 md:px-8 md:pb-20 lg:px-10 lg:pb-24"
+      className="portfolio-profile-panel relative bg-background px-5 py-10 sm:px-8 sm:py-12 lg:px-8"
     >
-      {(profile.heroImage || profile.image) && (
-        <div
-          className="hero-background-image absolute inset-0 z-0"
-          aria-hidden="true"
-          style={
-            {
-              "--hero-desktop-filter":
-                imageFilter(desktopImageSettings) || "none",
-              "--hero-mobile-filter":
-                imageFilter(mobileImageSettings) || "none",
-              "--hero-desktop-object-position":
-                imagePosition(desktopImageSettings),
-              "--hero-mobile-object-position":
-                imagePosition(mobileImageSettings),
-              "--hero-desktop-opacity": desktopImageSettings?.opacity
-                ? desktopImageSettings.opacity / 100
-                : 1,
-              "--hero-mobile-opacity": mobileImageSettings?.opacity
-                ? mobileImageSettings.opacity / 100
-                : 1,
-              "--hero-desktop-overlay-color":
-                desktopImageSettings?.overlayColor || "#ffffff",
-              "--hero-mobile-overlay-color":
-                mobileImageSettings?.overlayColor || "#ffffff",
-              "--hero-desktop-overlay-opacity":
-                desktopImageSettings?.overlayOpacity
-                  ? desktopImageSettings.overlayOpacity / 100
-                  : 0,
-              "--hero-mobile-overlay-opacity":
-                mobileImageSettings?.overlayOpacity
-                  ? mobileImageSettings.overlayOpacity / 100
-                  : 0,
-            } as React.CSSProperties
-          }
-        >
-          <picture className="absolute inset-0 block">
-            {profile.heroMobileImage && (
-              <source
-                media="(max-width: 767px)"
-                srcSet={profile.heroMobileImage}
+      <div className="portfolio-profile-content mx-auto w-full max-w-[28rem] text-center lg:text-left">
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-left lg:justify-start">
+          <div
+            className="relative h-24 w-24 shrink-0 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-sky-400 p-[3px] shadow-lg shadow-primary/10"
+          >
+            <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-background bg-secondary">
+              <Image
+                src={heroImage}
+                alt={profile.name}
+                fill
+                priority
+                sizes="96px"
+                className="object-cover"
               />
-            )}
-            <Image
-              src={profile.heroImage || profile.image}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-            />
-          </picture>
-          <div className="hero-custom-overlay" />
-        </div>
-      )}
-      <div className="relative z-10 mx-auto flex w-full max-w-7xl min-w-0 items-center">
-        <div className="hero-copy flex max-w-3xl flex-col items-start">
-          <div data-hero-reveal className="glass-pill mb-8">
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <p className="font-mono text-[11px] uppercase tracking-[.15em] text-foreground font-semibold">
+            </div>
+          </div>
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono text-[10px] font-semibold text-emerald-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
               {heroBadge}
             </p>
-          </div>
-
-          <p
-            data-hero-reveal
-            className="mb-3 font-mono text-sm font-semibold uppercase tracking-[.16em] text-primary"
-          >
-            Hello 👋, I am
-          </p>
-
-          <h1
-            data-mf-animation="fade-up"
-            data-mf-animation-once="true"
-            className="display-title max-w-4xl text-5xl font-bold leading-[1.02] text-foreground tracking-tight sm:text-6xl lg:text-8xl"
-          >
-            {profile.name}
-          </h1>
-          <svg
-            className="mt-3 h-6 w-full max-w-md text-primary"
-            viewBox="0 0 400 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="M4 16 C 70 6, 140 22, 210 12 S 330 4, 396 14"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-            />
-            <circle
-              data-motion-spark
-              r="3.5"
-              cx="4"
-              cy="16"
-              fill="currentColor"
-            />
-          </svg>
-
-          <div
-            data-hero-reveal
-            className="mt-6 flex items-center gap-2 text-[11px] uppercase tracking-[.18em] text-foreground"
-          >
-            <TypingRoles roles={roles} />
-          </div>
-
-          <p
-            data-hero-reveal
-            className="mt-8 max-w-xl text-base leading-[1.8] text-foreground sm:text-lg"
-          >
-            {profile.bio1}
-          </p>
-
-          <div
-            data-hero-reveal
-            className="mt-10 flex flex-wrap items-center gap-3 sm:mt-12 sm:gap-4"
-          >
-            <a
-              href="#work"
-              data-magnetic
-              className="hero-work-button glass-button group w-fit items-center gap-3 border-foreground/80 bg-foreground px-8 py-4 font-mono text-[11px] font-bold uppercase tracking-[.1em] text-background shadow-[0_16px_35px_hsl(var(--foreground)/0.2)]"
-              data-testid="link-hero-work"
-            >
-              See my work{" "}
-              <ArrowDownRight className="h-4 w-4 transition-transform group-hover:translate-x-1 group-hover:translate-y-1" />
-            </a>
-
-            {profile.resume && (
-              <button
-                type="button"
-                onClick={handleResumeDownload}
-                data-magnetic
-                className="glass-button group w-fit items-center gap-3 border-primary/40 bg-primary/10 px-8 py-4 font-mono text-[11px] font-semibold uppercase tracking-[.1em] text-foreground hover:border-primary hover:text-primary"
-                data-testid="link-hero-resume"
-              >
-                <Download className="h-4 w-4" />
-                Download resume
-              </button>
-            )}
+            <p className="mt-2 text-sm text-muted-foreground">
+              {profile.roles?.filter(Boolean).join(" · ") || profile.tagline}
+            </p>
           </div>
         </div>
+
+        <h1
+          data-mf-animation="fade-up"
+          data-mf-animation-once="true"
+          className="display-title mt-5 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl"
+        >
+          {profile.name}
+        </h1>
+
+        {roles.length > 0 && (
+          <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
+            {roles.map((role, index) => (
+              <span
+                key={`${role}-${index}`}
+                className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-1 font-mono text-[11px] font-semibold text-foreground"
+              >
+                {role}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {showStats && stats.length > 0 && (
+          <div
+            id="stats"
+            className="mt-5 grid grid-cols-2 border-y border-border sm:flex sm:flex-wrap sm:divide-x sm:divide-border lg:grid lg:grid-cols-2 lg:divide-x-0"
+          >
+            {stats.map((stat) => (
+              <div
+                key={stat.id}
+                data-testid={`stat-${stat.id}`}
+                className="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-3 text-center even:border-l even:border-border sm:border-l-0 lg:border-b lg:border-border lg:py-3 lg:odd:border-r lg:odd:border-border"
+              >
+                <span className="text-2xl font-bold leading-none text-foreground">
+                  <StatValue value={stat.value} />
+                </span>
+                <span className="mt-2 text-xs text-muted-foreground">
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p
+          data-hero-reveal
+          className="mx-auto mt-5 max-w-[680px] text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7 lg:mx-0"
+        >
+          {profile.bio1}
+        </p>
+
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+          {profile.github && (
+            <a
+              href={
+                profile.github.startsWith("http")
+                  ? profile.github
+                  : `https://${profile.github}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border px-3 py-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              aria-label="GitHub"
+            >
+              <FaGithub size={16} />
+            </a>
+          )}
+          {profile.linkedin && (
+            <a
+              href={
+                profile.linkedin.startsWith("http")
+                  ? profile.linkedin
+                  : `https://${profile.linkedin}`
+              }
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-border px-3 py-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              aria-label="LinkedIn"
+            >
+              <FaLinkedin size={16} />
+            </a>
+          )}
+          {profile.socialLinks
+            ?.filter((link) => !link.locations || link.locations.includes("nav"))
+            .map((link) => (
+              <a
+                key={link.id}
+                href={
+                  /^https?:\/\//i.test(link.url)
+                    ? link.url
+                    : `https://${link.url}`
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-border px-3 py-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                aria-label={link.label}
+              >
+                <SocialIcon
+                  label={link.label}
+                  icon={link.icon}
+                  iconImage={link.iconImage}
+                  size={16}
+                />
+              </a>
+            ))}
+          {profile.email && (
+            <a
+              href={`mailto:${profile.email}`}
+              className="rounded-full border border-border px-3 py-2 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+              aria-label="Email"
+            >
+              <Mail size={16} />
+            </a>
+          )}
+        </div>
+
+        <div className="mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 font-mono text-xs font-semibold text-background shadow-[0_6px_18px_hsl(var(--foreground)/0.15)] transition-transform hover:-translate-y-0.5"
+            data-testid="link-hero-work"
+          >
+            Let&apos;s build together <ArrowUpRight size={15} />
+          </a>
+          {profile.resume && (
+            <button
+              type="button"
+              onClick={handleResumeDownload}
+              className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 font-mono text-xs font-semibold text-foreground transition-colors hover:border-primary hover:text-primary"
+              data-testid="link-hero-resume"
+            >
+              <Download size={15} />
+              Download resume
+            </button>
+          )}
+        </div>
+        {navItems.length > 0 && (
+          <nav
+            aria-label="Portfolio sections"
+            className="portfolio-section-links mt-7 hidden border-t border-border pt-5 lg:grid"
+          >
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setActiveSection(item.id);
+                  document
+                    .getElementById(item.id)
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  window.history.replaceState(
+                    null,
+                    "",
+                    `${window.location.pathname}${window.location.search}`,
+                  );
+                }}
+                className={`portfolio-section-link${activeSection === item.id ? " is-active" : ""}`}
+                aria-current={activeSection === item.id ? "location" : undefined}
+              >
+                {item.label}
+              </a>
+            ))}
+          </nav>
+        )}
       </div>
-      <a
-        href="#about"
-        data-hero-reveal
-        className="scroll-cue absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[.2em] text-muted-foreground transition-colors hover:text-primary sm:flex"
-      >
-        <span className="h-px w-8 bg-border" />
-        <span className="scroll-cue-mouse" aria-hidden="true">
-          <span />
-        </span>
-        <span className="h-px w-8 bg-border" />
-      </a>
     </section>
   );
 }
@@ -670,39 +409,37 @@ function About({ profile }: { profile: Profile }) {
       id="about"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="01" icon={<Sparkles size={14} />}>
+      <SectionLabel number="01">
         ABOUT
       </SectionLabel>
       <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-[1.05fr_1.35fr] lg:items-center lg:gap-10">
-        <div className="w-full lg:w-auto">
-          {profile.aboutImage ? (
-            <div className="w-full overflow-hidden rounded-[1.5rem] border border-border/70 bg-card p-1.5 shadow-[0_22px_60px_rgba(15,23,42,0.12)] lg:max-w-[520px] lg:mx-0">
-              <div className="relative overflow-hidden rounded-[1.1rem] bg-secondary">
-                <Image
-                  src={profile.aboutImage}
-                  alt={profile.name}
-                  className="h-[300px] w-full object-cover object-center transition-transform duration-700 ease-out hover:scale-[1.02] sm:h-[420px] lg:h-[560px]"
-                  data-mf-parallax
-                  data-mf-parallax-speed="0.35"
-                  data-mf-parallax-speed-tablet="0"
-                  data-mf-parallax-speed-mobile="0"
-                  width={1400}
-                  height={900}
-                  sizes="(max-width: 767px) 100vw, 520px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-[#020817]/15 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-7">
-                  <p className="font-mono text-[9px] font-bold uppercase tracking-[.18em] text-primary sm:text-[10px]">
-                    Behind the work
-                  </p>
-                  <p className="mt-2 max-w-[24rem] text-xs font-medium text-white sm:text-sm lg:text-base">
-                    Developer · Creator · Problem solver
-                  </p>
-                </div>
-              </div>
+      <div className="w-full lg:w-auto">
+        <div className="w-full overflow-hidden rounded-[1.5rem] border border-border/70 bg-card p-1.5 shadow-[0_22px_60px_rgba(15,23,42,0.12)] lg:max-w-[520px] lg:mx-0">
+          <div className="about-image-card relative overflow-hidden rounded-[1.1rem] bg-secondary">
+            <Image
+              src={profile.aboutImage || DEFAULT_ABOUT_IMAGE}
+              alt={profile.name}
+              className="h-[300px] w-full object-cover object-center transition-transform duration-700 ease-out hover:scale-[1.02] sm:h-[420px] lg:h-[560px]"
+              data-mf-parallax
+              data-mf-parallax-speed="0.35"
+              data-mf-parallax-speed-tablet="0"
+              data-mf-parallax-speed-mobile="0"
+              width={1400}
+              height={900}
+              sizes="(max-width: 767px) 100vw, 520px"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#020817]/80 via-[#020817]/15 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-7">
+              <p className="font-mono text-[9px] font-bold uppercase tracking-[.18em] text-primary sm:text-[10px]">
+                Behind the work
+              </p>
+              <p className="mt-2 max-w-[24rem] text-xs font-medium text-white sm:text-sm lg:text-base">
+                Developer · Creator · Problem solver
+              </p>
             </div>
-          ) : null}
+          </div>
         </div>
+      </div>
         <div className="w-full max-w-[820px] mx-auto lg:mx-0 lg:max-w-none">
           <div
             data-mf-stagger-animation="fade-up"
@@ -772,64 +509,25 @@ function Stats({ stats }: { stats: Stat[] }) {
   return (
     <section
       id="stats"
-      className="mx-auto max-w-7xl px-4 py-8 sm:px-5 sm:py-10 md:px-8 lg:px-10"
+      className="border-b border-border px-4 py-8 sm:px-5 md:px-8 lg:px-10"
     >
-      <div
-        data-mf-stagger-animation="fade-up"
-        data-mf-stagger-once="true"
-        className="grid grid-cols-2 gap-6 lg:grid-cols-4"
-      >
+      <div className="grid grid-cols-2 divide-x divide-border sm:grid-cols-4">
         {stats.map((stat) => (
           <div
             key={stat.id}
-            className="bento-card group flex flex-col items-center justify-center overflow-hidden p-6 text-center"
+            data-testid={`stat-${stat.id}`}
+            className="flex flex-col items-center px-2 py-3 text-center"
           >
-            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/8 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary transition-transform group-hover:scale-110">
-              {stat.label.slice(0, 2)}
-            </div>
-            <p data-testid={`stat-${stat.id}`}>
+            <span className="text-2xl font-bold leading-none text-foreground">
               <StatValue value={stat.value} />
-            </p>
-            <p className="mt-4 font-mono text-[11px] font-semibold uppercase tracking-[.15em] text-muted-foreground">
+            </span>
+            <span className="mt-2 text-xs text-muted-foreground">
               {stat.label}
-            </p>
+            </span>
           </div>
         ))}
       </div>
     </section>
-  );
-}
-
-function Marquee({ services }: { services: Service[] }) {
-  const words =
-    services.length > 0
-      ? services.map((service) => service.title)
-      : ["Research", "Design", "Code", "Ship", "Learn"];
-  const sequence = [...words, ...words];
-
-  return (
-    <div
-      id="services-strip"
-      className="mx-auto my-10 max-w-7xl overflow-hidden rounded-xl border border-border/60 bg-secondary/55 py-6 backdrop-blur-sm [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
-    >
-      <div
-        data-mf-ticker
-        data-mf-ticker-speed="32"
-        data-mf-ticker-pause-on-hover="true"
-        className="flex w-max font-mono text-[13px] font-bold uppercase tracking-[.2em] text-foreground"
-      >
-        {sequence.map((word, index) => (
-          <span
-            key={`${word}-${index}`}
-            className="flex items-center gap-6 px-6"
-            aria-hidden={index >= words.length}
-          >
-            {word}
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          </span>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -841,7 +539,7 @@ function Timeline({ data }: { data: PortfolioData }) {
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up" data-mf-animation-once="true">
-          <SectionLabel number="02" icon={<GraduationCap size={14} />}>
+          <SectionLabel number="02">
             EDUCATION
           </SectionLabel>
           <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
@@ -871,30 +569,30 @@ function Timeline({ data }: { data: PortfolioData }) {
           >
             {data.education.map((item) => (
               <div
-                className="bento-card group relative overflow-hidden p-5 sm:p-6"
+                className="timeline-entry bento-card group relative overflow-hidden p-5 sm:p-6"
                 key={item.id}
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                  <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                <div className="timeline-entry-layout flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                  <div className="timeline-entry-period flex min-w-0 flex-wrap items-center gap-3 sm:w-40 sm:shrink-0">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
                       <GraduationCap size={16} />
                     </span>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    <span className="timeline-entry-date min-w-0 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
                       {item.period}
                     </span>
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-xl font-bold text-foreground">
+                  <div className="timeline-entry-content min-w-0 flex-1">
+                    <div className="timeline-entry-heading flex min-w-0 items-start justify-between gap-3">
+                      <h3 className="min-w-0 flex-1 text-xl font-bold text-foreground">
                         {item.degree}
                       </h3>
-                      <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                      <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
                     </div>
-                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                    <p className="timeline-entry-subtitle mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
                       {item.institution}
                     </p>
-                    <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                    <p className="timeline-entry-detail mt-4 text-sm leading-[1.7] text-muted-foreground">
                       {item.detail}
                     </p>
                   </div>
@@ -916,7 +614,7 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
     >
       <div className="grid gap-16 lg:grid-cols-[1fr_1.2fr]">
         <div data-mf-animation="fade-up" data-mf-animation-once="true">
-          <SectionLabel number="03" icon={<BriefcaseBusiness size={14} />}>
+          <SectionLabel number="03">
             EXPERIENCE
           </SectionLabel>
           <h2 className="display-title text-4xl font-bold leading-[1.05] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
@@ -946,30 +644,30 @@ function ExperienceSection({ data }: { data: PortfolioData }) {
           >
             {data.experience.map((item) => (
               <div
-                className="bento-card group relative overflow-hidden p-5 sm:p-6"
+                className="timeline-entry bento-card group relative overflow-hidden p-5 sm:p-6"
                 key={item.id}
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
-                  <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
-                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
+                <div className="timeline-entry-layout flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                  <div className="timeline-entry-period flex min-w-0 flex-wrap items-center gap-3 sm:w-40 sm:shrink-0">
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/8 text-primary">
                       <BriefcaseBusiness size={16} />
                     </span>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
+                    <span className="timeline-entry-date min-w-0 font-mono text-[10px] font-bold uppercase tracking-[.18em] text-primary">
                       {item.period}
                     </span>
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-xl font-bold text-foreground">
+                  <div className="timeline-entry-content min-w-0 flex-1">
+                    <div className="timeline-entry-heading flex min-w-0 items-start justify-between gap-3">
+                      <h3 className="min-w-0 flex-1 text-xl font-bold text-foreground">
                         {item.role}
                       </h3>
-                      <span className="h-2.5 w-2.5 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
+                      <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-primary/80 shadow-[0_0_18px_rgba(249,115,22,0.45)]" />
                     </div>
-                    <p className="mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
+                    <p className="timeline-entry-subtitle mt-2 font-mono text-[11px] uppercase tracking-[.14em] text-muted-foreground">
                       {item.company}
                     </p>
-                    <p className="mt-4 text-sm leading-[1.7] text-muted-foreground">
+                    <p className="timeline-entry-detail mt-4 text-sm leading-[1.7] text-muted-foreground">
                       {item.detail}
                     </p>
                   </div>
@@ -989,7 +687,7 @@ function Services({ data }: { data: PortfolioData }) {
       id="services"
       className="mx-auto max-w-7xl border-y border-border/60 bg-secondary/10 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="04" icon={<Code2 size={14} />}>
+      <SectionLabel number="04">
         SERVICES
       </SectionLabel>
 
@@ -1082,12 +780,17 @@ function Work({ data }: { data: PortfolioData }) {
   return (
     <section
       id="work"
-      className="mx-auto max-w-[1400px] border-b border-border/60 px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
+      className="mx-auto max-w-[58rem] border-b border-border px-4 py-12 sm:px-6 sm:py-16"
     >
-      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end mb-12">
-        <SectionLabel number="05" icon={<FolderKanban size={14} />}>
-          PROJECTS
-        </SectionLabel>
+      <div className="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <SectionLabel number="05">
+            Selected projects
+          </SectionLabel>
+          <p className="text-sm text-muted-foreground">
+            A few things I have built and shipped.
+          </p>
+        </div>
         <div
           className="flex flex-wrap gap-2"
           role="tablist"
@@ -1100,10 +803,10 @@ function Work({ data }: { data: PortfolioData }) {
               role="tab"
               aria-selected={activeCategory === category}
               onClick={() => setCategory(category)}
-              className={`rounded-full border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              className={`rounded-full border px-3 py-1.5 font-mono text-[10px] font-medium transition-colors ${
                 activeCategory === category
-                  ? "border-primary bg-primary text-background"
-                  : "border-border text-muted-foreground hover:border-primary hover:text-primary"
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:border-foreground hover:text-foreground"
               }`}
             >
               {category}
@@ -1112,80 +815,76 @@ function Work({ data }: { data: PortfolioData }) {
         </div>
       </div>
 
-      <div ref={gridRef} className="grid gap-8 lg:grid-cols-2">
-        {data.projects.map((project) => {
+      <div
+        ref={gridRef}
+        data-project-grid
+        className="divide-y divide-border border-y border-border"
+      >
+        {data.projects.map((project, index) => {
           const category = project.category.trim() || "Uncategorized";
           const isHidden =
             activeCategory !== "All projects" && category !== activeCategory;
+          const projectImage =
+            project.image ||
+            DEFAULT_PROJECT_IMAGES[index % DEFAULT_PROJECT_IMAGES.length];
           return (
             <article
               key={project.id}
               data-project-card
-              className={`bento-card group flex flex-col overflow-hidden ${isHidden ? "hidden" : ""}`}
+              className={`group flex flex-col gap-4 py-5 transition-opacity sm:flex-row sm:items-start sm:gap-5 ${isHidden ? "hidden" : ""}`}
             >
-              <div className="relative h-64 w-full overflow-hidden border-b border-border bg-secondary/50">
-                {project.image ? (
-                  <>
-                    <Image
-                      src={project.image}
-                      alt={project.title}
-                      loading="lazy"
-                      decoding="async"
-                      fill
-                      sizes="(min-width: 1024px) 50vw, 100vw"
-                      quality={70}
-                      className="absolute inset-0 h-full w-full object-fill transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-background/20 transition-colors duration-700 group-hover:bg-background/5" />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105 flex items-center justify-center bg-secondary">
-                    <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-                  </div>
-                )}
-                <div className="absolute top-4 right-4 inline-flex rounded-full border border-border bg-background/80 backdrop-blur-md px-3 py-1 font-mono text-[10px] font-bold uppercase text-primary">
-                  {project.category}
-                </div>
-                <div className="absolute bottom-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-4 py-2 font-mono text-[10px] font-bold uppercase text-foreground backdrop-blur-md z-10">
-                  <CalendarDays size={12} className="text-primary" />
-                  {project.year}
-                </div>
+              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary">
+                <Image
+                  src={projectImage}
+                  alt={project.title}
+                  loading="lazy"
+                  fill
+                  sizes="64px"
+                  quality={75}
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
-
-              <div className="flex flex-col flex-grow p-6">
-                <div className="mb-4">
-                  <h3 className="text-2xl font-bold leading-[1.1] tracking-tight text-foreground">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-mono text-[10px] font-medium text-muted-foreground">
+                      {category}
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold leading-snug text-foreground sm:text-xl">
                     {project.title}
-                  </h3>
+                    </h3>
+                  </div>
+                  <span className="shrink-0 pt-1 font-mono text-xs text-muted-foreground">
+                    {project.year}
+                  </span>
                 </div>
-
-                <p className="mb-8 line-clamp-6 text-sm leading-[1.8] text-muted-foreground">
+                <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
                   {project.description}
                 </p>
-                <div className="flex w-full flex-wrap items-center gap-3">
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                   <button
                     type="button"
                     onClick={() => setSelectedProject(project)}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
+                    className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:text-primary"
                   >
-                    View project details <ArrowUpRight size={13} />
+                    Details <ArrowUpRight size={13} />
                   </button>
                   <button
                     type="button"
                     onClick={() => void shareProject(project)}
                     aria-label={`Share ${project.title}`}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-border px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto"
+                    className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-primary"
                   >
-                    <Share2 size={13} /> Share
+                    <Share2 size={12} /> Share
                   </button>
                   {project.liveUrl && (
                     <a
                       href={project.liveUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-primary px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-background transition-colors hover:bg-primary/85 sm:w-auto"
+                      className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-primary"
                     >
-                      View live project <ExternalLink size={13} />
+                      Live project <ExternalLink size={12} />
                     </a>
                   )}
                 </div>
@@ -1318,7 +1017,7 @@ function Testimonials({ data }: { data: PortfolioData }) {
       id="testimonials"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="06" icon={<Quote size={14} />}>
+      <SectionLabel number="06">
         TESTIMONIALS
       </SectionLabel>
       <div className="relative overflow-hidden px-2 py-12 sm:px-8 sm:py-16 lg:px-16 lg:py-20">
@@ -1508,7 +1207,7 @@ function Contact({ profile }: { profile: Profile }) {
       id="contact"
       className="mx-auto max-w-7xl px-4 py-16 sm:px-5 sm:py-20 md:px-8 md:py-24 lg:px-10 lg:py-32"
     >
-      <SectionLabel number="07" icon={<Mail size={14} />}>
+      <SectionLabel number="07">
         CONTACT
       </SectionLabel>
       <div className="grid items-start gap-16 lg:grid-cols-[1fr_1.15fr]">
@@ -2097,25 +1796,34 @@ export function PublicPortfolio() {
     "--primary": hexToHsl(data.themeSettings?.accentColor || "#10b981"),
     ...(activeMode === "light"
       ? {
-          "--background": "40 100% 97%",
-          "--foreground": "222 47% 13%",
-          "--border": "35 26% 80%",
-          "--input": "35 30% 84%",
-          "--card": "40 100% 99%",
-          "--card-foreground": "222 47% 13%",
-          "--card-border": "35 30% 84%",
-          "--primary-foreground": "40 100% 97%",
-          "--secondary": "37 50% 92%",
-          "--secondary-foreground": "222 47% 13%",
-          "--muted": "37 45% 93%",
-          "--muted-foreground": "220 18% 38%",
-          "--accent": "174 55% 36%",
-          "--accent-foreground": "40 100% 99%",
+          "--background": "0 0% 100%",
+          "--foreground": "222 18% 12%",
+          "--border": "220 13% 90%",
+          "--input": "220 13% 90%",
+          "--card": "0 0% 100%",
+          "--card-foreground": "222 18% 12%",
+          "--card-border": "220 13% 90%",
+          "--primary-foreground": "0 0% 100%",
+          "--secondary": "220 14% 96%",
+          "--secondary-foreground": "222 18% 12%",
+          "--muted": "220 14% 96%",
+          "--muted-foreground": "220 9% 44%",
+          "--accent": "160 65% 35%",
+          "--accent-foreground": "0 0% 100%",
           "--destructive": "0 84% 60%",
           "--destructive-foreground": "0 0% 100%",
         }
       : {}),
   } as React.CSSProperties;
+  const portfolioNavItems = [
+    { id: "about", label: "About", visible: data.sectionVisibility?.about },
+    { id: "education", label: "Education", visible: data.sectionVisibility?.education },
+    { id: "experience", label: "Experience", visible: data.sectionVisibility?.experience },
+    { id: "services", label: "Services", visible: data.sectionVisibility?.services },
+    { id: "work", label: "Projects", visible: data.sectionVisibility?.projects },
+    { id: "testimonials", label: "Testimonials", visible: data.sectionVisibility?.testimonials },
+    { id: "contact", label: "Contact", visible: data.sectionVisibility?.contact },
+  ].filter((item) => item.visible);
 
   return (
     <div
@@ -2143,23 +1851,38 @@ export function PublicPortfolio() {
           setThemeOverride(activeMode === "light" ? "dark" : "light")
         }
       />
-      <main>
-        {data.sectionVisibility?.hero && <Hero profile={data.profile} />}
-        {data.sectionVisibility?.services && (
-          <Marquee services={data.services} />
+      <main
+        className={`portfolio-layout${data.sectionVisibility?.hero ? "" : " portfolio-layout-no-profile"}`}
+      >
+        {data.sectionVisibility?.hero && (
+          <Hero
+            profile={data.profile}
+            stats={data.stats}
+            showStats={Boolean(data.sectionVisibility?.stats)}
+            navItems={portfolioNavItems}
+          />
         )}
-        {data.sectionVisibility?.about && <About profile={data.profile} />}
-        {data.sectionVisibility?.stats && <Stats stats={data.stats} />}
-        {data.sectionVisibility?.education && <Timeline data={data} />}
-        {data.sectionVisibility?.experience && (
-          <ExperienceSection data={data} />
-        )}
-        {data.sectionVisibility?.services && <Services data={data} />}
-        {data.sectionVisibility?.projects && <Work data={data} />}
-        {data.sectionVisibility?.testimonials && <Testimonials data={data} />}
-        {data.sectionVisibility?.contact && <Contact profile={data.profile} />}
+        <div className="portfolio-content">
+          {!data.sectionVisibility?.hero &&
+            data.sectionVisibility?.stats &&
+            data.stats.length > 0 && <Stats stats={data.stats} />}
+          {data.sectionVisibility?.about && <About profile={data.profile} />}
+          {data.sectionVisibility?.education && <Timeline data={data} />}
+          {data.sectionVisibility?.experience && (
+            <ExperienceSection data={data} />
+          )}
+          {data.sectionVisibility?.services && <Services data={data} />}
+          {data.sectionVisibility?.projects && <Work data={data} />}
+          {data.sectionVisibility?.testimonials && (
+            <Testimonials data={data} />
+          )}
+          {data.sectionVisibility?.contact && (
+            <Contact profile={data.profile} />
+          )}
+          <ThankYouSection profile={data.profile} />
+          <Footer profile={data.profile} />
+        </div>
       </main>
-      <ThankYouSection profile={data.profile} />
       <a
         href="#top"
         className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg sm:bottom-6 sm:right-6"
@@ -2174,7 +1897,6 @@ export function PublicPortfolio() {
           <ArrowUp size={17} aria-hidden="true" />
         </span>
       </a>
-      <Footer profile={data.profile} />
       {aiAvailable && (
         <PortfolioAssistant
           data={data}

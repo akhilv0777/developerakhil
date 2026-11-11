@@ -3,22 +3,33 @@
 // ---------------------------------------------------------------------
 import translationConfig from "./translation-config.json";
 
+export const DEFAULT_PROFILE_IMAGE =
+  "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=600";
+export const DEFAULT_ABOUT_IMAGE =
+  "https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=1200";
+
+export const DEFAULT_PROJECT_IMAGES = [
+  "https://images.pexels.com/photos/270348/pexels-photo-270348.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=1200",
+  "https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&w=1200",
+];
+
 export const TRANSLATION_LANGUAGE_OPTIONS = translationConfig.languages as {
   code: TranslationLanguageCode;
   label: string;
 }[];
 
-export type TranslationLanguageCode =
-  | "en"
-  | "ar"
-  | "bn"
-  | "de"
-  | "es"
-  | "fr"
-  | "ja";
+export type TranslationLanguageCode = string;
 
-export const DEFAULT_TRANSLATION_LANGUAGES: TranslationLanguageCode[] =
-  TRANSLATION_LANGUAGE_OPTIONS.map(({ code }) => code);
+export const DEFAULT_TRANSLATION_LANGUAGES: TranslationLanguageCode[] = [
+  "en",
+  "ar",
+  "bn",
+  "de",
+  "es",
+  "fr",
+  "ja",
+];
 
 export function normalizeTranslationLanguages(
   value: unknown,
@@ -30,7 +41,7 @@ export function normalizeTranslationLanguages(
     ? value.filter(
         (code): code is TranslationLanguageCode =>
           typeof code === "string" &&
-          supportedCodes.has(code as TranslationLanguageCode),
+          supportedCodes.has(code),
       )
     : DEFAULT_TRANSLATION_LANGUAGES;
 

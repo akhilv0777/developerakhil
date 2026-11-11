@@ -13,6 +13,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { DEFAULT_PROFILE_IMAGE } from "@/lib/portfolio-types";
 import type { PortfolioData } from "@/lib/portfolio-types";
 import { SocialIcon } from "./SocialIcon";
 import { SiteTranslator } from "./SiteTranslator";
@@ -50,7 +51,7 @@ export function PublicNav({
       : []),
   ];
   const links = groups.flatMap((group) => group.items);
-  const initials = profile.name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "AV";
+  const sectionIds = links.map(([href]) => href).join(",");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -105,8 +106,14 @@ export function PublicNav({
     };
     updateActiveHash();
     window.addEventListener("hashchange", updateActiveHash);
-    const sections = links.map(([href]) => document.getElementById(href)).filter(Boolean) as HTMLElement[];
-    if (!sections.length) return () => window.removeEventListener("hashchange", updateActiveHash);
+    const sections = sectionIds
+      .split(",")
+      .filter(Boolean)
+      .map((href) => document.getElementById(href))
+      .filter((section): section is HTMLElement => section !== null);
+    if (!sections.length) {
+      return () => window.removeEventListener("hashchange", updateActiveHash);
+    }
     const observer = new IntersectionObserver((entries) => {
       const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
       if (visible) setActiveHash(visible.target.id);
@@ -116,17 +123,19 @@ export function PublicNav({
       window.removeEventListener("hashchange", updateActiveHash);
       observer.disconnect();
     };
-  }, [links]);
+  }, [sectionIds]);
 
   return (
-    <header className={`glass-nav fixed top-3 left-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 border px-4 py-3 backdrop-blur-md transition-all duration-300 sm:top-5 sm:px-6 sm:py-4 ${isNavVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0"}`}>
+    <header className={`glass-nav fixed top-3 z-50 w-[calc(100%-2rem)] max-w-5xl border px-4 py-3 backdrop-blur-md transition-all duration-300 sm:top-5 sm:px-6 sm:py-4 ${isNavVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0"}`}>
       <div className="flex items-center justify-between">
         <Link href="/" className="group flex min-w-0 flex-1 items-center gap-3" data-testid="link-home">
-          {profile.image ? (
-            <Image src={profile.image} alt={profile.name} className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110" width={36} height={36} />
-          ) : (
-            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary font-mono text-sm font-bold text-background transition-transform group-hover:scale-110">{initials}</span>
-          )}
+          <Image
+            src={profile.image || DEFAULT_PROFILE_IMAGE}
+            alt={profile.name}
+            className="h-9 w-9 rounded-full object-cover transition-transform group-hover:scale-110"
+            width={36}
+            height={36}
+          />
           <span className="flex min-w-0 flex-col items-start leading-none">
             <span className="break-words font-mono text-[12px] font-semibold uppercase tracking-wider text-foreground">
               {profile.name}
@@ -163,7 +172,10 @@ export function PublicNav({
             </div>;
           })}
         </nav>
-        <div className="flex items-center gap-2">
+        <div
+          className="public-nav-controls flex items-center gap-2"
+          dir="ltr"
+        >
           <SiteTranslator />
           {profile.github && (
             <a

@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Pool, type QueryResultRow } from "pg";
+import { DEFAULT_PROJECT_IMAGES } from "../portfolio-types";
 
 /**
  * Different Postgres providers on the Vercel Marketplace name their env
@@ -50,12 +51,23 @@ function resolveConnectionString(): string {
 
   if (connectionString) {
     const parsed = new URL(connectionString);
-    // Use the SSL mode from the original URL if present, otherwise default
-    // to "require". Most managed Postgres providers (including Prisma
-    // Postgres) do not support "verify-full" because their CA certificates
-    // are not in Node's default trust store.
-    if (!parsed.searchParams.has("sslmode")) {
-      parsed.searchParams.set("sslmode", "require");
+    const sslMode = parsed.searchParams.get("sslmode");
+    const usesLibpqCompat =
+      parsed.searchParams.get("uselibpqcompat") === "true";
+
+    // pg-connection-string currently treats these modes as verify-full
+    // unless libpq compatibility is explicitly enabled. Make that behavior
+    // explicit so the connection string remains unambiguous across versions.
+    if (!sslMode) {
+      parsed.searchParams.set(
+        "sslmode",
+        usesLibpqCompat ? "require" : "verify-full",
+      );
+    } else if (
+      !usesLibpqCompat &&
+      ["prefer", "require", "verify-ca"].includes(sslMode)
+    ) {
+      parsed.searchParams.set("sslmode", "verify-full");
     }
     return parsed.toString();
   }
@@ -262,6 +274,7 @@ export const seedPortfolioData = {
         "Designed a specialized custom Gutenberg block extension enabling streamlined integration of customized font icons directly inside the block builder interface. Engineered an advanced save function to guarantee high-fidelity serialization of UI elements without breaking core editor validation rules.",
       tags: "WordPress, React, PHP",
       accent: "lime",
+      image: DEFAULT_PROJECT_IMAGES[0],
     },
     {
       id: "prj-2",
@@ -272,6 +285,7 @@ export const seedPortfolioData = {
         "Engineered a production-ready Laravel portal featuring comprehensive administrative controllers, automated routing, and robust middleware security configurations. Built fully decoupled RESTful endpoints handling asynchronous communications between responsive front-end interfaces and relational database frameworks.",
       tags: "Laravel, REST API, MySQL",
       accent: "coral",
+      image: DEFAULT_PROJECT_IMAGES[1],
     },
   ],
   education: [

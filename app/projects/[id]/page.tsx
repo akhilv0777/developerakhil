@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { usePortfolioQuery } from "@/lib/portfolio-api";
+import { DEFAULT_PROJECT_IMAGES } from "@/lib/portfolio-types";
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
@@ -14,6 +15,10 @@ export default function ProjectDetailPage() {
   const [sharing, setSharing] = useState(false);
   const project = data?.projects.find((item) => item.id === params?.id);
   const projectIndex = project && data ? data.projects.findIndex((item) => item.id === project.id) : -1;
+  const projectImage = project
+    ? project.image ||
+      DEFAULT_PROJECT_IMAGES[projectIndex % DEFAULT_PROJECT_IMAGES.length]
+    : undefined;
   const previousProject = projectIndex > 0 ? data?.projects[projectIndex - 1] : undefined;
   const nextProject = data && projectIndex >= 0 && projectIndex < data.projects.length - 1 ? data.projects[projectIndex + 1] : undefined;
 
@@ -78,9 +83,9 @@ export default function ProjectDetailPage() {
             </button>
           </div>
 
-          {project.image && (
+          {projectImage && (
             <div className="relative mt-12 aspect-[16/8] overflow-hidden rounded-xl border border-border bg-secondary">
-              <Image src={project.image} alt={project.title} fill priority sizes="(min-width: 1024px) 960px, 100vw" className="object-cover" />
+              <Image src={projectImage} alt={project.title} fill priority sizes="(min-width: 1024px) 960px, 100vw" className="object-cover" />
             </div>
           )}
 

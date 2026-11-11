@@ -66,8 +66,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { useMotionFlow } from "@/lib/motionflow";
 import {
+  DEFAULT_ABOUT_IMAGE,
+  DEFAULT_PROFILE_IMAGE,
   DEFAULT_TRANSLATION_LANGUAGES,
   TRANSLATION_LANGUAGE_OPTIONS,
+  type TranslationLanguageCode,
 } from "@/lib/portfolio-types";
 import {
   resizeAndUploadImage,
@@ -1296,6 +1299,7 @@ function getHeroFilterValue(settings?: HeroImageSettings) {
     .trim();
 }
 
+/* eslint-disable @next/next/no-img-element -- Cropper.js requires a mutable HTMLImageElement. */
 function HeroImageCropModal({
   file,
   src,
@@ -1442,23 +1446,16 @@ function HeroImageCropModal({
     </div>
   );
 }
+/* eslint-enable @next/next/no-img-element */
 
 function HeroImageControls({
   label,
   settings,
   onChange,
-  onUpload,
-  onRemoveBackground,
-  onUndoBackgroundRemoval,
-  isRemovingBackground,
 }: {
   label: string;
   settings?: HeroImageSettings;
   onChange: (settings: HeroImageSettings) => void;
-  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemoveBackground?: () => Promise<void> | void;
-  onUndoBackgroundRemoval?: () => Promise<void> | void;
-  isRemovingBackground?: boolean;
 }) {
   const current = { ...defaultHeroImageSettings, ...(settings || {}) };
   const update = (key: keyof HeroImageSettings, value: string | number) =>
@@ -1661,6 +1658,7 @@ function ProfileEditor({
     setImageError(null);
     if (field === "heroImage" || field === "heroMobileImage") {
       setCropRequest({ file, field });
+      event.target.value = "";
       return;
     }
 
@@ -1757,8 +1755,6 @@ function ProfileEditor({
           settings: form.heroDesktopSettings,
           onChange: (heroDesktopSettings: HeroImageSettings) =>
             setForm((current) => ({ ...current, heroDesktopSettings })),
-          onUpload: (event: React.ChangeEvent<HTMLInputElement>) =>
-            void handleImage(event, "heroImage"),
           onRemoveBackground: async () => {
             const sourceUrl = form.heroImage;
             if (!sourceUrl) return;
@@ -1828,8 +1824,6 @@ function ProfileEditor({
             settings: form.heroMobileSettings,
             onChange: (heroMobileSettings: HeroImageSettings) =>
               setForm((current) => ({ ...current, heroMobileSettings })),
-            onUpload: (event: React.ChangeEvent<HTMLInputElement>) =>
-              void handleImage(event, "heroMobileImage"),
             onRemoveBackground: async () => {
               const sourceUrl = form.heroMobileImage;
               if (!sourceUrl) return;
@@ -1957,17 +1951,13 @@ function ProfileEditor({
               <div className="flex items-center gap-5 rounded-lg border border-border/70 bg-background/30 p-3">
                 <div className="group relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary">
                   <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
-                    {form.image ? (
-                      <NextImage
-                        src={form.image}
-                        alt="Profile icon"
-                        width={80}
-                        height={80}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <User size={22} className="text-muted-foreground" />
-                    )}
+                    <NextImage
+                      src={form.image || DEFAULT_PROFILE_IMAGE}
+                      alt="Profile icon"
+                      width={80}
+                      height={80}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <label
                     className="absolute -bottom-1 -right-1 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 border-card bg-primary text-background"
@@ -1993,19 +1983,13 @@ function ProfileEditor({
               </div>
               <div className="flex items-center gap-4 rounded-lg border border-border/70 bg-background/30 p-3">
                 <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary">
-                  {form.aboutImage ? (
-                    <NextImage
-                      src={form.aboutImage}
-                      alt="About"
-                      width={96}
-                      height={64}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                      No image
-                    </span>
-                  )}
+                  <NextImage
+                    src={form.aboutImage || DEFAULT_ABOUT_IMAGE}
+                    alt="About"
+                    width={96}
+                    height={64}
+                    className="h-full w-full object-cover"
+                  />
                   <label
                     className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-card bg-primary text-background"
                     title="Change about image"
@@ -2026,124 +2010,6 @@ function ProfileEditor({
                   <p className="mt-1 text-xs text-muted-foreground">
                     Used in the About section.
                   </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
-            <div className="flex items-center gap-4">
-              <div className="group relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-secondary sm:h-20 sm:w-28 md:h-24 md:w-32">
-                {form.heroImage ? (
-                  <>
-                    <NextImage
-                      src={form.heroImage}
-                      alt="Desktop hero"
-                      width={128}
-                      height={96}
-                      className="h-full w-full object-cover"
-                      style={{
-                        filter: getHeroFilterValue(form.heroDesktopSettings),
-                        objectPosition: getHeroImageObjectPosition(
-                          form.heroDesktopSettings,
-                        ),
-                        opacity:
-                          (form.heroDesktopSettings?.opacity ?? 100) / 100,
-                      }}
-                    />
-                    <div
-                      className="pointer-events-none absolute inset-0"
-                      style={{
-                        backgroundColor:
-                          form.heroDesktopSettings?.overlayColor || "#ffffff",
-                        opacity:
-                          (form.heroDesktopSettings?.overlayOpacity ?? 0) / 100,
-                      }}
-                    />
-                  </>
-                ) : (
-                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                    No image
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
-                  Hero desktop
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setHeroAdjustmentsOpen("desktop")}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                  >
-                    <Sparkles size={10} /> Magic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCropEditorField("heroImage")}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                  >
-                    <Pencil size={10} /> Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="rounded-xl border border-orange-500/60 bg-card p-4 shadow-[0_0_0_1px_rgba(251,146,60,0.16)]">
-            <div className="flex items-center gap-4">
-              <div className="group relative flex h-24 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.2rem] border border-border bg-secondary shadow-inner sm:h-28 sm:w-18 md:h-28 md:w-20">
-                {form.heroMobileImage ? (
-                  <>
-                    <NextImage
-                      src={form.heroMobileImage}
-                      alt="Mobile hero"
-                      width={128}
-                      height={160}
-                      className="h-full w-full object-cover"
-                      style={{
-                        filter: getHeroFilterValue(form.heroMobileSettings),
-                        objectPosition: getHeroImageObjectPosition(
-                          form.heroMobileSettings,
-                        ),
-                        opacity:
-                          (form.heroMobileSettings?.opacity ?? 100) / 100,
-                      }}
-                    />
-                    <div
-                      className="pointer-events-none absolute inset-0"
-                      style={{
-                        backgroundColor:
-                          form.heroMobileSettings?.overlayColor || "#ffffff",
-                        opacity:
-                          (form.heroMobileSettings?.overlayOpacity ?? 0) / 100,
-                      }}
-                    />
-                  </>
-                ) : (
-                  <span className="font-mono text-[9px] uppercase text-muted-foreground">
-                    Desktop fallback
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground/80">
-                  Hero mobile
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setHeroAdjustmentsOpen("mobile")}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                  >
-                    <Sparkles size={10} /> Magic
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCropEditorField("heroMobileImage")}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#f97316]/50 bg-[#f97316]/10 px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-[#f97316] transition-colors hover:bg-[#f97316]/20"
-                  >
-                    <Pencil size={10} /> Edit
-                  </button>
                 </div>
               </div>
             </div>
@@ -2507,16 +2373,8 @@ function ProfileEditor({
                     ? (event) => void handleImage(event, "heroImage")
                     : (event) => void handleImage(event, "heroMobileImage")
                 }
-                onRemoveBackground={
-                  cropEditorField === "heroImage"
-                    ? activeHeroModal?.onRemoveBackground
-                    : activeHeroModal?.onRemoveBackground
-                }
-                onUndoBackgroundRemoval={
-                  cropEditorField === "heroImage"
-                    ? activeHeroModal?.onUndoBackgroundRemoval
-                    : activeHeroModal?.onUndoBackgroundRemoval
-                }
+                onRemoveBackground={activeHeroModal?.onRemoveBackground}
+                onUndoBackgroundRemoval={activeHeroModal?.onUndoBackgroundRemoval}
                 isRemovingBackground={
                   removingBackgroundField === cropEditorField
                 }
@@ -2704,14 +2562,6 @@ function ProfileEditor({
                       label={activeHeroModal.label}
                       settings={activeHeroModal.settings}
                       onChange={activeHeroModal.onChange}
-                      onUpload={activeHeroModal.onUpload}
-                      onRemoveBackground={activeHeroModal.onRemoveBackground}
-                      onUndoBackgroundRemoval={
-                        activeHeroModal.onUndoBackgroundRemoval
-                      }
-                      isRemovingBackground={
-                        removingBackgroundField === activeHeroModal.field
-                      }
                     />
                   </div>
                 </div>
@@ -3040,6 +2890,7 @@ function ProfileMenu({
   const [open, setOpen] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [changingUsername, setChangingUsername] = useState(false);
+  const avatarImage = image || DEFAULT_PROFILE_IMAGE;
 
   useEffect(() => {
     // Close the menu whenever navigation changes.
@@ -3055,17 +2906,13 @@ function ProfileMenu({
         aria-label="Account menu"
         className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-background ring-2 ring-primary/20 transition-transform hover:scale-105"
       >
-        {image ? (
-          <NextImage
-            src={image}
-            alt="Profile avatar"
-            width={36}
-            height={36}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <User size={15} className="shrink-0 text-primary" />
-        )}
+        <NextImage
+          src={avatarImage}
+          alt="Profile avatar"
+          width={36}
+          height={36}
+          className="h-full w-full object-cover"
+        />
       </button>
 
       {open && (
@@ -3073,17 +2920,13 @@ function ProfileMenu({
           <div className="border-b border-border bg-secondary/30 px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary text-background">
-                {image ? (
-                  <NextImage
-                    src={image}
-                    alt="Profile avatar"
-                    width={32}
-                    height={32}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User size={14} className="shrink-0 text-primary" />
-                )}
+                <NextImage
+                  src={avatarImage}
+                  alt="Profile avatar"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-cover"
+                />
               </div>
               <p className="truncate text-sm font-semibold text-foreground">
                 {username}
@@ -3399,6 +3242,218 @@ function ActiveSessions() {
 
 type SettingsSubtab = "site" | "security" | "sessions" | "email";
 
+function SettingsSubnav({
+  activeTab,
+  onSelect,
+}: {
+  activeTab: SettingsSubtab;
+  onSelect: (tab: SettingsSubtab) => void;
+}) {
+  const tabs = [
+    ["site", "Site settings", Globe2],
+    ["security", "Security", Lock],
+    ["sessions", "Active sessions", Smartphone],
+    ["email", "Email notifications", Mail],
+  ] as const;
+
+  return (
+    <div
+      aria-label="Settings sections"
+      className="ml-2 flex w-full flex-col gap-1 border-l border-border/70 py-1 pl-2"
+    >
+      {tabs.map(([value, label, Icon]) => (
+        <button
+          key={value}
+          type="button"
+          aria-current={activeTab === value ? "page" : undefined}
+          onClick={() => onSelect(value)}
+          className={`flex min-h-10 w-full items-center gap-2.5 rounded-r-md border-l-2 px-3 py-2 text-left text-xs font-medium transition-colors ${
+            activeTab === value
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-transparent text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+          }`}
+        >
+          <Icon
+            size={14}
+            aria-hidden="true"
+            className={activeTab === value ? "text-primary" : "text-muted-foreground"}
+          />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TranslationLanguageMultiSelect({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (languages: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const selectedLanguages = TRANSLATION_LANGUAGE_OPTIONS.filter(({ code }) =>
+    value.includes(code),
+  );
+  const visibleLanguages = selectedLanguages.slice(0, 3);
+  const filteredLanguages = TRANSLATION_LANGUAGE_OPTIONS.filter(
+    ({ code, label }) =>
+      `${label} ${code}`.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    searchRef.current?.focus();
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setSearch("");
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !open) return;
+      setOpen(false);
+      setSearch("");
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
+  const toggleLanguage = (code: TranslationLanguageCode) => {
+    if (code === "en") return;
+    onChange(
+      value.includes(code)
+        ? value.filter((language) => language !== code)
+        : [...value, code],
+    );
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-label="Select public translation languages"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => {
+          setSearch("");
+          setOpen((current) => !current);
+        }}
+        className="flex min-h-12 w-full items-center justify-between gap-3 rounded-lg border border-border bg-secondary/50 px-3 py-2 text-left text-sm text-foreground outline-none transition-colors hover:border-primary/50 focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20"
+      >
+        <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+          {visibleLanguages.map(({ code, label }) => (
+            <span
+              key={code}
+              className="rounded-md border border-primary/20 bg-primary/10 px-2 py-1 text-xs font-medium text-foreground"
+            >
+              {label}
+              {code === "en" ? " (original)" : ""}
+            </span>
+          ))}
+          {selectedLanguages.length > visibleLanguages.length && (
+            <span className="rounded-md bg-secondary px-2 py-1 text-xs text-muted-foreground">
+              +{selectedLanguages.length - visibleLanguages.length} more
+            </span>
+          )}
+          {selectedLanguages.length === 0 && (
+            <span className="text-muted-foreground">Select languages</span>
+          )}
+        </span>
+        <ChevronDown
+          size={16}
+          aria-hidden="true"
+          className={`shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-border bg-card shadow-xl"
+        >
+          <div className="sticky top-0 border-b border-border bg-card p-2">
+            <div className="relative">
+              <Search
+                size={15}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <input
+                ref={searchRef}
+                type="search"
+                role="searchbox"
+                aria-label="Search languages"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search languages..."
+                className="h-10 w-full rounded-md border border-border bg-secondary/40 py-2 pl-9 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+          <div
+            role="listbox"
+            aria-label="Public translation languages"
+            aria-multiselectable="true"
+            className="max-h-52 overflow-y-auto p-1.5"
+          >
+            {filteredLanguages.length > 0 ? (
+              filteredLanguages.map(({ code, label }) => {
+                const selected = value.includes(code);
+                const isOriginalLanguage = code === "en";
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    aria-disabled={isOriginalLanguage}
+                    onClick={() => toggleLanguage(code)}
+                    className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                      selected
+                        ? "bg-primary/10 text-foreground"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    } ${isOriginalLanguage ? "cursor-not-allowed" : ""}`}
+                  >
+                    <span>
+                      {label}
+                      {isOriginalLanguage ? " (original)" : ""}
+                    </span>
+                    {selected && (
+                      <Check
+                        size={15}
+                        aria-hidden="true"
+                        className="shrink-0 text-primary"
+                      />
+                    )}
+                  </button>
+                );
+              })
+            ) : (
+              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                No languages found.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
   const [form, setForm] = useState<ContactSettings>({
     googleAdsenseAccount: "",
@@ -3604,48 +3659,17 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   Public translation languages
                 </legend>
                 <p className="text-xs leading-5 text-muted-foreground">
-                  Choose which languages visitors can select. English is the original language and always stays available.
+                  Search all languages supported by Google Translate and choose which ones visitors can use. English is the original language and always stays available.
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {TRANSLATION_LANGUAGE_OPTIONS.map(({ code, label }) => {
-                    const isOriginalLanguage = code === "en";
-                    return (
-                      <label
-                        key={code}
-                        className="flex min-h-10 items-center gap-3 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm text-foreground"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            isOriginalLanguage ||
-                            form.translationLanguages.includes(code)
-                          }
-                          disabled={isOriginalLanguage}
-                          onChange={(event) =>
-                            setForm((current) => ({
-                              ...current,
-                              translationLanguages: event.target.checked
-                                ? Array.from(
-                                    new Set([
-                                      ...current.translationLanguages,
-                                      code,
-                                    ]),
-                                  )
-                                : current.translationLanguages.filter(
-                                    (language) => language !== code,
-                                  ),
-                            }))
-                          }
-                          className="h-4 w-4 accent-primary disabled:opacity-60"
-                        />
-                        <span>
-                          {label}
-                          {isOriginalLanguage ? " (original)" : ""}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <TranslationLanguageMultiSelect
+                  value={form.translationLanguages}
+                  onChange={(translationLanguages) =>
+                    setForm((current) => ({
+                      ...current,
+                      translationLanguages,
+                    }))
+                  }
+                />
               </fieldset>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -3767,41 +3791,6 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                 </div>
               </div>
 
-              <div className="rounded-xl border border-border bg-secondary/20 p-4">
-                <p className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.16em] text-primary">
-                  Background remover API
-                </p>
-                <div className="grid gap-4">
-                  <label className="block">
-                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      API URL
-                    </span>
-                    <input
-                      type="url"
-                      value={form.removeBgApiUrl}
-                      onChange={(event) =>
-                        setForm({ ...form, removeBgApiUrl: event.target.value })
-                      }
-                      placeholder="https://api.example.com/remove-bg"
-                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      API key / token
-                    </span>
-                    <input
-                      type="password"
-                      value={form.removeBgApiKey}
-                      onChange={(event) =>
-                        setForm({ ...form, removeBgApiKey: event.target.value })
-                      }
-                      placeholder="Enter API key"
-                      className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
-                    />
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -3910,7 +3899,6 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   onChange={(event) =>
                     setForm({ ...form, turnstileHostnames: event.target.value })
                   }
-                  placeholder="developerakhil.vercel.app,localhost"
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                 />
                 <span className="mt-2 block text-xs text-muted-foreground">
@@ -4963,17 +4951,13 @@ function AdminArea({
       >
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
           <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-            {data.profile?.image || data.profile?.aboutImage ? (
-              <NextImage
-                src={data.profile.image || data.profile.aboutImage || ""}
-                alt="Profile"
-                width={32}
-                height={32}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              "AV"
-            )}
+            <NextImage
+              src={data.profile?.image || DEFAULT_PROFILE_IMAGE}
+              alt="Profile"
+              width={32}
+              height={32}
+              className="h-full w-full object-cover"
+            />
           </span>
           <div className="min-w-0">
             <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
@@ -5126,28 +5110,13 @@ function AdminArea({
               </button>
             </div>
             {settingsOpen && (
-              <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
-                {(
-                  [
-                    ["site", "Site settings", Settings],
-                    ["security", "Security", Lock],
-                    ["sessions", "Active Sessions", Smartphone],
-                    ["email", "Email notifications", Mail],
-                  ] as const
-                ).map(([value, label, Icon]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setSettingsSubtab(value);
-                      goToSection("settings");
-                    }}
-                    className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
-                  >
-                    <Icon size={13} /> {label}
-                  </button>
-                ))}
-              </div>
+              <SettingsSubnav
+                activeTab={section === "settings" ? settingsSubtab : "site"}
+                onSelect={(tab) => {
+                  setSettingsSubtab(tab);
+                  goToSection("settings");
+                }}
+              />
             )}
           </div>
           <button
@@ -5407,7 +5376,7 @@ function AdminArea({
                 </span>
               )}
               <ProfileMenu
-                image={data.profile?.image || data.profile?.aboutImage}
+                image={data.profile?.image || DEFAULT_PROFILE_IMAGE}
                 username={username}
                 isLight={adminLight}
                 section={section}
@@ -5430,19 +5399,13 @@ function AdminArea({
               <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border px-5">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-primary font-mono text-xs font-bold text-background">
-                    {data.profile?.image || data.profile?.aboutImage ? (
-                      <NextImage
-                        src={
-                          data.profile.image || data.profile.aboutImage || ""
-                        }
-                        alt="Profile"
-                        width={200}
-                        height={200}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      "AV"
-                    )}
+                    <NextImage
+                      src={data.profile?.image || DEFAULT_PROFILE_IMAGE}
+                      alt="Profile"
+                      width={200}
+                      height={200}
+                      className="h-full w-full object-cover"
+                    />
                   </span>
                   <div className="min-w-0">
                     <p className="font-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
@@ -5603,29 +5566,14 @@ function AdminArea({
                     </button>
                   </div>
                   {settingsOpen && (
-                    <div className="flex w-full flex-col gap-1 border-l border-border pl-2">
-                      {(
-                        [
-                          ["site", "Site settings", Settings],
-                          ["security", "Security", Lock],
-                          ["sessions", "Active Sessions", Smartphone],
-                          ["email", "Email notifications", Mail],
-                        ] as const
-                      ).map(([value, label, Icon]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => {
-                            setSettingsSubtab(value);
-                            goToSection("settings");
-                            setMobileNavOpen(false);
-                          }}
-                          className={`flex min-h-9 w-full items-center gap-2 rounded-md border px-3 py-2 text-left font-mono text-[10px] font-bold uppercase tracking-wider transition-colors ${section === "settings" && settingsSubtab === value ? "border-primary/30 bg-primary/8 text-primary shadow-[inset_3px_0_0_hsl(var(--primary))]" : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
-                        >
-                          <Icon size={13} /> {label}
-                        </button>
-                      ))}
-                    </div>
+                    <SettingsSubnav
+                      activeTab={section === "settings" ? settingsSubtab : "site"}
+                      onSelect={(tab) => {
+                        setSettingsSubtab(tab);
+                        goToSection("settings");
+                        setMobileNavOpen(false);
+                      }}
+                    />
                   )}
                 </div>
                 <button

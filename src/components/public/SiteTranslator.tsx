@@ -35,12 +35,9 @@ export function SiteTranslator() {
   const [languages, setLanguages] = useState<TranslationLanguageCode[]>([
     ...DEFAULT_TRANSLATION_LANGUAGES,
   ]);
-  const [popoverOpen, setPopoverOpen] = useState(false);
-  const [popupOffset, setPopupOffset] = useState(0);
   const [status, setStatus] = useState("");
   const [widgetReady, setWidgetReady] = useState(false);
   const detailsRef = useRef<HTMLDetailsElement>(null);
-  const popupRef = useRef<HTMLDivElement>(null);
   const observer = useRef<MutationObserver | null>(null);
   const optionObserver = useRef<MutationObserver | null>(null);
   const timeout = useRef<number | null>(null);
@@ -79,7 +76,7 @@ export function SiteTranslator() {
 
   useEffect(() => {
     document.documentElement.lang = language;
-    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = "ltr";
 
     const secure = window.location.protocol === "https:" ? "; Secure" : "";
     if (language === "en") {
@@ -126,34 +123,80 @@ export function SiteTranslator() {
   }, [language, languages]);
 
   useEffect(() => {
-    if (!popoverOpen) return;
+    const digits = language === "ar"
+      ? "٠١٢٣٤٥٦٧٨٩"
+      : "0123456789";
+    const digitPattern = /[0-9٠-٩]/g;
 
-    const positionPopup = () => {
-      const details = detailsRef.current;
-      const popup = popupRef.current;
-      const summary = details?.querySelector("summary");
-      if (!details || !popup || !summary) return;
+    const localizeDigits = (textNode: Node) => {
+      if (
+        !textNode.textContent ||
+        textNode.parentElement?.closest(
+          "#google-translate-element, script, style, noscript",
+        )
+      ) {
+        return;
+      }
 
-      const detailsRect = details.getBoundingClientRect();
-      const summaryRect = summary.getBoundingClientRect();
-      const popupWidth = popup.getBoundingClientRect().width;
-      const viewportWidth = document.documentElement.clientWidth;
-      const preferredLeft =
-        language === "ar"
-          ? summaryRect.left
-          : summaryRect.right - popupWidth;
-      const safeLeft = Math.max(
-        8,
-        Math.min(preferredLeft, viewportWidth - popupWidth - 8),
-      );
+      const localized = textNode.textContent.replace(digitPattern, (digit) => {
+        const value = digit.charCodeAt(0) >= 0x0660
+          ? digit.charCodeAt(0) - 0x0660
+          : digit.charCodeAt(0) - 0x0030;
+        return digits[value];
+      });
 
-      setPopupOffset(safeLeft - detailsRect.left);
+      if (localized !== textNode.textContent) {
+        textNode.textContent = localized;
+      }
     };
 
-    positionPopup();
-    window.addEventListener("resize", positionPopup);
-    return () => window.removeEventListener("resize", positionPopup);
-  }, [language, popoverOpen]);
+    const localizeTree = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        localizeDigits(node);
+        return;
+      }
+
+      const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) localizeDigits(walker.currentNode);
+    };
+
+    localizeTree(document.body);
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === "characterData") {
+          localizeDigits(mutation.target);
+        } else {
+          mutation.addedNodes.forEach(localizeTree);
+        }
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    return () => observer.disconnect();
+  }, [language]);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const details = detailsRef.current;
+      if (
+        !details?.open ||
+        details.contains(event.target as Node)
+      ) {
+        return;
+      }
+
+      details.removeAttribute("open");
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () =>
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+  }, []);
 
   useEffect(() => {
     const handleWidgetChange = (event: Event) => {
@@ -161,6 +204,7 @@ export function SiteTranslator() {
       const nextLanguage = select.value || "en";
       setLanguage(nextLanguage);
       setStatus("");
+      detailsRef.current?.removeAttribute("open");
     };
 
     const attachWidgetListener = () => {
@@ -327,10 +371,10 @@ export function SiteTranslator() {
   return (
     <details
       ref={detailsRef}
-      className="relative shrink-0"
+      className="notranslate relative shrink-0"
+      translate="no"
       onToggle={(event) => {
         const isOpen = event.currentTarget.open;
-        setPopoverOpen(isOpen);
         if (isOpen) openTranslator();
       }}
     >
@@ -344,21 +388,26 @@ export function SiteTranslator() {
         </span>
       </summary>
       <div
-        ref={popupRef}
         dir="ltr"
-        style={{ left: `${popupOffset}px` }}
-        className="site-translator-popup absolute left-0 top-full z-70 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card p-4 text-foreground shadow-2xl"
+        className="site-translator-popup text-foreground"
       >
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Website language
+        <p className="mb-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Language
         </p>
-        <div id="google-translate-element" className="site-translator-widget mt-2 min-h-10" />
-        <span className="mt-2 block text-xs text-muted-foreground" role="status" aria-live="polite">
-          {status}
-        </span>
-        <p className="mt-3 text-[11px] leading-4 text-muted-foreground">
-          Your country or browser language sets the default. Google Translate processes page text while translation is active.
-        </p>
+        <div
+          id="google-translate-element"
+          className="site-translator-widget notranslate min-h-10"
+          translate="no"
+        />
+        {status && (
+          <span
+            className="mt-1 block text-[10px] text-muted-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            {status}
+          </span>
+        )}
       </div>
     </details>
   );
