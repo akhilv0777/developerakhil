@@ -672,10 +672,25 @@ export async function revokeAllAdminSessions(username: string): Promise<void> {
   await sql`DELETE FROM admin_sessions WHERE username = ${username};`;
 }
 
+function normalizeCanonicalUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+
+  const candidate = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed.replace(/^\/\//, "")}`;
+  const url = new URL(candidate);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Canonical URL must use HTTP or HTTPS.");
+  }
+  return url.toString();
+}
+
 export async function getContactSettings(): Promise<ContactSettings> {
   await ensureSchema();
   const result = await sql`SELECT data FROM contact_settings WHERE id = 1;`;
-  return { ...defaultContactSettings, ...(result.rows[0]?.data ?? {}) };
+  const settings = { ...defaultContactSettings, ...(result.rows[0]?.data ?? {}) };
+  return { ...settings, siteUrl: normalizeCanonicalUrl(settings.siteUrl) };
 }
 
 export async function saveContactSettings(
@@ -684,7 +699,13 @@ export async function saveContactSettings(
   await ensureSchema();
   await updateRecord(
     "contact_settings",
-    { data: JSON.stringify(settings), updated_at: new Date() },
+    {
+      data: JSON.stringify({
+        ...settings,
+        siteUrl: normalizeCanonicalUrl(settings.siteUrl),
+      }),
+      updated_at: new Date(),
+    },
     { id: 1 },
   );
 }
