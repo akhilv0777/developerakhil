@@ -391,6 +391,7 @@ export type ContactSettings = {
   siteName: string;
   siteDescription: string;
   siteKeywords: string;
+  customMetaTags: { name: string; content: string }[];
   translationLanguages: string[];
   siteUrl: string;
   openGraphImage: string;
@@ -416,6 +417,7 @@ const defaultContactSettings: ContactSettings = {
     "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
   siteKeywords:
     "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+  customMetaTags: [],
   translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
   siteUrl: "https://www.developerakhil.site/",
   openGraphImage: "/og-image.svg",

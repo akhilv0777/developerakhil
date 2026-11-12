@@ -95,6 +95,12 @@ export async function generateMetadata(): Promise<Metadata> {
         images: [ogImageUrl],
       },
       other: {
+        ...Object.fromEntries(
+          (settings.customMetaTags || []).map(({ name, content }) => [
+            name,
+            content,
+          ]),
+        ),
         "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",

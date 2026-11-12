@@ -26,6 +26,7 @@ let inMemorySettings: ContactSettings = {
     "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
   siteKeywords:
     "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+  customMetaTags: [],
   translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
   siteUrl: "https://www.developerakhil.site/",
   openGraphImage: "/og-image.svg",
@@ -58,6 +59,33 @@ function isDatabaseUnavailableError(error: unknown): boolean {
 function isValidSettings(value: unknown): value is ContactSettings {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
+  const reservedMetaNames = new Set([
+    "application-name",
+    "color-scheme",
+    "description",
+    "keywords",
+    "robots",
+    "theme-color",
+    "viewport",
+  ]);
+  const customMetaTags = record.customMetaTags;
+  const areCustomMetaTagsValid =
+    customMetaTags === undefined ||
+    (Array.isArray(customMetaTags) &&
+      customMetaTags.length <= 50 &&
+      customMetaTags.every((tag) => {
+        if (!tag || typeof tag !== "object") return false;
+        const { name, content } = tag as Record<string, unknown>;
+        return (
+          typeof name === "string" &&
+          name.length <= 100 &&
+          /^[a-zA-Z][a-zA-Z0-9._:-]*$/.test(name) &&
+          !reservedMetaNames.has(name.toLowerCase()) &&
+          typeof content === "string" &&
+          content.trim().length > 0 &&
+          content.length <= 2000
+        );
+      }));
   return (
     typeof record.googleAdsenseAccount === "string" &&
     typeof record.googleAnalyticsMeasurementId === "string" &&
@@ -70,6 +98,7 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.siteName === "string" &&
     typeof record.siteDescription === "string" &&
     typeof record.siteKeywords === "string" &&
+    areCustomMetaTagsValid &&
     Array.isArray(record.translationLanguages) &&
     record.translationLanguages.every(
       (code) =>
@@ -135,6 +164,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         siteName: req.body.siteName.trim(),
         siteDescription: typeof req.body.siteDescription === "string" ? req.body.siteDescription.trim() : current.siteDescription,
         siteKeywords: typeof req.body.siteKeywords === "string" ? req.body.siteKeywords.trim() : current.siteKeywords,
+        customMetaTags: Array.isArray(req.body.customMetaTags)
+          ? req.body.customMetaTags.map(
+              (tag: { name: string; content: string }) => ({
+                name: tag.name.trim(),
+                content: tag.content.trim(),
+              }),
+            )
+          : current.customMetaTags,
         translationLanguages: normalizeTranslationLanguages(req.body.translationLanguages),
         siteUrl: typeof req.body.siteUrl === "string" ? req.body.siteUrl.trim() : current.siteUrl,
         openGraphImage: typeof req.body.openGraphImage === "string" ? req.body.openGraphImage.trim() : current.openGraphImage,
