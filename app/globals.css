@@ -284,7 +284,7 @@ body {
 }
 
 .public-shell .portfolio-layout {
-  grid-template-columns: minmax(19rem, 0.78fr) minmax(0, 1.22fr);
+  grid-template-columns: minmax(18rem, 0.68fr) minmax(0, 1.32fr);
 }
 
 .public-shell .portfolio-profile-panel {
@@ -296,33 +296,27 @@ body {
 }
 
 .public-shell .portfolio-profile-panel::before {
-  position: absolute;
-  inset: 1.25rem;
-  z-index: -1;
-  border: 1px solid hsl(var(--foreground) / 0.045);
-  border-radius: 1.75rem;
-  content: "";
-  pointer-events: none;
+  display: none;
 }
 
 .public-shell .portfolio-profile-content {
-  width: min(100% - 3rem, 30rem);
+  width: min(100% - 2rem, 27rem);
   margin-block: auto;
 }
 
-.public-shell #hero .portfolio-profile-content > div:first-child > div:first-child {
+.public-shell #hero .portfolio-profile-avatar {
   box-shadow:
-    0 0 0 0.45rem hsl(var(--primary) / 0.07),
-    0 18px 42px hsl(var(--foreground) / 0.16);
+    0 0 0 0.3rem hsl(var(--primary) / 0.09),
+    0 16px 36px hsl(var(--foreground) / 0.14);
 }
 
-.public-shell #hero .portfolio-profile-content > div:first-child p:first-child {
+.public-shell #hero .portfolio-profile-status {
   border-color: hsl(152 62% 42% / 0.38);
   background: hsl(152 62% 32% / 0.18);
   color: hsl(var(--foreground));
 }
 
-.public-shell #hero .portfolio-profile-content > div:first-child p:first-child > span {
+.public-shell #hero .portfolio-profile-status > span {
   display: block;
   flex: 0 0 auto;
   transform-origin: center;
@@ -358,21 +352,24 @@ body {
 }
 
 .public-shell #hero h1 {
-  font-size: clamp(2.5rem, 4vw, 3.75rem);
-  letter-spacing: -0.055em;
-  line-height: 1.04;
+  font-size: clamp(2rem, 3.2vw, 2.85rem);
+  letter-spacing: -0.045em;
+  line-height: 1.08;
 }
 
 .public-shell #hero #stats {
-  overflow: hidden;
-  border: 1px solid hsl(var(--border) / 0.82);
-  border-radius: 1rem;
-  background: hsl(var(--card) / 0.58);
-  box-shadow: 0 10px 28px hsl(var(--foreground) / 0.045);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-.public-shell #hero #stats > div {
-  min-height: 5.3rem;
+.public-shell #hero #stats > .portfolio-profile-stat {
+  min-height: 4.25rem;
+  border: 1px solid hsl(var(--border) / 0.76);
+  background: hsl(var(--card) / 0.62);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.035);
 }
 
 .public-shell #hero #stats > div > span:first-child {
@@ -381,26 +378,27 @@ body {
 }
 
 .public-shell .portfolio-section-links {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.35rem;
-  padding: 0.7rem;
-  border: 1px solid hsl(var(--border) / 0.82);
-  border-radius: 1rem;
-  background: hsl(var(--card) / 0.58);
-  box-shadow: 0 10px 28px hsl(var(--foreground) / 0.045);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.1rem;
+  padding: 0.75rem 0 0;
+  border-color: hsl(var(--border) / 0.62);
+  background: transparent;
+  box-shadow: none;
 }
 
 .public-shell .portfolio-section-link {
+  position: relative;
   display: inline-flex;
-  min-height: 2rem;
+  min-height: 1.3rem;
   align-items: center;
-  justify-content: center;
-  padding: 0.3rem 0.45rem;
-  border: 1px solid hsl(var(--border) / 0.72);
-  border-radius: 9999px;
+  gap: 0.65rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
   color: hsl(var(--muted-foreground));
-  text-align: center;
-  font-size: 0.7rem;
+  text-align: left;
+  font-size: 0.68rem;
   text-decoration: none;
   white-space: nowrap;
   transition:
@@ -411,19 +409,54 @@ body {
     box-shadow 160ms ease;
 }
 
+.public-shell .portfolio-section-link:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.6);
+  outline-offset: 2px;
+}
+
 .public-shell .portfolio-section-link:hover {
-  border-color: hsl(var(--primary) / 0.2);
-  background: hsl(var(--primary) / 0.07);
+  background: hsl(var(--primary) / 0.055);
   color: hsl(var(--primary));
-  transform: translateY(-1px);
 }
 
 .public-shell .portfolio-section-link.is-active {
-  border-color: hsl(var(--primary) / 0.34);
-  background: hsl(var(--primary) / 0.12);
+  border-color: hsl(var(--primary) / 0.22);
+  background: hsl(var(--primary) / 0.09);
   color: hsl(var(--primary));
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.06);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
+}
+
+.public-shell:not(.light) .portfolio-section-link:hover,
+.public-shell:not(.light) .portfolio-section-link.is-active {
+  color: hsl(var(--foreground));
+}
+
+.public-shell:not(.light) .portfolio-section-link.is-active {
+  border-color: hsl(var(--primary) / 0.38);
+  background: hsl(var(--primary) / 0.16);
+}
+
+.public-shell:not(.light) .portfolio-section-link.is-active .portfolio-section-index {
+  color: hsl(var(--foreground) / 0.78);
+}
+
+.public-shell .portfolio-section-index {
+  width: 1.25rem;
+  flex: 0 0 auto;
+  color: hsl(var(--muted-foreground) / 0.72);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.public-shell .portfolio-section-link.is-active .portfolio-section-index {
+  color: hsl(var(--primary));
+}
+
+.public-shell .portfolio-section-arrow {
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .public-shell .portfolio-content {
@@ -1515,31 +1548,16 @@ body {
 }
 
 .public-shell.light main > #hero {
-  --background: 240 15% 7%;
-  --foreground: 36 30% 96%;
-  --border: 0 0% 100%;
-  --input: 0 0% 100%;
-  --card: 240 12% 12%;
-  --card-foreground: 36 30% 96%;
-  --card-border: 240 8% 23%;
-  --secondary: 240 9% 17%;
-  --secondary-foreground: 36 30% 96%;
-  --muted: 240 9% 15%;
-  --muted-foreground: 225 10% 72%;
   background:
-    radial-gradient(ellipse at 80% 10%, hsl(var(--primary) / 0.18), transparent 28rem),
-    linear-gradient(155deg, hsl(240 13% 11%), hsl(240 15% 6%) 74%);
-  border-right-color: hsl(0 0% 100% / 0.12);
-}
-
-.public-shell.light .portfolio-profile-panel::before {
-  border-color: hsl(0 0% 100% / 0.08);
+    radial-gradient(ellipse at 80% 10%, hsl(var(--primary) / 0.1), transparent 28rem),
+    linear-gradient(155deg, hsl(var(--card)), hsl(var(--background)) 74%);
+  border-right-color: hsl(var(--border) / 0.82);
 }
 
 .public-shell.light .portfolio-section-links {
-  border-color: hsl(0 0% 100% / 0.12);
-  background: hsl(0 0% 100% / 0.035);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  border-color: hsl(var(--border) / 0.62);
+  background: transparent;
+  box-shadow: none;
 }
 
 .public-shell.light .portfolio-section-link {
@@ -1547,27 +1565,31 @@ body {
   color: hsl(var(--muted-foreground));
 }
 
-.public-shell.light .portfolio-section-link:hover,
+.public-shell.light .portfolio-section-link:hover {
+  color: hsl(var(--primary));
+}
+
 .public-shell.light .portfolio-section-link.is-active {
-  border-color: hsl(var(--primary) / 0.38);
-  background: hsl(var(--primary) / 0.16);
-  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 0.22);
+  background: hsl(var(--primary) / 0.09);
+  color: hsl(var(--primary));
 }
 
 .public-shell.light #hero #stats {
-  border-color: hsl(0 0% 100% / 0.12);
-  background: hsl(0 0% 100% / 0.045);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
-.public-shell.light #hero #stats > div + div {
-  border-color: hsl(0 0% 100% / 0.12);
+.public-shell.light #hero #stats > .portfolio-profile-stat {
+  border-color: hsl(var(--border) / 0.8);
+  background: hsl(var(--card) / 0.78);
 }
 
-.public-shell.light #hero .portfolio-profile-content > div:first-child p:first-child {
-  color: hsl(36 30% 96%);
-  border-color: hsl(152 62% 52% / 0.38);
-  background: hsl(152 62% 42% / 0.2);
+.public-shell.light #hero .portfolio-profile-status {
+  color: hsl(152 58% 26%);
+  border-color: hsl(152 38% 78%);
+  background: hsl(152 52% 94%);
 }
 
 .public-shell #work [data-project-card] {
@@ -1600,13 +1622,13 @@ body {
 }
 
 @media (max-width: 35.99rem), (min-width: 62rem) {
-  .public-shell #hero #stats > div {
+  .public-shell #hero #stats > div:not(.portfolio-profile-stat) {
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
   }
 
-  .public-shell #hero #stats > div:nth-child(odd) {
+  .public-shell #hero #stats > div:nth-child(odd):not(.portfolio-profile-stat) {
     border-right: 1px solid hsl(var(--border) / 0.82);
   }
 }
@@ -1695,14 +1717,14 @@ body {
   }
 
   .public-shell .portfolio-section-links {
-    gap: 0.3rem;
+    gap: 0.1rem;
     margin-top: 1.1rem;
-    padding: 0.55rem;
+    padding: 0;
   }
 
   .public-shell .portfolio-section-link {
-    min-height: 1.8rem;
-    padding: 0.25rem 0.35rem;
+    min-height: 1.3rem;
+    padding: 0.1rem 0.35rem;
     font-size: 0.68rem;
   }
 }
@@ -1773,6 +1795,6 @@ body {
   }
 }
 
-.public-shell #hero #stats > div:nth-child(n) {
+.public-shell #hero #stats > div:nth-child(n):not(.portfolio-profile-stat) {
   border: 0;
 }

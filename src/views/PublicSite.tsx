@@ -205,12 +205,12 @@ function Hero({
       id="hero"
       data-mf-animation="fade-up"
       data-mf-animation-once="true"
-      className="portfolio-profile-panel relative bg-background px-5 py-10 sm:px-8 sm:py-12 lg:px-8"
+      className="portfolio-profile-panel relative bg-background px-5 py-10 sm:px-8 sm:py-12 lg:px-7"
     >
       <div className="portfolio-profile-content mx-auto w-full max-w-[28rem] text-center lg:text-left">
-        <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-left lg:justify-start">
+        <div className="portfolio-profile-header flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:text-left lg:justify-start">
           <div
-            className="relative h-28 w-28 shrink-0 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-sky-400 p-[3px] shadow-lg shadow-primary/10"
+            className="portfolio-profile-avatar relative h-20 w-20 shrink-0 rounded-full bg-gradient-to-br from-primary via-emerald-400 to-sky-400 p-[3px] shadow-lg shadow-primary/10 sm:h-24 sm:w-24"
           >
             <div className="relative h-full w-full overflow-hidden rounded-full border-2 border-background bg-secondary">
               <Image
@@ -224,7 +224,7 @@ function Hero({
             </div>
           </div>
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono text-[10px] font-semibold text-emerald-800">
+            <p className="portfolio-profile-status inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono text-[10px] font-semibold text-emerald-800">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               {heroBadge}
             </p>
@@ -237,13 +237,13 @@ function Hero({
         <h1
           data-mf-animation="fade-up"
           data-mf-animation-once="true"
-          className="display-title mt-5 text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl"
+          className="portfolio-profile-name display-title mt-4 text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl"
         >
           {profile.name}
         </h1>
 
         {roles.length > 0 && (
-          <div className="mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
+          <div className="portfolio-profile-roles mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
             {roles.map((role, index) => (
               <span
                 key={`${role}-${index}`}
@@ -258,18 +258,18 @@ function Hero({
         {showStats && stats.length > 0 && (
           <div
             id="stats"
-            className="mt-5 grid grid-cols-2 border-y border-border sm:flex sm:flex-wrap sm:divide-x sm:divide-border lg:grid lg:grid-cols-2 lg:divide-x-0"
+            className="portfolio-profile-stats mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4"
           >
             {stats.map((stat) => (
               <div
                 key={stat.id}
                 data-testid={`stat-${stat.id}`}
-                className="flex min-w-0 flex-1 flex-col items-center justify-center px-2 py-3 text-center even:border-l even:border-border sm:border-l-0 lg:border-b lg:border-border lg:py-3 lg:odd:border-r lg:odd:border-border"
+                className="portfolio-profile-stat flex min-w-0 flex-col items-center justify-center rounded-xl border border-border/70 bg-card/55 px-2 py-3 text-center"
               >
-                <span className="text-2xl font-bold leading-none text-foreground">
+                <span className="text-xl font-bold leading-none text-foreground">
                   <StatValue value={stat.value} />
                 </span>
-                <span className="mt-2 text-xs text-muted-foreground">
+                <span className="mt-1.5 text-[10px] leading-4 text-muted-foreground">
                   {stat.label}
                 </span>
               </div>
@@ -279,12 +279,12 @@ function Hero({
 
         <p
           data-hero-reveal
-          className="mx-auto mt-5 max-w-[680px] text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7 lg:mx-0"
+          className="portfolio-profile-bio mx-auto mt-4 max-w-[680px] text-sm leading-6 text-muted-foreground sm:text-base sm:leading-7 lg:mx-0"
         >
           {profile.bio1}
         </p>
 
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+        <div className="portfolio-profile-socials mt-4 flex flex-wrap items-center justify-center gap-2 lg:justify-start">
           {profile.github && (
             <a
               href={
@@ -349,7 +349,7 @@ function Hero({
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
+        <div className="portfolio-profile-actions mt-4 flex flex-wrap justify-center gap-3 lg:justify-start">
           <a
             href="#contact"
             className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 font-mono text-xs font-semibold text-background shadow-[0_6px_18px_hsl(var(--foreground)/0.15)] transition-transform hover:-translate-y-0.5"
@@ -372,9 +372,9 @@ function Hero({
         {navItems.length > 0 && (
           <nav
             aria-label="Portfolio sections"
-            className="portfolio-section-links mt-7 hidden border-t border-border pt-5 lg:grid"
+            className="portfolio-section-links mt-5 hidden border-t border-border pt-4 lg:grid"
           >
-            {navItems.map((item) => (
+            {navItems.map((item, index) => (
               <a
                 key={item.id}
                 href={`#${item.id}`}
@@ -393,7 +393,17 @@ function Hero({
                 className={`portfolio-section-link${activeSection === item.id ? " is-active" : ""}`}
                 aria-current={activeSection === item.id ? "location" : undefined}
               >
-                {item.label}
+                <span className="portfolio-section-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span>{item.label}</span>
+                {activeSection === item.id && (
+                  <ArrowUpRight
+                    size={13}
+                    aria-hidden="true"
+                    className="portfolio-section-arrow"
+                  />
+                )}
               </a>
             ))}
           </nav>
