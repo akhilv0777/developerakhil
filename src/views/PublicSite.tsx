@@ -241,6 +241,9 @@ function Hero({
         >
           {profile.name}
         </h1>
+        <p className="mt-1 font-mono text-[11px] font-semibold tracking-wide text-muted-foreground">
+          Developer Akhil
+        </p>
 
         {roles.length > 0 && (
           <div className="portfolio-profile-roles mt-3 flex flex-wrap justify-center gap-2 lg:justify-start">
@@ -1730,8 +1733,12 @@ function PortfolioAssistant({
   );
 }
 
-export function PublicPortfolio() {
-  const { data, isLoading, isError } = usePortfolioQuery();
+export function PublicPortfolio({
+  initialData,
+}: {
+  initialData: PortfolioData;
+}) {
+  const { data, isLoading, isError } = usePortfolioQuery(initialData);
   const shellRef = useRef<HTMLDivElement>(null);
   useMotionFlow([Boolean(data), isLoading, isError]);
   const [themeOverride, setThemeOverride] = useState<"dark" | "light">("light");
@@ -1777,10 +1784,8 @@ export function PublicPortfolio() {
         .then((response) => response.json())
         .then(
           (settings: {
-            siteName?: string;
             faviconUrl?: string;
           }) => {
-            if (settings.siteName) document.title = settings.siteName;
             if (settings.faviconUrl) {
               document
                 .querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')

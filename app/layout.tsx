@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { DM_Sans, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-import { getContactSettings } from "@/lib/api-server/db";
+import {
+  getContactSettings,
+  getPublicPortfolioData,
+} from "@/lib/api-server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,37 +24,58 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
 });
 
+const defaultDescription =
+  "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India, building React-powered Gutenberg blocks, Laravel apps, and modern websites.";
+const previousDefaultDescription =
+  "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.";
+const defaultKeywords = [
+  "Developer Akhil",
+  "Akhil developer",
+  "Akhilesh Vishwakarma",
+  "WordPress developer India",
+  "PHP developer India",
+  "Gutenberg developer",
+  "React developer",
+  "Laravel developer",
+  "web developer portfolio",
+];
+const getPageTitle = (siteName: string) =>
+  `Developer Akhil | ${siteName} - WordPress & PHP Developer`;
+const getSeoDescription = (configuredDescription?: string) => {
+  const description = configuredDescription?.trim();
+  return !description || description === previousDefaultDescription
+    ? defaultDescription
+    : description;
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const settings = await getContactSettings();
     const siteName = settings.siteName || "Akhilesh Vishwakarma";
-    const description =
-      settings.siteDescription ||
-      "Akhilesh Vishwakarma is a full-stack developer, UI engineer, and digital craftsman building fast, scalable web products with React, Next.js, and modern design systems.";
-    const keywords =
-      settings.siteKeywords
-        ?.split(",")
-        .map((value) => value.trim())
-        .filter(Boolean) || [
-        "Akhilesh Vishwakarma",
-        "full stack developer",
-        "React developer",
-        "Next.js developer",
-        "UI engineer",
-        "web developer",
-        "portfolio website",
-      ];
+    const description = getSeoDescription(settings.siteDescription);
+    const keywords = Array.from(
+      new Set([
+        ...(settings.siteKeywords
+          ?.split(",")
+          .map((value) => value.trim())
+          .filter(Boolean) || []),
+        ...defaultKeywords,
+      ]),
+    );
     const siteUrl =
-      settings.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
+      settings.siteUrl ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      "https://developerakhil.site/";
     const ogImage = settings.openGraphImage || "/og-image.svg";
     const faviconUrl = settings.faviconUrl || "/favicon.svg";
-    const canonicalUrl = siteUrl.replace(/\/$/, "");
+    const canonicalUrl = siteUrl.replace(/\/+$/, "");
     const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
+    const title = getPageTitle(siteName);
 
     return {
       metadataBase: new URL(canonicalUrl),
-      title: `${siteName} | Full-Stack Developer & UI Engineer`,
+      title,
       description,
       keywords,
       applicationName: siteName,
@@ -78,7 +102,7 @@ export async function generateMetadata(): Promise<Metadata> {
         },
       },
       openGraph: {
-        title: `${siteName} | Full-Stack Developer & UI Engineer`,
+        title,
         description,
         siteName,
         type: "website",
@@ -90,7 +114,7 @@ export async function generateMetadata(): Promise<Metadata> {
         card: "summary_large_image",
         site: "@akhilesh",
         creator: "@akhilesh",
-        title: `${siteName} | Full-Stack Developer & UI Engineer`,
+        title,
         description,
         images: [ogImageUrl],
       },
@@ -108,32 +132,23 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     };
   } catch {
-    const defaultTitle = "Akhilesh Vishwakarma | Full-Stack Developer & UI Engineer";
-    const defaultDescription =
-      "Akhilesh Vishwakarma is a full-stack developer, UI engineer, and digital craftsman building fast, scalable web products with React, Next.js, and modern design systems.";
-    const fallbackUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
+    const siteName = "Akhilesh Vishwakarma";
+    const defaultTitle = getPageTitle(siteName);
+    const fallbackUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://developerakhil.site/";
     const fallbackOgImage = new URL("/og-image.svg", fallbackUrl).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
     return {
-      metadataBase: new URL(fallbackUrl),
+      metadataBase: new URL(fallbackUrl.replace(/\/+$/, "")),
       title: defaultTitle,
       description: defaultDescription,
-      keywords: [
-        "Akhilesh Vishwakarma",
-        "full stack developer",
-        "React developer",
-        "Next.js developer",
-        "web developer",
-        "portfolio website",
-        "frontend developer",
-        "backend developer",
-      ],
-      applicationName: "Akhilesh Vishwakarma",
-      authors: [{ name: "Akhilesh Vishwakarma" }],
-      creator: "Akhilesh Vishwakarma",
-      publisher: "Akhilesh Vishwakarma",
-      alternates: { canonical: fallbackUrl },
+      keywords: defaultKeywords,
+      applicationName: siteName,
+      authors: [{ name: siteName }, { name: "Developer Akhil" }],
+      creator: siteName,
+      publisher: siteName,
+      alternates: { canonical: fallbackUrl.replace(/\/+$/, "") },
       verification: verification ? { google: verification } : undefined,
       icons: {
         icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
@@ -152,11 +167,11 @@ export async function generateMetadata(): Promise<Metadata> {
       openGraph: {
         title: defaultTitle,
         description: defaultDescription,
-        siteName: "Akhilesh Vishwakarma",
+        siteName,
         type: "website",
-        url: fallbackUrl,
+        url: fallbackUrl.replace(/\/+$/, ""),
         locale: "en_US",
-        images: [{ url: fallbackOgImage, width: 1200, height: 630, alt: "Akhilesh Vishwakarma" }],
+        images: [{ url: fallbackOgImage, width: 1200, height: 630, alt: siteName }],
       },
       twitter: {
         card: "summary_large_image",
@@ -167,10 +182,10 @@ export async function generateMetadata(): Promise<Metadata> {
         images: [fallbackOgImage],
       },
       other: {
-        "application-name": "Akhilesh Vishwakarma",
+        "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",
-        keywords: "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer",
+        keywords: defaultKeywords.join(", "),
       },
     };
   }
@@ -182,46 +197,46 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const settings = await getContactSettings().catch(() => null);
+  const portfolio = await getPublicPortfolioData();
   const siteName = settings?.siteName || "Akhilesh Vishwakarma";
-  const description =
-    settings?.siteDescription ||
-    "Akhilesh Vishwakarma is a full-stack developer, UI engineer, and digital craftsman building fast, scalable web products with React, Next.js, and modern design systems.";
+  const description = getSeoDescription(settings?.siteDescription);
   const siteUrl =
-    settings?.siteUrl || process.env.NEXT_PUBLIC_SITE_URL || "https://www.developerakhil.site/";
+    settings?.siteUrl ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    "https://developerakhil.site/";
+  const canonicalUrl = siteUrl.replace(/\/+$/, "");
   const ogImage = settings?.openGraphImage || "/og-image.svg";
-  const ogImageUrl = new URL(ogImage, siteUrl).toString();
+  const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
+  const profile = portfolio.profile;
+  const absoluteProfileUrl = (value: string) =>
+    /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  const sameAs = [
+    profile.github,
+    profile.linkedin,
+    ...(profile.socialLinks || []).map((link) => link.url),
+  ]
+    .filter(Boolean)
+    .map(absoluteProfileUrl);
   const structuredData = [
     {
       "@context": "https://schema.org",
       "@type": "Person",
-      name: siteName,
-      jobTitle: "Full-Stack Developer & UI Engineer",
-      description,
-      knowsAbout: [
-        "Full-Stack Development",
-        "React",
-        "Next.js",
-        "UI Engineering",
-        "Web Design",
-        "Frontend Architecture",
-        "Backend Development",
-      ],
-      sameAs: [],
-      url: siteUrl,
+      name: profile.name,
+      alternateName: "Developer Akhil",
+      jobTitle: profile.roles?.join(", ") || profile.tagline,
+      description: profile.bio1 || description,
+      knowsAbout: profile.skills,
+      sameAs,
+      url: canonicalUrl,
       image: ogImageUrl,
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: siteName,
-      url: siteUrl,
+      name: getPageTitle(siteName),
+      url: canonicalUrl,
       description,
-      inLanguage: "en-US",
-      potentialAction: {
-        "@type": "SearchAction",
-        target: `${siteUrl}/?q={search_term_string}`,
-        "query-input": "required name=search_term_string",
-      },
+      inLanguage: "en-IN",
     },
   ];
 
@@ -233,7 +248,9 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+          }}
         />
         <Providers>{children}</Providers>
       </body>

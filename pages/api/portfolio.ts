@@ -1,45 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { ensureSchema, seedPortfolioData, sql } from '@/lib/api-server/db';
+import {
+  ensureSchema,
+  isDatabaseUnavailableError,
+  normalizePortfolioData,
+  seedPortfolioData,
+  sql,
+} from '@/lib/api-server/db';
 import { getSessionUser } from '@/lib/api-server/auth';
 
 const RESOURCE_KEYS = ['stats', 'services', 'projects', 'education', 'experience', 'testimonials'] as const;
 let inMemoryPortfolioData = JSON.parse(JSON.stringify(seedPortfolioData));
-
-function normalizePortfolioData(value: unknown) {
-  const normalized = JSON.parse(JSON.stringify(value)) as typeof seedPortfolioData;
-  normalized.profile.heroImage ||= normalized.profile.image || "";
-  normalized.profile.heroMobileImage ||= normalized.profile.heroImage || normalized.profile.image || "";
-  normalized.sectionVisibility.skills ??= true;
-  const existingIds = new Set(normalized.testimonials.map((item) => item.id));
-  normalized.testimonials = [
-    ...normalized.testimonials,
-    ...seedPortfolioData.testimonials.filter((item) => !existingIds.has(item.id)),
-  ];
-  return normalized;
-}
-
-function isDatabaseUnavailableError(error: unknown): boolean {
-  if (error instanceof AggregateError) {
-    return error.errors.some((err) => isDatabaseUnavailableError(err));
-  }
-
-  if (!error || typeof error !== 'object') {
-    return false;
-  }
-
-  const candidate = error as { code?: unknown; errno?: unknown; message?: unknown };
-  const code = typeof candidate.code === 'string' ? candidate.code : '';
-  const errno = typeof candidate.errno === 'number' || typeof candidate.errno === 'string' ? String(candidate.errno) : '';
-  const message = typeof candidate.message === 'string' ? candidate.message : '';
-
-  return (
-    code === 'ECONNREFUSED' ||
-    code === 'ECONNRESET' ||
-    code === 'ENOTFOUND' ||
-    errno === '-4078' ||
-    /ECONNREFUSED|ECONNRESET|connect/i.test(message)
-  );
-}
 
 /** Returns an empty array when the payload is valid, otherwise a list of
  * human-readable reasons — so a 400 always tells us (in the Vercel function

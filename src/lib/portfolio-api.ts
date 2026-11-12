@@ -6,9 +6,10 @@ import type { PortfolioData } from "./portfolio-types";
 // Shared by the public frontend and the admin console.
 // ---------------------------------------------------------------------
 
-export function usePortfolioQuery() {
+export function usePortfolioQuery(initialData?: PortfolioData) {
   return useQuery<PortfolioData>({
     queryKey: ["portfolio"],
+    ...(initialData ? { initialData } : {}),
     queryFn: async () => {
       const response = await fetch("/api/portfolio", {
         credentials: "include",

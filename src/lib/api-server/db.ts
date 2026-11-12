@@ -1,6 +1,9 @@
 import bcrypt from "bcryptjs";
 import { Pool, type QueryResultRow } from "pg";
-import { DEFAULT_PROJECT_IMAGES } from "../portfolio-types";
+import {
+  DEFAULT_PROJECT_IMAGES,
+  type PortfolioData,
+} from "../portfolio-types";
 
 /**
  * Different Postgres providers on the Vercel Marketplace name their env
@@ -414,12 +417,12 @@ const defaultContactSettings: ContactSettings = {
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
   siteDescription:
-    "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+    "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
   siteKeywords:
-    "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+    "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
   customMetaTags: [],
   translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
-  siteUrl: "https://www.developerakhil.site/",
+  siteUrl: "https://developerakhil.site/",
   openGraphImage: "/og-image.svg",
   faviconUrl: "",
   removeBgApiUrl: "",
@@ -695,6 +698,61 @@ export async function getContactSettings(): Promise<ContactSettings> {
   const result = await sql`SELECT data FROM contact_settings WHERE id = 1;`;
   const settings = { ...defaultContactSettings, ...(result.rows[0]?.data ?? {}) };
   return { ...settings, siteUrl: normalizeCanonicalUrl(settings.siteUrl) };
+}
+
+export function normalizePortfolioData(value: unknown): PortfolioData {
+  const normalized = JSON.parse(JSON.stringify(value)) as PortfolioData;
+  normalized.profile.heroImage ||= normalized.profile.image || "";
+  normalized.profile.heroMobileImage ||=
+    normalized.profile.heroImage || normalized.profile.image || "";
+  normalized.sectionVisibility.skills ??= true;
+  const existingIds = new Set(normalized.testimonials.map((item) => item.id));
+  normalized.testimonials = [
+    ...normalized.testimonials,
+    ...seedPortfolioData.testimonials.filter((item) => !existingIds.has(item.id)),
+  ];
+  return normalized;
+}
+
+export function isDatabaseUnavailableError(error: unknown): boolean {
+  if (error instanceof AggregateError) {
+    return error.errors.some((nestedError) =>
+      isDatabaseUnavailableError(nestedError),
+    );
+  }
+  if (!error || typeof error !== "object") return false;
+
+  const candidate = error as {
+    code?: unknown;
+    errno?: unknown;
+    message?: unknown;
+  };
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  const errno =
+    typeof candidate.errno === "number" || typeof candidate.errno === "string"
+      ? String(candidate.errno)
+      : "";
+  const message = typeof candidate.message === "string" ? candidate.message : "";
+
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ECONNRESET" ||
+    code === "ENOTFOUND" ||
+    errno === "-4078" ||
+    /ECONNREFUSED|ECONNRESET|connect/i.test(message)
+  );
+}
+
+export async function getPublicPortfolioData(): Promise<PortfolioData> {
+  try {
+    await ensureSchema();
+    const result = await sql`SELECT data FROM portfolio_content WHERE id = 1;`;
+    return normalizePortfolioData(result.rows[0]?.data ?? seedPortfolioData);
+  } catch (error) {
+    if (!isDatabaseUnavailableError(error)) throw error;
+    console.warn("Portfolio server render is using seed data:", error);
+    return normalizePortfolioData(seedPortfolioData);
+  }
 }
 
 export async function saveContactSettings(

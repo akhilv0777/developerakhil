@@ -23,12 +23,12 @@ let inMemorySettings: ContactSettings = {
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
   siteDescription:
-    "Akhilesh Vishwakarma is a full-stack developer and UI engineer building modern, scalable web experiences with React, Next.js, and custom product design.",
+    "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
   siteKeywords:
-    "Akhilesh Vishwakarma, full stack developer, React developer, Next.js developer, UI engineer, web developer, portfolio website",
+    "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
   customMetaTags: [],
   translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
-  siteUrl: "https://www.developerakhil.site/",
+  siteUrl: "https://developerakhil.site/",
   openGraphImage: "/og-image.svg",
   faviconUrl: "",
   removeBgApiUrl: "",
