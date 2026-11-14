@@ -368,14 +368,14 @@ function Hero({
         </div>
 
         <div className="portfolio-profile-actions mt-4 flex flex-wrap justify-center gap-3 lg:justify-start">
-          <a
-            href="#contact"
+          <Link
+            href="/"
             onClick={(event) => navigateToSection(event, "contact")}
             className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 font-mono text-xs font-semibold text-background shadow-[0_6px_18px_hsl(var(--foreground)/0.15)] transition-transform hover:-translate-y-0.5"
             data-testid="link-hero-work"
           >
             Let&apos;s build together <ArrowUpRight size={15} />
-          </a>
+          </Link>
           {profile.resume && (
             <button
               type="button"
@@ -394,9 +394,9 @@ function Hero({
             className="portfolio-section-links mt-5 hidden border-t border-border pt-4 lg:grid"
           >
             {navItems.map((item, index) => (
-              <a
+              <Link
                 key={item.id}
-                href={`#${item.id}`}
+                href="/"
                 onClick={(event) => {
                   setActiveSection(item.id);
                   navigateToSection(event, item.id);
@@ -415,7 +415,7 @@ function Hero({
                     className="portfolio-section-arrow"
                   />
                 )}
-              </a>
+              </Link>
             ))}
           </nav>
         )}
@@ -820,17 +820,17 @@ function Work({ data }: { data: PortfolioData }) {
         .filter(Boolean),
     ),
   );
-  const visibleCount =
-    activeCategory === "All projects"
-      ? data.projects.length
-      : data.projects.filter(
-          (project) =>
-            (project.category.trim() || "Uncategorized") === activeCategory,
-        ).length;
-
-  const setCategory = (category: string) => {
-    setActiveCategory(category);
-  };
+  const visibleProjects = data.projects
+    .map((project, index) => ({
+      project,
+      index,
+      category: project.category.trim() || "Uncategorized",
+    }))
+    .filter(
+      ({ category }) =>
+        activeCategory === "All projects" || category === activeCategory,
+    );
+  const visibleCount = visibleProjects.length;
 
   const shareProject = async (project: Project) => {
     const shareUrl = `${window.location.origin}/projects/${encodeURIComponent(project.id)}`;
@@ -895,7 +895,7 @@ function Work({ data }: { data: PortfolioData }) {
               type="button"
               role="tab"
               aria-selected={activeCategory === category}
-              onClick={() => setCategory(category)}
+              onClick={() => setActiveCategory(category)}
               className={`rounded-full border px-3 py-1.5 font-mono text-[10px] font-medium transition-colors ${
                 activeCategory === category
                   ? "border-foreground bg-foreground text-background"
@@ -913,10 +913,7 @@ function Work({ data }: { data: PortfolioData }) {
         data-project-grid
         className="grid gap-4 sm:grid-cols-2"
       >
-        {data.projects.map((project, index) => {
-          const category = project.category.trim() || "Uncategorized";
-          const isHidden =
-            activeCategory !== "All projects" && category !== activeCategory;
+        {visibleProjects.map(({ project, index, category }) => {
           const projectImage =
             project.image ||
             DEFAULT_PROJECT_IMAGES[index % DEFAULT_PROJECT_IMAGES.length];
@@ -924,7 +921,7 @@ function Work({ data }: { data: PortfolioData }) {
             <article
               key={project.id}
               data-project-card
-              className={`overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50 ${isHidden ? "hidden" : ""}`}
+              className="overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50"
             >
               <div className="group relative aspect-[16/9] overflow-hidden bg-secondary">
                 <Image
@@ -936,23 +933,23 @@ function Work({ data }: { data: PortfolioData }) {
                   quality={75}
                   className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:blur-sm group-focus-within:blur-sm"
                 />
-                <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/15 opacity-100 backdrop-blur-[2px] transition-opacity duration-300 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                <div className="absolute inset-0 bg-black/15 opacity-100 backdrop-blur-[2px] transition-opacity duration-300 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
                   <button
                     type="button"
                     onClick={() => setSelectedProject(project)}
-                    className="inline-flex items-center gap-2 rounded-full bg-background px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="absolute left-1/2 top-1/2 inline-flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full bg-primary px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-primary-foreground shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                   >
                     Details <ArrowUpRight size={14} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void shareProject(project)}
-                    aria-label={`Share ${project.title}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-black/40 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                  >
-                    <Share2 size={14} /> Share
-                  </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void shareProject(project)}
+                  aria-label={`Share ${project.title}`}
+                  className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-background text-primary shadow-lg transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <Share2 size={17} />
+                </button>
               </div>
               <div className="min-w-0 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -1780,6 +1777,25 @@ export function PublicPortfolio({
   const [aiAvailable, setAiAvailable] = useState(false);
 
   useEffect(() => {
+    const clearFragment = () => {
+      const fragment = window.location.hash.slice(1);
+      if (!fragment) return;
+      document
+        .getElementById(fragment)
+        ?.scrollIntoView({ behavior: "auto", block: "start" });
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    };
+
+    clearFragment();
+    const frame = window.requestAnimationFrame(clearFragment);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     let frame = 0;
     const updateScrollProgress = () => {
       cancelAnimationFrame(frame);
@@ -2006,8 +2022,8 @@ export function PublicPortfolio({
           <Footer profile={data.profile} />
         </div>
       </main>
-      <a
-        href="#top"
+      <Link
+        href="/"
         onClick={(event) => navigateToSection(event, "top")}
         className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg sm:bottom-6 sm:right-6"
         style={{
@@ -2020,7 +2036,7 @@ export function PublicPortfolio({
         <span className="flex h-full w-full items-center justify-center rounded-full bg-secondary hover:bg-primary hover:text-background">
           <ArrowUp size={17} aria-hidden="true" />
         </span>
-      </a>
+      </Link>
       {aiAvailable && (
         <PortfolioAssistant
           data={data}

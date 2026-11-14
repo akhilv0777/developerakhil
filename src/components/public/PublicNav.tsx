@@ -114,7 +114,13 @@ export function PublicNav({
   useEffect(() => {
     const updateActiveHash = () => {
       const nextHash = window.location.hash.replace("#", "");
-      if (nextHash) setActiveHash(nextHash);
+      if (!nextHash) return;
+      setActiveHash(nextHash);
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
     };
     updateActiveHash();
     window.addEventListener("hashchange", updateActiveHash);
@@ -167,9 +173,9 @@ export function PublicNav({
             const groupActive = group.items.some(([href]) => activeHash === href);
             if (isSingle) {
               const [href, label] = group.items[0];
-              return <a key={href} href={`#${href}`} onClick={(event) => handleSectionClick(event, href)} className="available-for-btn shrink-0" data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>
+              return <Link key={href} href="/" onClick={(event) => handleSectionClick(event, href)} className="available-for-btn shrink-0" data-testid={`link-nav-${href}`} aria-current={groupActive ? "page" : undefined}>
                 <span>{label}</span>
-              </a>;
+              </Link>;
             }
             return <div key={group.label} className="group relative w-full shrink-0 lg:w-auto">
               <button type="button" onClick={() => setOpenGroup((current) => current === group.label ? null : group.label)} className={`flex w-full cursor-pointer items-center justify-between gap-1 border-b border-border py-3 font-mono text-[11px] font-medium uppercase tracking-[.15em] transition-colors lg:w-auto lg:border-0 lg:py-0 ${groupActive ? "text-primary" : "text-muted-foreground hover:text-primary"}`} aria-expanded={openGroup === group.label}>
@@ -178,7 +184,7 @@ export function PublicNav({
               <div className={`${openGroup === group.label ? "flex" : "hidden"} relative mt-3 min-w-48 flex-col gap-1 rounded-lg border border-border/80 bg-card/95 p-2 shadow-2xl backdrop-blur-xl lg:absolute lg:left-1/2 lg:top-full lg:mt-2 lg:hidden lg:-translate-x-1/2 lg:before:absolute lg:before:-top-2 lg:before:left-0 lg:before:right-0 lg:before:h-2 lg:before:content-[''] lg:group-hover:flex`}>
                 {group.items.map(([href, label]) => {
                   const isActive = activeHash === href || (!activeHash && href === "about");
-                  return <a key={href} href={`#${href}`} onClick={(event) => handleSectionClick(event, href)} className={`rounded-md border-l-2 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-primary/40 hover:bg-secondary hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</a>;
+                  return <Link key={href} href="/" onClick={(event) => handleSectionClick(event, href)} className={`rounded-md border-l-2 px-3 py-2 font-mono text-[10px] font-medium uppercase tracking-[.15em] transition-colors ${isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-primary/40 hover:bg-secondary hover:text-primary"}`} data-testid={`link-nav-${href}`} aria-current={isActive ? "page" : undefined}>{label}</Link>;
                 })}
               </div>
             </div>;

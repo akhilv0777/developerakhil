@@ -94,7 +94,7 @@ export default function ProjectDetailClient({
       <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background px-6 text-center">
         <p className="font-mono text-xs font-bold uppercase tracking-widest text-primary">Project not found</p>
         <h1 className="display-title text-4xl font-bold text-foreground">This case study is unavailable.</h1>
-        <Link href="/#work" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary">
+        <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary">
           <ArrowLeft size={14} /> Back to projects
         </Link>
       </main>
@@ -105,7 +105,7 @@ export default function ProjectDetailClient({
     <main className="min-h-dvh bg-background text-foreground">
       <ToastContainer position="bottom-right" theme="dark" />
       <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
-        <Link href="/#work" className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary">
+        <Link href="/" className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary">
           <ArrowLeft size={14} /> Back to projects
         </Link>
 

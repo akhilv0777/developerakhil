@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getContactSettings, getPublicPortfolioData } from "@/lib/api-server/db";
 import ProjectDetailClient from "./ProjectDetailClient";
 
@@ -82,9 +83,9 @@ export default async function ProjectDetailPage({
       <main className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-background px-6 text-center">
         <p className="font-mono text-xs font-bold uppercase tracking-widest text-primary">Project not found</p>
         <h1 className="display-title text-4xl font-bold text-foreground">This case study is unavailable.</h1>
-        <a href="/#work" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary">
+        <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground hover:border-primary hover:text-primary">
           Back to projects
-        </a>
+        </Link>
       </main>
     );
   }
