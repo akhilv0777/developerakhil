@@ -392,13 +392,18 @@ export type ContactSettings = {
   contactFromEmail: string;
   twoFactorEnabled: boolean;
   siteName: string;
+  seoTitle: string;
   siteDescription: string;
   siteKeywords: string;
+  openGraphTitle: string;
+  openGraphDescription: string;
   customMetaTags: { name: string; content: string }[];
   translationLanguages: string[];
   siteUrl: string;
   openGraphImage: string;
   faviconUrl: string;
+  twitterHandle: string;
+  allowIndexing: boolean;
   removeBgApiUrl: string;
   removeBgApiKey: string;
   turnstileSiteKey: string;
@@ -416,15 +421,20 @@ const defaultContactSettings: ContactSettings = {
   contactFromEmail: "",
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
+  seoTitle: "",
   siteDescription:
     "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
   siteKeywords:
     "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
+  openGraphTitle: "",
+  openGraphDescription: "",
   customMetaTags: [],
   translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
   siteUrl: "https://developerakhil.site/",
   openGraphImage: "/og-image.svg",
   faviconUrl: "",
+  twitterHandle: "@akhilesh",
+  allowIndexing: true,
   removeBgApiUrl: "",
   removeBgApiKey: "",
   turnstileSiteKey: "",

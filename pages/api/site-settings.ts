@@ -67,13 +67,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const turnstileHostnames = settings.turnstileHostnames || process.env.TURNSTILE_HOSTNAMES || "";
     return res.status(200).json({
       siteName: settings.siteName,
+      seoTitle: settings.seoTitle,
       siteDescription: settings.siteDescription,
       siteKeywords: settings.siteKeywords,
+      openGraphTitle: settings.openGraphTitle,
+      openGraphDescription: settings.openGraphDescription,
       translationLanguages,
       preferredLanguage: getPreferredLanguage(req, translationLanguages),
       siteUrl: settings.siteUrl,
       openGraphImage: settings.openGraphImage,
       faviconUrl: settings.faviconUrl,
+      twitterHandle: settings.twitterHandle,
+      allowIndexing: settings.allowIndexing,
       googleAdsenseAccount: settings.googleAdsenseAccount,
       googleAnalyticsMeasurementId: normalizeGoogleAnalyticsMeasurementId(
         settings.googleAnalyticsMeasurementId,
@@ -88,13 +93,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const hasEnvTurnstile = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY && process.env.TURNSTILE_HOSTNAMES;
     return res.status(200).json({
       siteName: "Akhilesh Vishwakarma",
+      seoTitle: "",
       siteDescription: "",
       siteKeywords: "",
+      openGraphTitle: "",
+      openGraphDescription: "",
       translationLanguages,
       preferredLanguage: getPreferredLanguage(req, translationLanguages),
       siteUrl: "https://developerakhil.site/",
       openGraphImage: "/og-image.svg",
       faviconUrl: "",
+      twitterHandle: "@akhilesh",
+      allowIndexing: true,
       googleAdsenseAccount: "",
       googleAnalyticsMeasurementId: "",
       twoFactorEnabled: false,

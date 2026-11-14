@@ -53,15 +53,15 @@ export async function generateMetadata(): Promise<Metadata> {
     const settings = await getContactSettings();
     const siteName = settings.siteName || "Akhilesh Vishwakarma";
     const description = getSeoDescription(settings.siteDescription);
-    const keywords = Array.from(
-      new Set([
-        ...(settings.siteKeywords
-          ?.split(",")
-          .map((value) => value.trim())
-          .filter(Boolean) || []),
-        ...defaultKeywords,
-      ]),
-    );
+    const configuredKeywords =
+      settings.siteKeywords
+        ?.split(",")
+        .map((value) => value.trim())
+        .filter(Boolean) || [];
+    const keywords =
+      configuredKeywords.length > 0
+        ? Array.from(new Set(configuredKeywords))
+        : defaultKeywords;
     const siteUrl =
       settings.siteUrl ||
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -71,7 +71,14 @@ export async function generateMetadata(): Promise<Metadata> {
     const canonicalUrl = siteUrl.replace(/\/+$/, "");
     const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
-    const title = getPageTitle(siteName);
+    const title = settings.seoTitle?.trim() || getPageTitle(siteName);
+    const openGraphTitle = settings.openGraphTitle?.trim() || title;
+    const openGraphDescription =
+      settings.openGraphDescription?.trim() || description;
+    const twitterHandle = settings.twitterHandle?.trim()
+      ? settings.twitterHandle.trim().replace(/^@?/, "@")
+      : undefined;
+    const allowIndexing = settings.allowIndexing ?? true;
 
     return {
       metadataBase: new URL(canonicalUrl),
@@ -85,25 +92,22 @@ export async function generateMetadata(): Promise<Metadata> {
       alternates: { canonical: canonicalUrl },
       verification: verification ? { google: verification } : undefined,
       icons: {
-        icon: [
-          { url: faviconUrl, type: "image/svg+xml" },
-          { url: "/favicon.svg", type: "image/svg+xml" },
-        ],
-        shortcut: "/favicon.svg",
-        apple: "/favicon.svg",
+        icon: faviconUrl,
+        shortcut: faviconUrl,
+        apple: faviconUrl,
       },
       manifest: "/site.webmanifest",
       robots: {
-        index: true,
+        index: allowIndexing,
         follow: true,
         googleBot: {
-          index: true,
+          index: allowIndexing,
           follow: true,
         },
       },
       openGraph: {
-        title,
-        description,
+        title: openGraphTitle,
+        description: openGraphDescription,
         siteName,
         type: "website",
         url: canonicalUrl,
@@ -112,10 +116,10 @@ export async function generateMetadata(): Promise<Metadata> {
       },
       twitter: {
         card: "summary_large_image",
-        site: "@akhilesh",
-        creator: "@akhilesh",
-        title,
-        description,
+        site: twitterHandle,
+        creator: twitterHandle,
+        title: openGraphTitle,
+        description: openGraphDescription,
         images: [ogImageUrl],
       },
       other: {
@@ -128,7 +132,6 @@ export async function generateMetadata(): Promise<Metadata> {
         "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",
-        keywords: keywords.join(", "),
       },
     };
   } catch {
@@ -151,7 +154,7 @@ export async function generateMetadata(): Promise<Metadata> {
       alternates: { canonical: fallbackUrl.replace(/\/+$/, "") },
       verification: verification ? { google: verification } : undefined,
       icons: {
-        icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+        icon: "/favicon.svg",
         shortcut: "/favicon.svg",
         apple: "/favicon.svg",
       },
@@ -185,7 +188,6 @@ export async function generateMetadata(): Promise<Metadata> {
         "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",
-        keywords: defaultKeywords.join(", "),
       },
     };
   }
@@ -200,6 +202,7 @@ export default async function RootLayout({
   const portfolio = await getPublicPortfolioData();
   const siteName = settings?.siteName || "Akhilesh Vishwakarma";
   const description = getSeoDescription(settings?.siteDescription);
+  const siteTitle = settings?.seoTitle?.trim() || getPageTitle(siteName);
   const siteUrl =
     settings?.siteUrl ||
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -233,7 +236,7 @@ export default async function RootLayout({
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: getPageTitle(siteName),
+      name: siteTitle,
       url: canonicalUrl,
       description,
       inLanguage: "en-IN",

@@ -3,7 +3,7 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { normalizeGoogleAnalyticsMeasurementId } from "@/lib/google-analytics";
 
 type ConsentState = {
@@ -16,6 +16,8 @@ type ConsentState = {
 
 const STORAGE_KEY = "portfolio-cookie-consent";
 const COOKIE_NAME = "portfolio_cookie_consent";
+let consentSnapshot: ConsentState | undefined;
+const consentListeners = new Set<() => void>();
 
 function readCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -66,14 +68,39 @@ function parseConsent(raw: string | null): ConsentState | null {
   }
 }
 
-export function CookieConsent() {
-  const [consent, setConsent] = useState<ConsentState | null>(() => {
-    if (typeof window === "undefined") return null;
+function getConsentSnapshot(): ConsentState | null {
+  if (typeof window === "undefined") return null;
+  if (consentSnapshot) return consentSnapshot;
 
-    const existingFromStorage = parseConsent(localStorage.getItem(STORAGE_KEY));
-    const existingFromCookie = parseConsent(readCookie(COOKIE_NAME));
-    return existingFromStorage ?? existingFromCookie ?? getDefaultConsent();
-  });
+  let existingFromStorage: ConsentState | null = null;
+  try {
+    existingFromStorage = parseConsent(localStorage.getItem(STORAGE_KEY));
+  } catch (error) {
+    console.warn("Could not read cookie consent from local storage:", error);
+  }
+
+  consentSnapshot =
+    existingFromStorage ??
+    parseConsent(readCookie(COOKIE_NAME)) ??
+    getDefaultConsent();
+  return consentSnapshot;
+}
+
+function subscribeToConsent(listener: () => void): () => void {
+  consentListeners.add(listener);
+  return () => consentListeners.delete(listener);
+}
+
+function getServerConsentSnapshot(): null {
+  return null;
+}
+
+export function CookieConsent() {
+  const consent = useSyncExternalStore(
+    subscribeToConsent,
+    getConsentSnapshot,
+    getServerConsentSnapshot,
+  );
   const [googleAnalyticsMeasurementId, setGoogleAnalyticsMeasurementId] =
     useState("");
 
@@ -117,7 +144,8 @@ export function CookieConsent() {
       // Ignore storage quota issues silently.
     }
     writeCookie(COOKIE_NAME, JSON.stringify(nextConsent));
-    setConsent(nextConsent);
+    consentSnapshot = nextConsent;
+    consentListeners.forEach((listener) => listener());
   };
 
   const handleAcceptAll = () => {

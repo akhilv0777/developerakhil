@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import {
   ChevronDown,
   Menu,
@@ -36,7 +41,13 @@ export function PublicNav({
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const profileLinks: Array<[string, string]> = [];
   if (data.sectionVisibility?.about) profileLinks.push(["about", "About"]);
-  if (data.sectionVisibility?.skills ?? true) profileLinks.push(["skills", "Skills"]);
+  if (
+    data.sectionVisibility?.about &&
+    (data.sectionVisibility?.skills ?? true) &&
+    (profile.skills?.length > 0 || profile.languages?.length > 0)
+  ) {
+    profileLinks.push(["skills", "Skills"]);
+  }
   if (data.sectionVisibility?.education) profileLinks.push(["education", "Education"]);
   if (data.sectionVisibility?.experience) profileLinks.push(["experience", "Experience"]);
   const workLinks: Array<[string, string]> = [];
@@ -49,7 +60,7 @@ export function PublicNav({
     ...(data.sectionVisibility?.contact
       ? [{ label: "Hire me", items: [["contact", "Hire me"] as [string, string]] }]
       : []),
-  ];
+  ].filter((group) => group.items.length > 0);
   const links = groups.flatMap((group) => group.items);
   const sectionIds = links.map(([href]) => href).join(",");
 
@@ -82,21 +93,22 @@ export function PublicNav({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  const handleSectionClick = (event: ReactMouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleSectionClick = (
+    event: ReactMouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) => {
     event.preventDefault();
     setOpen(false);
     setOpenGroup(null);
     setActiveHash(href);
-
-    const target = document.getElementById(href);
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
-      return;
-    }
-
-    if (typeof window.history?.replaceState === "function") {
-      window.history.replaceState(null, "", window.location.pathname);
-    }
+    document
+      .getElementById(href)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
   };
 
   useEffect(() => {

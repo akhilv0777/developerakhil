@@ -91,6 +91,21 @@ function hexToHsl(hex: string): string {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+function navigateToSection(
+  event: MouseEvent<HTMLAnchorElement>,
+  sectionId: string,
+) {
+  event.preventDefault();
+  document
+    .getElementById(sectionId)
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
 function SectionLabel({
   number,
   children,
@@ -355,6 +370,7 @@ function Hero({
         <div className="portfolio-profile-actions mt-4 flex flex-wrap justify-center gap-3 lg:justify-start">
           <a
             href="#contact"
+            onClick={(event) => navigateToSection(event, "contact")}
             className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 font-mono text-xs font-semibold text-background shadow-[0_6px_18px_hsl(var(--foreground)/0.15)] transition-transform hover:-translate-y-0.5"
             data-testid="link-hero-work"
           >
@@ -382,16 +398,8 @@ function Hero({
                 key={item.id}
                 href={`#${item.id}`}
                 onClick={(event) => {
-                  event.preventDefault();
                   setActiveSection(item.id);
-                  document
-                    .getElementById(item.id)
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  window.history.replaceState(
-                    null,
-                    "",
-                    `${window.location.pathname}${window.location.search}`,
-                  );
+                  navigateToSection(event, item.id);
                 }}
                 className={`portfolio-section-link${activeSection === item.id ? " is-active" : ""}`}
                 aria-current={activeSection === item.id ? "location" : undefined}
@@ -416,7 +424,13 @@ function Hero({
   );
 }
 
-function About({ profile }: { profile: Profile }) {
+function About({
+  profile,
+  showSkills,
+}: {
+  profile: Profile;
+  showSkills: boolean;
+}) {
   return (
     <section
       id="about"
@@ -465,7 +479,8 @@ function About({ profile }: { profile: Profile }) {
             <p>{profile.bio2}</p>
             <p>{profile.bio3}</p>
           </div>
-          {(profile.skills?.length > 0 || profile.languages?.length > 0) && (
+          {showSkills &&
+            (profile.skills?.length > 0 || profile.languages?.length > 0) && (
             <div
               id="skills"
               data-mf-animation="fade-up"
@@ -1892,6 +1907,14 @@ export function PublicPortfolio({
   } as React.CSSProperties;
   const portfolioNavItems = [
     { id: "about", label: "About", visible: data.sectionVisibility?.about },
+    {
+      id: "skills",
+      label: "Skills",
+      visible:
+        data.sectionVisibility?.about &&
+        (data.sectionVisibility?.skills ?? true) &&
+        (data.profile.skills?.length > 0 || data.profile.languages?.length > 0),
+    },
     { id: "education", label: "Education", visible: data.sectionVisibility?.education },
     { id: "experience", label: "Experience", visible: data.sectionVisibility?.experience },
     { id: "services", label: "Services", visible: data.sectionVisibility?.services },
@@ -1941,7 +1964,12 @@ export function PublicPortfolio({
           {!data.sectionVisibility?.hero &&
             data.sectionVisibility?.stats &&
             data.stats.length > 0 && <Stats stats={data.stats} />}
-          {data.sectionVisibility?.about && <About profile={data.profile} />}
+          {data.sectionVisibility?.about && (
+            <About
+              profile={data.profile}
+              showSkills={data.sectionVisibility?.skills ?? true}
+            />
+          )}
           {data.sectionVisibility?.education && <Timeline data={data} />}
           {data.sectionVisibility?.experience && (
             <ExperienceSection data={data} />
@@ -1960,6 +1988,7 @@ export function PublicPortfolio({
       </main>
       <a
         href="#top"
+        onClick={(event) => navigateToSection(event, "top")}
         className="fixed bottom-5 right-5 z-40 flex h-11 w-11 items-center justify-center rounded-full p-[2px] text-primary shadow-lg sm:bottom-6 sm:right-6"
         style={{
           background:

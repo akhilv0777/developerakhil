@@ -3027,13 +3027,18 @@ type ContactSettings = {
   contactFromEmail: string;
   twoFactorEnabled: boolean;
   siteName: string;
+  seoTitle: string;
   siteDescription: string;
   siteKeywords: string;
+  openGraphTitle: string;
+  openGraphDescription: string;
   customMetaTags: { name: string; content: string }[];
   translationLanguages: string[];
   siteUrl: string;
   openGraphImage: string;
   faviconUrl: string;
+  twitterHandle: string;
+  allowIndexing: boolean;
   removeBgApiUrl: string;
   removeBgApiKey: string;
   turnstileSiteKey: string;
@@ -3467,15 +3472,20 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     contactFromEmail: "",
     twoFactorEnabled: false,
     siteName: "Akhilesh Vishwakarma",
+    seoTitle: "",
     siteDescription:
       "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
     siteKeywords:
       "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
+    openGraphTitle: "",
+    openGraphDescription: "",
     customMetaTags: [],
     translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
     siteUrl: "https://developerakhil.site/",
     openGraphImage: "/og-image.svg",
     faviconUrl: "",
+    twitterHandle: "@akhilesh",
+    allowIndexing: true,
     removeBgApiUrl: "",
     removeBgApiKey: "",
     turnstileSiteKey: "",
@@ -3490,6 +3500,9 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     useState(false);
   const [error, setError] = useState<string | null>(null);
   const [faviconError, setFaviconError] = useState<string | null>(null);
+  const [openGraphImageError, setOpenGraphImageError] = useState<string | null>(
+    null,
+  );
 
   const handleFaviconUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -3498,7 +3511,9 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
     if (!file) return;
     setFaviconError(null);
     try {
-      const cdnUrl = await resizeAndUploadImage(file, 256, 256);
+      const cdnUrl = file.name.toLowerCase().endsWith(".ico")
+        ? await uploadImageToCDN(file)
+        : await resizeAndUploadImage(file, 256, 256);
       setForm((current) => ({ ...current, faviconUrl: cdnUrl }));
     } catch (uploadError) {
       const message =
@@ -3506,6 +3521,26 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
           ? uploadError.message
           : "Could not upload favicon";
       setFaviconError(message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleOpenGraphImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setOpenGraphImageError(null);
+    try {
+      const cdnUrl = await resizeAndUploadImage(file, 1200, 630);
+      setForm((current) => ({ ...current, openGraphImage: cdnUrl }));
+    } catch (uploadError) {
+      const message =
+        uploadError instanceof Error
+          ? uploadError.message
+          : "Could not upload share image";
+      setOpenGraphImageError(message);
     } finally {
       event.target.value = "";
     }
@@ -3534,15 +3569,20 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
               contactFromEmail: "",
               twoFactorEnabled: false,
               siteName: "Akhilesh Vishwakarma",
+              seoTitle: "",
               siteDescription:
                 "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
               siteKeywords:
                 "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
+              openGraphTitle: "",
+              openGraphDescription: "",
               customMetaTags: [],
               translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
               siteUrl: "https://developerakhil.site/",
               openGraphImage: "/og-image.svg",
               faviconUrl: "",
+              twitterHandle: "@akhilesh",
+              allowIndexing: true,
               removeBgApiUrl: "",
               removeBgApiKey: "",
               turnstileSiteKey: "",
@@ -3643,6 +3683,23 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   placeholder="Akhilesh Vishwakarma"
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                 />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  SEO page title
+                </span>
+                <input
+                  value={form.seoTitle}
+                  onChange={(event) =>
+                    setForm({ ...form, seoTitle: event.target.value })
+                  }
+                  maxLength={120}
+                  placeholder="Developer Akhil | WordPress & PHP Developer"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+                <span className="mt-2 block text-xs leading-5 text-muted-foreground">
+                  Leave blank to use the generated title based on the site name.
+                </span>
               </label>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -3752,6 +3809,25 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   <Plus size={14} /> Add meta tag
                 </button>
               </fieldset>
+              <label className="flex items-start gap-3 rounded-lg border border-border bg-secondary/30 p-4">
+                <input
+                  type="checkbox"
+                  checked={form.allowIndexing}
+                  onChange={(event) =>
+                    setForm({ ...form, allowIndexing: event.target.checked })
+                  }
+                  className="mt-0.5 h-4 w-4 accent-primary"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    Allow search engines to index this site
+                  </span>
+                  <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                    Turning this off sends noindex directives to crawlers; it
+                    does not remove pages already indexed.
+                  </span>
+                </span>
+              </label>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Google Analytics 4 measurement ID
@@ -3819,6 +3895,92 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                   placeholder="https://example.com/og-image.jpg"
                   className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
                 />
+                <span className="mt-2 block text-xs leading-5 text-muted-foreground">
+                  Used for link previews when this site is shared. A 1200 × 630
+                  image is recommended.
+                </span>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-primary/20">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={handleOpenGraphImageUpload}
+                      className="hidden"
+                    />
+                    Upload share image
+                  </label>
+                  {form.openGraphImage && (
+                    <NextImage
+                      src={form.openGraphImage}
+                      loader={({ src }) => src}
+                      unoptimized
+                      alt="Social share image preview"
+                      width={120}
+                      height={63}
+                      className="h-[63px] w-[120px] rounded border border-border bg-background object-cover"
+                    />
+                  )}
+                  {form.openGraphImage && (
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, openGraphImage: "" })}
+                      className="font-mono text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-red-400"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {openGraphImageError && (
+                  <p className="mt-2 font-mono text-[10px] text-red-400">
+                    {openGraphImageError}
+                  </p>
+                )}
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Open Graph title
+                </span>
+                <input
+                  value={form.openGraphTitle}
+                  onChange={(event) =>
+                    setForm({ ...form, openGraphTitle: event.target.value })
+                  }
+                  maxLength={120}
+                  placeholder="Uses the SEO page title when blank"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Open Graph description
+                </span>
+                <textarea
+                  value={form.openGraphDescription}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      openGraphDescription: event.target.value,
+                    })
+                  }
+                  rows={3}
+                  maxLength={320}
+                  placeholder="Uses the SEO description when blank"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  X / Twitter handle
+                </span>
+                <input
+                  value={form.twitterHandle}
+                  onChange={(event) =>
+                    setForm({ ...form, twitterHandle: event.target.value })
+                  }
+                  placeholder="@yourhandle"
+                  autoComplete="off"
+                  className="w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/20"
+                />
               </label>
               <label className="block">
                 <span className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -3854,7 +4016,7 @@ function SettingsEditor({ activeTab }: { activeTab: SettingsSubtab }) {
                       className="h-8 w-8 rounded border border-border bg-background object-contain"
                     />
                   )}
-                  {form.faviconUrl?.startsWith("data:") && (
+                  {form.faviconUrl && (
                     <button
                       type="button"
                       onClick={() => setForm({ ...form, faviconUrl: "" })}

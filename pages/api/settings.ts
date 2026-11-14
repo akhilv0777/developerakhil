@@ -22,15 +22,20 @@ let inMemorySettings: ContactSettings = {
   contactFromEmail: "",
   twoFactorEnabled: false,
   siteName: "Akhilesh Vishwakarma",
+  seoTitle: "",
   siteDescription:
     "Developer Akhil (Akhilesh Vishwakarma) is a PHP and WordPress developer in India specializing in React-based Gutenberg blocks, Laravel, and modern web development.",
   siteKeywords:
     "Developer Akhil, Akhil developer, Akhilesh Vishwakarma, WordPress developer India, PHP developer India, Gutenberg developer, React developer, Laravel developer, web developer portfolio",
+  openGraphTitle: "",
+  openGraphDescription: "",
   customMetaTags: [],
   translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
   siteUrl: "https://developerakhil.site/",
   openGraphImage: "/og-image.svg",
   faviconUrl: "",
+  twitterHandle: "@akhilesh",
+  allowIndexing: true,
   removeBgApiUrl: "",
   removeBgApiKey: "",
   turnstileSiteKey: "",
@@ -96,8 +101,11 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.contactFromEmail === "string" &&
     typeof record.twoFactorEnabled === "boolean" &&
     typeof record.siteName === "string" &&
+    typeof record.seoTitle === "string" &&
     typeof record.siteDescription === "string" &&
     typeof record.siteKeywords === "string" &&
+    typeof record.openGraphTitle === "string" &&
+    typeof record.openGraphDescription === "string" &&
     areCustomMetaTagsValid &&
     Array.isArray(record.translationLanguages) &&
     record.translationLanguages.every(
@@ -108,6 +116,8 @@ function isValidSettings(value: unknown): value is ContactSettings {
     typeof record.siteUrl === "string" &&
     typeof record.openGraphImage === "string" &&
     typeof record.faviconUrl === "string" &&
+    typeof record.twitterHandle === "string" &&
+    typeof record.allowIndexing === "boolean" &&
     typeof record.removeBgApiUrl === "string" &&
     typeof record.removeBgApiKey === "string"
   );
@@ -162,8 +172,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         contactFromEmail: req.body.contactFromEmail.trim(),
         twoFactorEnabled: req.body.twoFactorEnabled,
         siteName: req.body.siteName.trim(),
+        seoTitle: typeof req.body.seoTitle === "string" ? req.body.seoTitle.trim() : current.seoTitle,
         siteDescription: typeof req.body.siteDescription === "string" ? req.body.siteDescription.trim() : current.siteDescription,
         siteKeywords: typeof req.body.siteKeywords === "string" ? req.body.siteKeywords.trim() : current.siteKeywords,
+        openGraphTitle: typeof req.body.openGraphTitle === "string" ? req.body.openGraphTitle.trim() : current.openGraphTitle,
+        openGraphDescription: typeof req.body.openGraphDescription === "string" ? req.body.openGraphDescription.trim() : current.openGraphDescription,
         customMetaTags: Array.isArray(req.body.customMetaTags)
           ? req.body.customMetaTags.map(
               (tag: { name: string; content: string }) => ({
@@ -176,6 +189,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         siteUrl: typeof req.body.siteUrl === "string" ? req.body.siteUrl.trim() : current.siteUrl,
         openGraphImage: typeof req.body.openGraphImage === "string" ? req.body.openGraphImage.trim() : current.openGraphImage,
         faviconUrl: req.body.faviconUrl.trim(),
+        twitterHandle: typeof req.body.twitterHandle === "string" ? req.body.twitterHandle.trim() : current.twitterHandle,
+        allowIndexing: req.body.allowIndexing,
         removeBgApiUrl: typeof req.body.removeBgApiUrl === "string" ? req.body.removeBgApiUrl.trim() : current.removeBgApiUrl,
         removeBgApiKey: typeof req.body.removeBgApiKey === "string" ? req.body.removeBgApiKey.trim() : current.removeBgApiKey,
         turnstileSiteKey: typeof req.body.turnstileSiteKey === "string" ? req.body.turnstileSiteKey.trim() : current.turnstileSiteKey,
