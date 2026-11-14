@@ -835,11 +835,29 @@ function Work({ data }: { data: PortfolioData }) {
   const shareProject = async (project: Project) => {
     const shareUrl = `${window.location.origin}/projects/${encodeURIComponent(project.id)}`;
     try {
+      const imageSource = project.image || DEFAULT_PROJECT_IMAGES[0];
+      let shareFile: File | null = null;
+
+      if (navigator.canShare?.({ files: [new File([""], "share.png", { type: "image/png" })] })) {
+        try {
+          const response = await fetch(imageSource);
+          const blob = await response.blob();
+          const mimeType = blob.type || "image/png";
+          const extension = mimeType === "image/jpeg" ? "jpg" : mimeType.split("/")[1] || "png";
+          shareFile = new File([blob], `project-share.${extension}`, { type: mimeType });
+        } catch {
+          shareFile = null;
+        }
+      }
+
       if (navigator.share) {
         await navigator.share({
           title: project.title,
           text: project.description,
           url: shareUrl,
+          ...(shareFile && navigator.canShare?.({ files: [shareFile] })
+            ? { files: [shareFile] }
+            : {}),
         });
       } else {
         await navigator.clipboard.writeText(shareUrl);
@@ -893,7 +911,7 @@ function Work({ data }: { data: PortfolioData }) {
       <div
         ref={gridRef}
         data-project-grid
-        className="divide-y divide-border border-y border-border"
+        className="grid gap-4 sm:grid-cols-2"
       >
         {data.projects.map((project, index) => {
           const category = project.category.trim() || "Uncategorized";
@@ -906,27 +924,44 @@ function Work({ data }: { data: PortfolioData }) {
             <article
               key={project.id}
               data-project-card
-              className={`group flex flex-col gap-4 py-5 transition-opacity sm:flex-row sm:items-start sm:gap-5 ${isHidden ? "hidden" : ""}`}
+              className={`overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-primary/50 ${isHidden ? "hidden" : ""}`}
             >
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-border bg-secondary">
+              <div className="group relative aspect-[16/9] overflow-hidden bg-secondary">
                 <Image
                   src={projectImage}
                   alt={project.title}
                   loading="lazy"
                   fill
-                  sizes="(max-width: 40rem) calc(100vw - 4rem), (max-width: 63.99rem) calc((100vw - 5rem) / 2), 27.5rem"
+                  sizes="(max-width: 40rem) calc(100vw - 2rem), (max-width: 63.99rem) calc((100vw - 3rem) / 2), 27.5rem"
                   quality={75}
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:blur-sm group-focus-within:blur-sm"
                 />
+                <div className="absolute inset-0 flex items-center justify-center gap-3 bg-black/15 opacity-100 backdrop-blur-[2px] transition-opacity duration-300 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProject(project)}
+                    className="inline-flex items-center gap-2 rounded-full bg-background px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-foreground shadow-lg transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    Details <ArrowUpRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void shareProject(project)}
+                    aria-label={`Share ${project.title}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-black/40 px-5 py-3 font-mono text-[10px] font-bold uppercase tracking-wider text-white shadow-lg transition-colors hover:bg-white hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    <Share2 size={14} /> Share
+                  </button>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 p-4 sm:p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="font-mono text-[10px] font-medium text-muted-foreground">
                       {category}
                     </p>
                     <h3 className="mt-1 text-lg font-bold leading-snug text-foreground sm:text-xl">
-                    {project.title}
+                      {project.title}
                     </h3>
                   </div>
                   <span className="shrink-0 pt-1 font-mono text-xs text-muted-foreground">
@@ -936,23 +971,8 @@ function Work({ data }: { data: PortfolioData }) {
                 <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
                   {project.description}
                 </p>
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedProject(project)}
-                    className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-foreground transition-colors hover:text-primary"
-                  >
-                    Details <ArrowUpRight size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void shareProject(project)}
-                    aria-label={`Share ${project.title}`}
-                    className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    <Share2 size={12} /> Share
-                  </button>
-                  {project.liveUrl && (
+                {project.liveUrl && (
+                  <div className="mt-3">
                     <a
                       href={project.liveUrl}
                       target="_blank"
@@ -961,8 +981,8 @@ function Work({ data }: { data: PortfolioData }) {
                     >
                       Live project <ExternalLink size={12} />
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </article>
           );

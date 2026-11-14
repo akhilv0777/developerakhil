@@ -43,7 +43,7 @@ const normalizeOpenGraphImage = (value?: string) => {
   const trimmed = value?.trim();
   if (!trimmed) return "/og-image.png";
   return trimmed.toLowerCase().endsWith(".svg")
-    ? trimmed.replace(/\.svg$/i, ".png")
+    ? "/og-image.png"
     : trimmed;
 };
 const getPageTitle = (siteName: string) =>
@@ -73,10 +73,21 @@ export async function generateMetadata(): Promise<Metadata> {
       settings.siteUrl ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://developerakhil.site/";
-    const ogImage = normalizeOpenGraphImage(settings.openGraphImage);
+    const ogImage = "/og-image.png";
     const faviconUrl = settings.faviconUrl || "/favicon.svg";
     const canonicalUrl = siteUrl.replace(/\/+$/, "");
     const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
+    const configuredOgImageUrl = new URL(
+      normalizeOpenGraphImage(settings.openGraphImage),
+      canonicalUrl,
+    ).toString();
+    const ogImages = Array.from(
+      new Set([ogImageUrl, configuredOgImageUrl]),
+    ).map((url) => ({
+      url,
+      alt: `${siteName} social preview`,
+      ...(url === ogImageUrl ? { width: 1200, height: 630 } : {}),
+    }));
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
     const title = settings.seoTitle?.trim() || getPageTitle(siteName);
     const openGraphTitle = settings.openGraphTitle?.trim() || title;
@@ -93,7 +104,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       keywords,
       applicationName: siteName,
-      authors: [{ name: siteName }, { name: "Akhilesh Vishwakarma" }],
+      authors: Array.from(new Set([siteName, "Akhilesh Vishwakarma"])).map(
+        (name) => ({ name }),
+      ),
       creator: siteName,
       publisher: siteName,
       alternates: { canonical: canonicalUrl },
@@ -110,6 +123,10 @@ export async function generateMetadata(): Promise<Metadata> {
         googleBot: {
           index: allowIndexing,
           follow: true,
+          noimageindex: false,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
         },
       },
       openGraph: {
@@ -119,7 +136,7 @@ export async function generateMetadata(): Promise<Metadata> {
         type: "website",
         url: canonicalUrl,
         locale: "en_US",
-        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: siteName }],
+        images: ogImages,
       },
       twitter: {
         card: "summary_large_image",
@@ -127,16 +144,25 @@ export async function generateMetadata(): Promise<Metadata> {
         creator: twitterHandle,
         title: openGraphTitle,
         description: openGraphDescription,
-        images: [ogImageUrl],
+        images: ogImages.map(({ url, alt }) => ({ url, alt })),
       },
       other: {
         ...Object.fromEntries(
-          (settings.customMetaTags || []).map(({ name, content }) => [
-            name,
-            content,
-          ]),
+          (settings.customMetaTags || [])
+            .filter(
+              ({ name }) =>
+                ![
+                  "application-name",
+                  "color-scheme",
+                  "description",
+                  "keywords",
+                  "robots",
+                  "theme-color",
+                  "viewport",
+                ].includes(name.toLowerCase()),
+            )
+            .map(({ name, content }) => [name, content]),
         ),
-        "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",
       },
@@ -147,7 +173,7 @@ export async function generateMetadata(): Promise<Metadata> {
     const fallbackUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://developerakhil.site/";
     const fallbackOgImage = new URL(
-      normalizeOpenGraphImage("/og-image.png"),
+      "/og-image.png",
       fallbackUrl,
     ).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
@@ -158,7 +184,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: defaultDescription,
       keywords: defaultKeywords,
       applicationName: siteName,
-      authors: [{ name: siteName }, { name: "Developer Akhil" }],
+      authors: Array.from(new Set([siteName, "Developer Akhil"])).map(
+        (name) => ({ name }),
+      ),
       creator: siteName,
       publisher: siteName,
       alternates: { canonical: fallbackUrl.replace(/\/+$/, "") },
@@ -175,6 +203,10 @@ export async function generateMetadata(): Promise<Metadata> {
         googleBot: {
           index: true,
           follow: true,
+          noimageindex: false,
+          "max-video-preview": -1,
+          "max-image-preview": "large",
+          "max-snippet": -1,
         },
       },
       openGraph: {
@@ -184,7 +216,14 @@ export async function generateMetadata(): Promise<Metadata> {
         type: "website",
         url: fallbackUrl.replace(/\/+$/, ""),
         locale: "en_US",
-        images: [{ url: fallbackOgImage, width: 1200, height: 630, alt: siteName }],
+        images: [
+          {
+            url: fallbackOgImage,
+            width: 1200,
+            height: 630,
+            alt: `${siteName} social preview`,
+          },
+        ],
       },
       twitter: {
         card: "summary_large_image",
@@ -192,10 +231,9 @@ export async function generateMetadata(): Promise<Metadata> {
         creator: "@akhilesh",
         title: defaultTitle,
         description: defaultDescription,
-        images: [fallbackOgImage],
+        images: [{ url: fallbackOgImage, alt: `${siteName} social preview` }],
       },
       other: {
-        "application-name": siteName,
         "theme-color": "#0f172a",
         "color-scheme": "dark light",
       },
@@ -218,7 +256,7 @@ export default async function RootLayout({
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://developerakhil.site/";
   const canonicalUrl = siteUrl.replace(/\/+$/, "");
-  const ogImage = normalizeOpenGraphImage(settings?.openGraphImage);
+  const ogImage = "/og-image.png";
   const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
   const profile = portfolio.profile;
   const absoluteProfileUrl = (value: string) =>
