@@ -32,7 +32,7 @@ let inMemorySettings: ContactSettings = {
   customMetaTags: [],
   translationLanguages: [...DEFAULT_TRANSLATION_LANGUAGES],
   siteUrl: "https://developerakhil.site/",
-  openGraphImage: "/og-image.svg",
+  openGraphImage: "/og-image.png",
   faviconUrl: "",
   twitterHandle: "@akhilesh",
   allowIndexing: true,

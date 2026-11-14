@@ -431,7 +431,7 @@ const defaultContactSettings: ContactSettings = {
   customMetaTags: [],
   translationLanguages: ["en", "ar", "bn", "de", "es", "fr", "ja"],
   siteUrl: "https://developerakhil.site/",
-  openGraphImage: "/og-image.svg",
+  openGraphImage: "/og-image.png",
   faviconUrl: "",
   twitterHandle: "@akhilesh",
   allowIndexing: true,

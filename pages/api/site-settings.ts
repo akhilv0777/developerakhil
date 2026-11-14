@@ -101,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       translationLanguages,
       preferredLanguage: getPreferredLanguage(req, translationLanguages),
       siteUrl: "https://developerakhil.site/",
-      openGraphImage: "/og-image.svg",
+      openGraphImage: "/og-image.png",
       faviconUrl: "",
       twitterHandle: "@akhilesh",
       allowIndexing: true,

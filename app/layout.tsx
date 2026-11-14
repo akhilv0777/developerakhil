@@ -39,6 +39,13 @@ const defaultKeywords = [
   "Laravel developer",
   "web developer portfolio",
 ];
+const normalizeOpenGraphImage = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return "/og-image.png";
+  return trimmed.toLowerCase().endsWith(".svg")
+    ? trimmed.replace(/\.svg$/i, ".png")
+    : trimmed;
+};
 const getPageTitle = (siteName: string) =>
   `Developer Akhil | ${siteName} - WordPress & PHP Developer`;
 const getSeoDescription = (configuredDescription?: string) => {
@@ -66,7 +73,7 @@ export async function generateMetadata(): Promise<Metadata> {
       settings.siteUrl ||
       process.env.NEXT_PUBLIC_SITE_URL ||
       "https://developerakhil.site/";
-    const ogImage = settings.openGraphImage || "/og-image.svg";
+    const ogImage = normalizeOpenGraphImage(settings.openGraphImage);
     const faviconUrl = settings.faviconUrl || "/favicon.svg";
     const canonicalUrl = siteUrl.replace(/\/+$/, "");
     const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
@@ -139,7 +146,10 @@ export async function generateMetadata(): Promise<Metadata> {
     const defaultTitle = getPageTitle(siteName);
     const fallbackUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://developerakhil.site/";
-    const fallbackOgImage = new URL("/og-image.svg", fallbackUrl).toString();
+    const fallbackOgImage = new URL(
+      normalizeOpenGraphImage("/og-image.png"),
+      fallbackUrl,
+    ).toString();
     const verification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION;
 
     return {
@@ -208,7 +218,7 @@ export default async function RootLayout({
     process.env.NEXT_PUBLIC_SITE_URL ||
     "https://developerakhil.site/";
   const canonicalUrl = siteUrl.replace(/\/+$/, "");
-  const ogImage = settings?.openGraphImage || "/og-image.svg";
+  const ogImage = normalizeOpenGraphImage(settings?.openGraphImage);
   const ogImageUrl = new URL(ogImage, canonicalUrl).toString();
   const profile = portfolio.profile;
   const absoluteProfileUrl = (value: string) =>
